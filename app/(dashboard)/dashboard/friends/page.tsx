@@ -4,6 +4,14 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Check, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 
 export default function FriendsPage() {
   const user = useQuery(api.users.getCurrentUser);
@@ -26,45 +34,59 @@ export default function FriendsPage() {
     searchTerm.length >= 2 ? { searchTerm } : "skip"
   );
 
+  if (user === undefined) {
+    return (
+      <div className="max-w-4xl space-y-6">
+        <div>
+          <Skeleton className="h-9 w-24" />
+          <Skeleton className="h-5 w-64 mt-2" />
+        </div>
+        <Skeleton className="h-12 w-full" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl">
-      <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">
-        Friends
-      </h1>
-      <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+      <h1 className="text-3xl font-bold">Friends</h1>
+      <p className="mt-2 text-muted-foreground">
         Connect with friends and stay accountable together.
       </p>
 
       {/* Search */}
       <div className="mt-8">
-        <input
+        <Input
           type="text"
           placeholder="Search for friends..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900"
+          className="w-full"
         />
         {searchResults && searchResults.length > 0 && (
-          <div className="mt-2 rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-            {searchResults
-              .filter((u) => u._id !== user?._id)
-              .map((searchUser) => (
-                <SearchResult
-                  key={searchUser._id}
-                  searchUser={searchUser}
-                  currentUserId={user?._id}
-                />
-              ))}
-          </div>
+          <Card className="mt-2">
+            <CardContent className="p-0 divide-y">
+              {searchResults
+                .filter((u) => u._id !== user?._id)
+                .map((searchUser) => (
+                  <SearchResult
+                    key={searchUser._id}
+                    searchUser={searchUser}
+                    currentUserId={user?._id}
+                  />
+                ))}
+            </CardContent>
+          </Card>
         )}
       </div>
 
       {/* Pending requests */}
       {pendingRequests && pendingRequests.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
-            Pending Requests
-          </h2>
+          <h2 className="text-xl font-semibold mb-4">Pending Requests</h2>
           <div className="space-y-2">
             {pendingRequests.map(({ request, user: requester }) => (
               <PendingRequest
@@ -79,91 +101,69 @@ export default function FriendsPage() {
 
       {/* Friend progress */}
       <div className="mt-8">
-        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
-          Friends&apos; Progress
-        </h2>
+        <h2 className="text-xl font-semibold mb-4">Friends&apos; Progress</h2>
         {friendProgress?.length === 0 && (
-          <p className="text-zinc-500 dark:text-zinc-400">
-            Add friends to see their progress here.
-          </p>
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <p className="text-muted-foreground">
+                Add friends to see their progress here.
+              </p>
+            </CardContent>
+          </Card>
         )}
         <div className="grid gap-4 sm:grid-cols-2">
           {friendProgress?.map((friend) => (
-            <div
-              key={friend.user._id}
-              className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center">
-                  {friend.user.avatarUrl ? (
-                    <img
-                      src={friend.user.avatarUrl}
-                      alt={friend.user.displayName}
-                      className="h-10 w-10 rounded-full"
-                    />
-                  ) : (
-                    <span className="text-lg">
+            <Card key={friend.user._id}>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarImage src={friend.user.avatarUrl} alt={friend.user.displayName} />
+                    <AvatarFallback>
                       {friend.user.displayName.charAt(0).toUpperCase()}
-                    </span>
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="font-medium">{friend.user.displayName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Day {friend.challenge.currentDay} / 75
+                    </p>
+                  </div>
+                  {friend.todayComplete && (
+                    <div className="h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                      <Check className="h-4 w-4 text-emerald-600" />
+                    </div>
                   )}
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                    {friend.user.displayName}
-                  </p>
-                  <p className="text-sm text-zinc-500">
-                    Day {friend.challenge.currentDay} / 75
-                  </p>
-                </div>
-                {friend.todayComplete && (
-                  <span className="text-green-500 text-xl">✓</span>
-                )}
-              </div>
-              <div className="mt-3">
-                <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                  <div
-                    className="h-full rounded-full bg-green-500"
-                    style={{
-                      width: `${(friend.challenge.currentDay / 75) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
+                <Progress
+                  value={(friend.challenge.currentDay / 75) * 100}
+                  className="mt-3 h-2"
+                />
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
 
       {/* All friends */}
       <div className="mt-8">
-        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
+        <h2 className="text-xl font-semibold mb-4">
           All Friends ({friends?.length ?? 0})
         </h2>
         <div className="space-y-2">
           {friends?.map((friend) => (
-            <div
-              key={friend?._id}
-              className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center">
-                  {friend?.avatarUrl ? (
-                    <img
-                      src={friend.avatarUrl}
-                      alt={friend.displayName}
-                      className="h-10 w-10 rounded-full"
-                    />
-                  ) : (
-                    <span className="text-lg">
+            <Card key={friend?._id}>
+              <CardContent className="py-3">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarImage src={friend?.avatarUrl} alt={friend?.displayName} />
+                    <AvatarFallback>
                       {friend?.displayName.charAt(0).toUpperCase()}
-                    </span>
-                  )}
+                    </AvatarFallback>
+                  </Avatar>
+                  <p className="font-medium">{friend?.displayName}</p>
                 </div>
-                <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                  {friend?.displayName}
-                </p>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
@@ -189,38 +189,38 @@ function SearchResult({
         toUserId: searchUser._id,
       });
       setSent(true);
-    } catch (err) {
-      // Already friends or request exists
+      toast.success("Friend request sent!");
+    } catch {
+      toast.error("Could not send request");
     }
   };
 
   return (
-    <div className="flex items-center justify-between p-4 border-b last:border-b-0 border-zinc-200 dark:border-zinc-800">
+    <div className="flex items-center justify-between p-4">
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center">
-          {searchUser.avatarUrl ? (
-            <img
-              src={searchUser.avatarUrl}
-              alt={searchUser.displayName}
-              className="h-10 w-10 rounded-full"
-            />
-          ) : (
-            <span className="text-lg">
-              {searchUser.displayName.charAt(0).toUpperCase()}
-            </span>
-          )}
-        </div>
-        <p className="font-medium text-zinc-900 dark:text-zinc-50">
-          {searchUser.displayName}
-        </p>
+        <Avatar>
+          <AvatarImage src={searchUser.avatarUrl} alt={searchUser.displayName} />
+          <AvatarFallback>
+            {searchUser.displayName.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <p className="font-medium">{searchUser.displayName}</p>
       </div>
-      <button
+      <Button
         onClick={handleSend}
         disabled={sent}
-        className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        size="sm"
       >
-        {sent ? "Sent" : "Add Friend"}
-      </button>
+        {sent ? (
+          <>
+            <Check className="mr-1 h-4 w-4" /> Sent
+          </>
+        ) : (
+          <>
+            <UserPlus className="mr-1 h-4 w-4" /> Add
+          </>
+        )}
+      </Button>
     </div>
   );
 }
@@ -237,40 +237,55 @@ function PendingRequest({
 
   if (!user) return null;
 
+  const handleAccept = async () => {
+    try {
+      await acceptRequest({ friendshipId: requestId });
+      toast.success("Friend request accepted!");
+    } catch {
+      toast.error("Failed to accept request");
+    }
+  };
+
+  const handleDecline = async () => {
+    try {
+      await declineRequest({ friendshipId: requestId });
+      toast.success("Friend request declined");
+    } catch {
+      toast.error("Failed to decline request");
+    }
+  };
+
   return (
-    <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center">
-          {user.avatarUrl ? (
-            <img
-              src={user.avatarUrl}
-              alt={user.displayName}
-              className="h-10 w-10 rounded-full"
-            />
-          ) : (
-            <span className="text-lg">
-              {user.displayName.charAt(0).toUpperCase()}
-            </span>
-          )}
+    <Card>
+      <CardContent className="py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar>
+              <AvatarImage src={user.avatarUrl} alt={user.displayName} />
+              <AvatarFallback>
+                {user.displayName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <p className="font-medium">{user.displayName}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleAccept}
+              size="sm"
+              className="bg-emerald-500 hover:bg-emerald-600"
+            >
+              Accept
+            </Button>
+            <Button
+              onClick={handleDecline}
+              variant="outline"
+              size="sm"
+            >
+              Decline
+            </Button>
+          </div>
         </div>
-        <p className="font-medium text-zinc-900 dark:text-zinc-50">
-          {user.displayName}
-        </p>
-      </div>
-      <div className="flex gap-2">
-        <button
-          onClick={() => acceptRequest({ friendshipId: requestId })}
-          className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500"
-        >
-          Accept
-        </button>
-        <button
-          onClick={() => declineRequest({ friendshipId: requestId })}
-          className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-        >
-          Decline
-        </button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

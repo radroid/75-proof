@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "75 HARD Tracker",
-  description: "Track and manage your 75 HARD challenge journey",
+  title: "SeventyFive - 75 HARD Challenge Tracker",
+  description: "Transform your life with SeventyFive. Track workouts, water intake, reading, and progress photos. Build mental toughness with the ultimate 75 HARD companion.",
 };
 
 export default function RootLayout({
@@ -25,12 +27,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ClerkProvider>
-          <ConvexClientProvider>{children}</ConvexClientProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <ConvexClientProvider>{children}</ConvexClientProvider>
+            <Toaster />
+          </ThemeProvider>
         </ClerkProvider>
       </body>
     </html>

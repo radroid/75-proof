@@ -5,6 +5,11 @@ import { api } from "@/convex/_generated/api";
 import { useEffect, useState } from "react";
 import { DailyChecklist } from "@/components/DailyChecklist";
 import { StartChallengeModal } from "@/components/StartChallengeModal";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Rocket } from "lucide-react";
 
 export default function DashboardPage() {
   const user = useQuery(api.users.getCurrentUser);
@@ -22,8 +27,16 @@ export default function DashboardPage() {
   // Loading state
   if (user === undefined || isCreatingUser) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-pulse text-zinc-500">Loading...</div>
+      <div className="max-w-4xl space-y-6">
+        <div>
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-5 w-96 mt-2" />
+        </div>
+        <Skeleton className="h-40 w-full" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-48" />
+          <Skeleton className="h-48" />
+        </div>
       </div>
     );
   }
@@ -31,10 +44,10 @@ export default function DashboardPage() {
   return (
     <div className="max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-3xl font-bold">
           Welcome back{user?.displayName ? `, ${user.displayName}` : ""}!
         </h1>
-        <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+        <p className="mt-2 text-muted-foreground">
           Track your daily progress and stay on top of your 75 HARD challenge.
         </p>
       </div>
@@ -61,49 +74,47 @@ function ActiveChallenge({
 
   if (!challenge) {
     return (
-      <div className="animate-pulse text-zinc-500">Loading challenge...</div>
+      <div className="space-y-6">
+        <Skeleton className="h-40 w-full" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-48" />
+          <Skeleton className="h-48" />
+        </div>
+      </div>
     );
   }
 
   const today = new Date().toISOString().split("T")[0];
+  const progressPercent = (challenge.currentDay / 75) * 100;
 
   return (
     <div className="space-y-6">
       {/* Progress header */}
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-              Current Progress
-            </p>
-            <p className="mt-1 text-4xl font-bold text-zinc-900 dark:text-zinc-50">
-              Day {challenge.currentDay}
-              <span className="text-lg font-normal text-zinc-400"> / 75</span>
-            </p>
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardDescription>Current Progress</CardDescription>
+              <CardTitle className="text-4xl mt-1">
+                Day {challenge.currentDay}
+                <span className="text-lg font-normal text-muted-foreground"> / 75</span>
+              </CardTitle>
+            </div>
+            <div className="text-right">
+              <CardDescription>Started</CardDescription>
+              <p className="text-lg font-semibold mt-1">
+                {new Date(challenge.startDate).toLocaleDateString()}
+              </p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-              Started
-            </p>
-            <p className="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-              {new Date(challenge.startDate).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-
-        {/* Progress bar */}
-        <div className="mt-4">
-          <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
-              style={{ width: `${(challenge.currentDay / 75) * 100}%` }}
-            />
-          </div>
-          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+        </CardHeader>
+        <CardContent>
+          <Progress value={progressPercent} className="h-3" />
+          <p className="mt-2 text-sm text-muted-foreground">
             {75 - challenge.currentDay} days remaining
           </p>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Daily checklist */}
       <DailyChecklist
@@ -121,24 +132,27 @@ function NoActiveChallenge() {
 
   return (
     <>
-      <div className="rounded-xl border-2 border-dashed border-zinc-300 bg-white p-12 text-center dark:border-zinc-700 dark:bg-zinc-900">
-        <div className="text-6xl mb-4">🎯</div>
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-          Ready to Start?
-        </h2>
-        <p className="mt-2 text-zinc-600 dark:text-zinc-400 max-w-md mx-auto">
-          Begin your 75 HARD journey today. Track your workouts, water intake,
-          reading, and more.
-        </p>
-        <button
-          onClick={() => setShowModal(true)}
-          className="mt-6 rounded-full bg-zinc-900 px-8 py-3 text-white font-medium transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-        >
-          Start 75 HARD Challenge
-        </button>
-      </div>
+      <Card className="border-2 border-dashed border-emerald-300 dark:border-emerald-800">
+        <CardContent className="pt-12 pb-12 text-center">
+          <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
+            <Rocket className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <h2 className="text-2xl font-bold">Ready to Transform?</h2>
+          <p className="mt-2 text-muted-foreground max-w-md mx-auto">
+            Begin your 75 HARD journey today. Track your workouts, water intake,
+            reading, and build unbreakable mental toughness.
+          </p>
+          <Button
+            onClick={() => setShowModal(true)}
+            size="lg"
+            className="mt-6 bg-emerald-500 hover:bg-emerald-600"
+          >
+            Start 75 HARD Challenge
+          </Button>
+        </CardContent>
+      </Card>
 
-      {showModal && <StartChallengeModal onClose={() => setShowModal(false)} />}
+      <StartChallengeModal open={showModal} onOpenChange={setShowModal} />
     </>
   );
 }

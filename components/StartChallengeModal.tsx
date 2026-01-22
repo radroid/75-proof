@@ -3,12 +3,27 @@
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Card, CardContent } from "@/components/ui/card";
+import { Check } from "lucide-react";
+import { toast } from "sonner";
 
 interface StartChallengeModalProps {
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function StartChallengeModal({ onClose }: StartChallengeModalProps) {
+export function StartChallengeModal({ open, onOpenChange }: StartChallengeModalProps) {
   const user = useQuery(api.users.getCurrentUser);
   const startChallenge = useMutation(api.challenges.startChallenge);
 
@@ -19,13 +34,11 @@ export function StartChallengeModal({ onClose }: StartChallengeModalProps) {
     "friends"
   );
   const [isStarting, setIsStarting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleStart = async () => {
     if (!user) return;
 
     setIsStarting(true);
-    setError(null);
 
     try {
       await startChallenge({
@@ -33,124 +46,119 @@ export function StartChallengeModal({ onClose }: StartChallengeModalProps) {
         startDate,
         visibility,
       });
-      onClose();
+      toast.success("Challenge started! Let's go!");
+      onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to start challenge");
+      toast.error(err instanceof Error ? err.message : "Failed to start challenge");
     } finally {
       setIsStarting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-          Start 75 HARD
-        </h2>
-        <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-          Are you ready to commit to 75 days of mental toughness?
-        </p>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-2xl">
+            Start <span className="text-emerald-500">75 HARD</span>
+          </DialogTitle>
+          <DialogDescription>
+            Are you ready to commit to 75 days of mental toughness?
+          </DialogDescription>
+        </DialogHeader>
 
         {/* Rules reminder */}
-        <div className="mt-4 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800">
-          <h3 className="font-medium text-zinc-900 dark:text-zinc-50">
-            Daily Requirements:
-          </h3>
-          <ul className="mt-2 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
-            <li>✓ Two 45-minute workouts (one must be outdoor)</li>
-            <li>✓ Follow a diet (no cheat meals)</li>
-            <li>✓ No alcohol</li>
-            <li>✓ Drink 1 gallon (128 oz) of water</li>
-            <li>✓ Read 10 pages of non-fiction</li>
-            <li>✓ Take a progress photo</li>
-          </ul>
-          <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-500">
-            Miss any requirement? Start over from Day 1.
-          </p>
-        </div>
+        <Card className="bg-muted/50">
+          <CardContent className="pt-4">
+            <h3 className="font-medium">Daily Requirements:</h3>
+            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+              <li className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-emerald-500" />
+                Two 45-minute workouts (one must be outdoor)
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-emerald-500" />
+                Follow a diet (no cheat meals)
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-emerald-500" />
+                No alcohol
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-emerald-500" />
+                Drink 1 gallon (128 oz) of water
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-emerald-500" />
+                Read 10 pages of non-fiction
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-emerald-500" />
+                Take a progress photo
+              </li>
+            </ul>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Miss any requirement? Start over from Day 1.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Form */}
-        <div className="mt-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Start Date
-            </label>
-            <input
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="start-date">Start Date</Label>
+            <Input
+              id="start-date"
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Who can see your progress?
-            </label>
-            <div className="mt-2 space-y-2">
+          <div className="space-y-2">
+            <Label>Who can see your progress?</Label>
+            <RadioGroup
+              value={visibility}
+              onValueChange={(value) => setVisibility(value as typeof visibility)}
+              className="space-y-2"
+            >
               {[
                 { value: "private", label: "Private", desc: "Only you" },
                 { value: "friends", label: "Friends", desc: "Your friends can see" },
                 { value: "public", label: "Public", desc: "Anyone can see" },
               ].map((option) => (
-                <label
-                  key={option.value}
-                  className={`flex cursor-pointer items-center rounded-lg border p-3 transition-colors ${
-                    visibility === option.value
-                      ? "border-zinc-900 bg-zinc-50 dark:border-zinc-400 dark:bg-zinc-800"
-                      : "border-zinc-200 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="visibility"
-                    value={option.value}
-                    checked={visibility === option.value}
-                    onChange={(e) =>
-                      setVisibility(e.target.value as typeof visibility)
-                    }
-                    className="sr-only"
-                  />
-                  <div>
-                    <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                      {option.label}
-                    </p>
-                    <p className="text-sm text-zinc-500">{option.desc}</p>
-                  </div>
-                </label>
+                <div key={option.value} className="flex items-center space-x-2">
+                  <RadioGroupItem value={option.value} id={option.value} />
+                  <Label htmlFor={option.value} className="flex-1 cursor-pointer">
+                    <span className="font-medium">{option.label}</span>
+                    <span className="text-sm text-muted-foreground ml-2">
+                      {option.desc}
+                    </span>
+                  </Label>
+                </div>
               ))}
-            </div>
+            </RadioGroup>
           </div>
         </div>
 
-        {error && (
-          <p className="mt-4 text-sm text-red-600 dark:text-red-400">{error}</p>
-        )}
-
         {/* Actions */}
-        <div className="mt-6 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 rounded-lg border border-zinc-200 px-4 py-2 font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        <div className="flex gap-3 pt-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="flex-1"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleStart}
             disabled={isStarting || !user}
-            className="flex-1 rounded-lg bg-zinc-900 px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="flex-1 bg-emerald-500 hover:bg-emerald-600"
           >
             {isStarting ? "Starting..." : "Start Challenge"}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

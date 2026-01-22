@@ -4,6 +4,22 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Check, Dumbbell, Droplets, BookOpen, Utensils, Wine, Camera, TreePine } from "lucide-react";
+import { toast } from "sonner";
 
 interface DailyChecklistProps {
   challengeId: Id<"challenges">;
@@ -25,13 +41,10 @@ export function DailyChecklist({
   const updateLog = useMutation(api.dailyLogs.createOrUpdateDailyLog);
   const updateWater = useMutation(api.dailyLogs.updateWaterIntake);
 
-  const [isUpdating, setIsUpdating] = useState(false);
-
   const handleToggle = async (
     field: "dietFollowed" | "noAlcohol",
     value: boolean
   ) => {
-    setIsUpdating(true);
     try {
       await updateLog({
         challengeId,
@@ -40,8 +53,9 @@ export function DailyChecklist({
         date,
         [field]: value,
       });
-    } finally {
-      setIsUpdating(false);
+      toast.success(value ? "Marked as complete!" : "Unmarked");
+    } catch {
+      toast.error("Failed to update");
     }
   };
 
@@ -71,16 +85,21 @@ export function DailyChecklist({
   const readingProgress = Math.min(100, ((dailyLog?.readingMinutes ?? 0) / 20) * 100);
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-        Today&apos;s Checklist
-      </h2>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Today&apos;s Checklist</h2>
+        {dailyLog?.allRequirementsMet && (
+          <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600">
+            <Check className="mr-1 h-3 w-3" /> All Complete
+          </Badge>
+        )}
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         {/* Workout 1 */}
         <ChecklistCard
           title="Workout 1"
-          icon="🏋️"
+          icon={<Dumbbell className="h-5 w-5" />}
           completed={!!dailyLog?.workout1 && dailyLog.workout1.durationMinutes >= 45}
           subtitle={dailyLog?.workout1 ? `${dailyLog.workout1.name} - ${dailyLog.workout1.durationMinutes} min` : "45 minutes required"}
         >
@@ -97,7 +116,7 @@ export function DailyChecklist({
         {/* Workout 2 */}
         <ChecklistCard
           title="Workout 2"
-          icon="🏃"
+          icon={<Dumbbell className="h-5 w-5" />}
           completed={!!dailyLog?.workout2 && dailyLog.workout2.durationMinutes >= 45}
           subtitle={dailyLog?.workout2 ? `${dailyLog.workout2.name} - ${dailyLog.workout2.durationMinutes} min` : "45 minutes required"}
         >
@@ -114,50 +133,50 @@ export function DailyChecklist({
         {/* Outdoor Workout */}
         <ChecklistCard
           title="Outdoor Workout"
-          icon="🌳"
+          icon={<TreePine className="h-5 w-5" />}
           completed={dailyLog?.outdoorWorkoutCompleted ?? false}
           subtitle="One workout must be outside"
         >
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted-foreground">
             {dailyLog?.outdoorWorkoutCompleted
               ? "Completed!"
-              : "Mark a workout as outdoor"}
+              : "Mark a workout as outdoor above"}
           </p>
         </ChecklistCard>
 
         {/* Water Intake */}
         <ChecklistCard
           title="Water Intake"
-          icon="💧"
+          icon={<Droplets className="h-5 w-5 text-blue-500" />}
           completed={(dailyLog?.waterIntakeOz ?? 0) >= 128}
           subtitle={`${dailyLog?.waterIntakeOz ?? 0} / 128 oz`}
         >
-          <div className="space-y-2">
-            <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-              <div
-                className="h-full rounded-full bg-blue-500 transition-all"
-                style={{ width: `${waterProgress}%` }}
-              />
-            </div>
+          <div className="space-y-3">
+            <Progress value={waterProgress} className="h-2" />
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => handleWaterChange(8)}
-                className="flex-1 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+                className="flex-1"
               >
                 +8 oz
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => handleWaterChange(16)}
-                className="flex-1 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+                className="flex-1"
               >
                 +16 oz
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => handleWaterChange(-8)}
-                className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
               >
                 -8
-              </button>
+              </Button>
             </div>
           </div>
         </ChecklistCard>
@@ -165,36 +184,36 @@ export function DailyChecklist({
         {/* Reading */}
         <ChecklistCard
           title="Reading"
-          icon="📚"
+          icon={<BookOpen className="h-5 w-5 text-amber-500" />}
           completed={(dailyLog?.readingMinutes ?? 0) >= 20}
           subtitle={`${dailyLog?.readingMinutes ?? 0} / 20 min (10 pages)`}
         >
-          <div className="space-y-2">
-            <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-              <div
-                className="h-full rounded-full bg-amber-500 transition-all"
-                style={{ width: `${readingProgress}%` }}
-              />
-            </div>
+          <div className="space-y-3">
+            <Progress value={readingProgress} className="h-2" />
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => handleReadingChange(5)}
-                className="flex-1 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+                className="flex-1"
               >
                 +5 min
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => handleReadingChange(10)}
-                className="flex-1 rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+                className="flex-1"
               >
                 +10 min
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => handleReadingChange(-5)}
-                className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-medium hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
               >
                 -5
-              </button>
+              </Button>
             </div>
           </div>
         </ChecklistCard>
@@ -202,47 +221,51 @@ export function DailyChecklist({
         {/* Diet */}
         <ChecklistCard
           title="Follow Diet"
-          icon="🥗"
+          icon={<Utensils className="h-5 w-5 text-green-500" />}
           completed={dailyLog?.dietFollowed ?? false}
           subtitle="Stick to your chosen diet"
         >
-          <button
+          <Button
+            variant={dailyLog?.dietFollowed ? "default" : "outline"}
+            className={dailyLog?.dietFollowed ? "w-full bg-emerald-500 hover:bg-emerald-600" : "w-full"}
             onClick={() => handleToggle("dietFollowed", !dailyLog?.dietFollowed)}
-            disabled={isUpdating}
-            className={`w-full rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              dailyLog?.dietFollowed
-                ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400"
-                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-            }`}
           >
-            {dailyLog?.dietFollowed ? "Completed ✓" : "Mark Complete"}
-          </button>
+            {dailyLog?.dietFollowed ? (
+              <>
+                <Check className="mr-2 h-4 w-4" /> Completed
+              </>
+            ) : (
+              "Mark Complete"
+            )}
+          </Button>
         </ChecklistCard>
 
         {/* No Alcohol */}
         <ChecklistCard
           title="No Alcohol"
-          icon="🚫"
+          icon={<Wine className="h-5 w-5 text-red-500" />}
           completed={dailyLog?.noAlcohol ?? false}
           subtitle="Stay alcohol-free"
         >
-          <button
+          <Button
+            variant={dailyLog?.noAlcohol ? "default" : "outline"}
+            className={dailyLog?.noAlcohol ? "w-full bg-emerald-500 hover:bg-emerald-600" : "w-full"}
             onClick={() => handleToggle("noAlcohol", !dailyLog?.noAlcohol)}
-            disabled={isUpdating}
-            className={`w-full rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              dailyLog?.noAlcohol
-                ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400"
-                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-            }`}
           >
-            {dailyLog?.noAlcohol ? "Completed ✓" : "Mark Complete"}
-          </button>
+            {dailyLog?.noAlcohol ? (
+              <>
+                <Check className="mr-2 h-4 w-4" /> Completed
+              </>
+            ) : (
+              "Mark Complete"
+            )}
+          </Button>
         </ChecklistCard>
 
         {/* Progress Photo */}
         <ChecklistCard
           title="Progress Photo"
-          icon="📸"
+          icon={<Camera className="h-5 w-5 text-purple-500" />}
           completed={!!dailyLog?.progressPhotoId}
           subtitle="Take your daily photo"
         >
@@ -258,12 +281,14 @@ export function DailyChecklist({
 
       {/* All requirements status */}
       {dailyLog?.allRequirementsMet && (
-        <div className="rounded-xl bg-green-50 border border-green-200 p-6 text-center dark:bg-green-900/20 dark:border-green-800">
-          <p className="text-2xl mb-2">🎉</p>
-          <p className="text-lg font-semibold text-green-700 dark:text-green-400">
-            All requirements completed for today!
-          </p>
-        </div>
+        <Card className="border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/20">
+          <CardContent className="pt-6 text-center">
+            <p className="text-3xl mb-2">🎉</p>
+            <p className="text-lg font-semibold text-emerald-700 dark:text-emerald-400">
+              All requirements completed for today!
+            </p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
@@ -277,35 +302,30 @@ function ChecklistCard({
   children,
 }: {
   title: string;
-  icon: string;
+  icon: React.ReactNode;
   completed: boolean;
   subtitle: string;
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className={`rounded-xl border p-4 transition-colors ${
-        completed
-          ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20"
-          : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
-      }`}
-    >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{icon}</span>
-          <div>
-            <h3 className="font-medium text-zinc-900 dark:text-zinc-50">
-              {title}
-            </h3>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">{subtitle}</p>
+    <Card className={completed ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/20" : ""}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {icon}
+            <CardTitle className="text-base">{title}</CardTitle>
           </div>
+          {completed && (
+            <Badge variant="outline" className="border-emerald-500 text-emerald-600">
+              <Check className="mr-1 h-3 w-3" />
+              Done
+            </Badge>
+          )}
         </div>
-        {completed && (
-          <span className="text-green-500 text-xl">✓</span>
-        )}
-      </div>
-      {children}
-    </div>
+        <CardDescription>{subtitle}</CardDescription>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
   );
 }
 
@@ -333,9 +353,7 @@ function WorkoutButton({
   const [name, setName] = useState(existingWorkout?.name ?? "");
   const [duration, setDuration] = useState(existingWorkout?.durationMinutes ?? 45);
   const [isOutdoor, setIsOutdoor] = useState(existingWorkout?.isOutdoor ?? false);
-  const [type, setType] = useState<"strength" | "cardio" | "yoga" | "sports" | "other">(
-    (existingWorkout?.type as any) ?? "strength"
-  );
+  const [type, setType] = useState<string>(existingWorkout?.type ?? "strength");
 
   const updateLog = useMutation(api.dailyLogs.createOrUpdateDailyLog);
   const [isSaving, setIsSaving] = useState(false);
@@ -344,7 +362,7 @@ function WorkoutButton({
     setIsSaving(true);
     try {
       const workoutData = {
-        type,
+        type: type as "strength" | "cardio" | "yoga" | "sports" | "other",
         name: name || `Workout ${workoutNumber}`,
         durationMinutes: duration,
         isOutdoor,
@@ -357,7 +375,10 @@ function WorkoutButton({
         date,
         ...(workoutNumber === 1 ? { workout1: workoutData } : { workout2: workoutData }),
       });
+      toast.success("Workout logged!");
       setShowForm(false);
+    } catch {
+      toast.error("Failed to save workout");
     } finally {
       setIsSaving(false);
     }
@@ -365,68 +386,78 @@ function WorkoutButton({
 
   if (!showForm) {
     return (
-      <button
+      <Button
+        variant="outline"
+        className="w-full"
         onClick={() => setShowForm(true)}
-        className="w-full rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
       >
         {existingWorkout ? "Edit Workout" : "Log Workout"}
-      </button>
+      </Button>
     );
   }
 
   return (
     <div className="space-y-3">
-      <input
-        type="text"
-        placeholder="Workout name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-      />
-      <div className="flex gap-2">
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value as any)}
-          className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-        >
-          <option value="strength">Strength</option>
-          <option value="cardio">Cardio</option>
-          <option value="yoga">Yoga</option>
-          <option value="sports">Sports</option>
-          <option value="other">Other</option>
-        </select>
-        <input
-          type="number"
-          value={duration}
-          onChange={(e) => setDuration(Number(e.target.value))}
-          className="w-20 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-          min={1}
+      <div className="space-y-2">
+        <Label htmlFor={`workout-name-${workoutNumber}`}>Workout Name</Label>
+        <Input
+          id={`workout-name-${workoutNumber}`}
+          placeholder="e.g., Morning Run"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
-        <span className="flex items-center text-sm text-zinc-500">min</span>
       </div>
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-2">
+          <Label>Type</Label>
+          <Select value={type} onValueChange={setType}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="strength">Strength</SelectItem>
+              <SelectItem value="cardio">Cardio</SelectItem>
+              <SelectItem value="yoga">Yoga</SelectItem>
+              <SelectItem value="sports">Sports</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`duration-${workoutNumber}`}>Duration (min)</Label>
+          <Input
+            id={`duration-${workoutNumber}`}
+            type="number"
+            value={duration}
+            onChange={(e) => setDuration(Number(e.target.value))}
+            min={1}
+          />
+        </div>
+      </div>
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id={`outdoor-${workoutNumber}`}
           checked={isOutdoor}
-          onChange={(e) => setIsOutdoor(e.target.checked)}
-          className="rounded"
+          onCheckedChange={(checked) => setIsOutdoor(checked as boolean)}
         />
-        <span className="text-zinc-700 dark:text-zinc-300">Outdoor workout</span>
-      </label>
+        <Label htmlFor={`outdoor-${workoutNumber}`} className="text-sm font-normal">
+          This is an outdoor workout
+        </Label>
+      </div>
       <div className="flex gap-2">
-        <button
+        <Button
           onClick={handleSave}
           disabled={isSaving}
-          className="flex-1 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="flex-1"
         >
           {isSaving ? "Saving..." : "Save"}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
           onClick={() => setShowForm(false)}
-          className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium dark:border-zinc-700"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -470,25 +501,38 @@ function PhotoUpload({
         date,
         progressPhotoId: storageId,
       });
+      toast.success("Photo uploaded!");
+    } catch {
+      toast.error("Failed to upload photo");
     } finally {
       setIsUploading(false);
     }
   };
 
   return (
-    <label className={`flex w-full cursor-pointer items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-      hasPhoto
-        ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400"
-        : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-    }`}>
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleUpload}
-        disabled={isUploading}
-        className="hidden"
-      />
-      {isUploading ? "Uploading..." : hasPhoto ? "Photo Uploaded ✓" : "Upload Photo"}
-    </label>
+    <Button
+      variant={hasPhoto ? "default" : "outline"}
+      className={hasPhoto ? "w-full bg-emerald-500 hover:bg-emerald-600" : "w-full"}
+      asChild
+    >
+      <label className="cursor-pointer">
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleUpload}
+          disabled={isUploading}
+          className="hidden"
+        />
+        {isUploading ? (
+          "Uploading..."
+        ) : hasPhoto ? (
+          <>
+            <Check className="mr-2 h-4 w-4" /> Photo Uploaded
+          </>
+        ) : (
+          "Upload Photo"
+        )}
+      </label>
+    </Button>
   );
 }

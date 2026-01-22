@@ -2,8 +2,26 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { AlertTriangle } from "lucide-react";
 
 export default function SettingsPage() {
   const user = useQuery(api.users.getCurrentUser);
@@ -16,12 +34,16 @@ export default function SettingsPage() {
       : "skip"
   );
 
-  const [displayName, setDisplayName] = useState(user?.displayName ?? "");
-  const [waterUnit, setWaterUnit] = useState<"oz" | "ml">(
-    user?.preferences.waterUnit ?? "oz"
-  );
+  const [displayName, setDisplayName] = useState("");
+  const [waterUnit, setWaterUnit] = useState<"oz" | "ml">("oz");
   const [isSaving, setIsSaving] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setDisplayName(user.displayName ?? "");
+      setWaterUnit(user.preferences?.waterUnit ?? "oz");
+    }
+  }, [user]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -29,10 +51,13 @@ export default function SettingsPage() {
       await updateUser({
         displayName,
         preferences: {
-          timezone: user?.preferences.timezone ?? "America/New_York",
+          timezone: user?.preferences?.timezone ?? "America/New_York",
           waterUnit,
         },
       });
+      toast.success("Settings saved!");
+    } catch {
+      toast.error("Failed to save settings");
     } finally {
       setIsSaving(false);
     }
@@ -40,151 +65,164 @@ export default function SettingsPage() {
 
   const handleResetChallenge = async () => {
     if (!user?.currentChallengeId || !challenge) return;
-    await failChallenge({
-      challengeId: user.currentChallengeId,
-      failedOnDay: challenge.currentDay,
-    });
-    setShowResetConfirm(false);
+    try {
+      await failChallenge({
+        challengeId: user.currentChallengeId,
+        failedOnDay: challenge.currentDay,
+      });
+      toast.success("Challenge has been reset");
+    } catch {
+      toast.error("Failed to reset challenge");
+    }
   };
+
+  if (user === undefined) {
+    return (
+      <div className="max-w-2xl space-y-6">
+        <div>
+          <Skeleton className="h-9 w-24" />
+          <Skeleton className="h-5 w-48 mt-2" />
+        </div>
+        <Skeleton className="h-48" />
+        <Skeleton className="h-48" />
+      </div>
+    );
+  }
 
   if (!user) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-pulse text-zinc-500">Loading...</div>
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">
-        Settings
-      </h1>
-      <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+      <h1 className="text-3xl font-bold">Settings</h1>
+      <p className="mt-2 text-muted-foreground">
         Manage your account and preferences.
       </p>
 
       {/* Profile section */}
       <div className="mt-8">
-        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
-          Profile
-        </h2>
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex items-center gap-4 mb-6">
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: "w-16 h-16",
-                },
-              }}
-            />
-            <div>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Click to manage your Clerk account
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Display Name
-              </label>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+        <h2 className="text-xl font-semibold mb-4">Profile</h2>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4 mb-6">
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "w-16 h-16",
+                  },
+                }}
               />
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Click to manage your Clerk account
+                </p>
+              </div>
             </div>
-          </div>
-        </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="display-name">Display Name</Label>
+                <Input
+                  id="display-name"
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Preferences section */}
       <div className="mt-8">
-        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
-          Preferences
-        </h2>
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Water Unit
-              </label>
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={() => setWaterUnit("oz")}
-                  className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                    waterUnit === "oz"
-                      ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
-                      : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-                  }`}
-                >
-                  Ounces (oz)
-                </button>
-                <button
-                  onClick={() => setWaterUnit("ml")}
-                  className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                    waterUnit === "ml"
-                      ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
-                      : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-                  }`}
-                >
-                  Milliliters (ml)
-                </button>
+        <h2 className="text-xl font-semibold mb-4">Preferences</h2>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Water Unit</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={waterUnit === "oz" ? "default" : "outline"}
+                    onClick={() => setWaterUnit("oz")}
+                    className="flex-1"
+                  >
+                    Ounces (oz)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={waterUnit === "ml" ? "default" : "outline"}
+                    onClick={() => setWaterUnit("ml")}
+                    className="flex-1"
+                  >
+                    Milliliters (ml)
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="mt-6 w-full rounded-lg bg-zinc-900 px-4 py-2 font-medium text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            {isSaving ? "Saving..." : "Save Changes"}
-          </button>
-        </div>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="mt-6 w-full"
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Danger zone */}
       {user.currentChallengeId && (
         <div className="mt-8">
-          <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-4">
+          <h2 className="text-xl font-semibold text-destructive mb-4">
             Danger Zone
           </h2>
-          <div className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-800 dark:bg-red-900/20">
-            <h3 className="font-medium text-red-900 dark:text-red-100">
-              Reset Challenge
-            </h3>
-            <p className="mt-1 text-sm text-red-700 dark:text-red-300">
-              If you missed a requirement, you need to restart from Day 1. This
-              action cannot be undone.
-            </p>
-            {!showResetConfirm ? (
-              <button
-                onClick={() => setShowResetConfirm(true)}
-                className="mt-4 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"
-              >
-                Reset My Challenge
-              </button>
-            ) : (
-              <div className="mt-4 flex gap-2">
-                <button
-                  onClick={handleResetChallenge}
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500"
-                >
-                  Confirm Reset
-                </button>
-                <button
-                  onClick={() => setShowResetConfirm(false)}
-                  className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium dark:border-zinc-700"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardHeader>
+              <CardTitle className="text-destructive flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Reset Challenge
+              </CardTitle>
+              <CardDescription>
+                If you missed a requirement, you need to restart from Day 1. This
+                action cannot be undone.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">Reset My Challenge</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will mark your current challenge as failed and you&apos;ll
+                      need to start a new one from Day 1. This action cannot be
+                      undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleResetChallenge}
+                      className="bg-destructive hover:bg-destructive/90"
+                    >
+                      Yes, Reset Challenge
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

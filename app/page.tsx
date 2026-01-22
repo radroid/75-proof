@@ -2,59 +2,95 @@
 
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { SignInButton, UserButton } from "@clerk/nextjs";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { HeroSection } from "@/components/ui/hero-section-with-smooth-bg-shader";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
+  const router = useRouter();
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 dark:bg-black">
+    <>
       <AuthLoading>
-        <div className="animate-pulse text-zinc-500">Loading...</div>
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="animate-pulse text-zinc-500">Loading...</div>
+        </div>
       </AuthLoading>
 
       <Authenticated>
-        <main className="flex flex-col items-center gap-8 p-8">
-          <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">
-              75 HARD Tracker
-            </h1>
-            <UserButton />
-          </div>
-          <p className="text-zinc-600 dark:text-zinc-400">
-            Welcome back! Ready to crush your goals?
-          </p>
-          <Link
-            href="/dashboard"
-            className="rounded-full bg-zinc-900 px-6 py-3 text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            Go to Dashboard
-          </Link>
-        </main>
+        <HeroSection
+          title="Welcome back to"
+          highlightText="SeventyFive"
+          description="You're on your journey to mental toughness. Keep pushing, stay consistent, and crush your goals today."
+          buttonText="Go to Dashboard"
+          onButtonClick={() => router.push("/dashboard")}
+          colors={["#10b981", "#34d399", "#6ee7b7", "#a7f3d0", "#059669", "#047857"]}
+          distortion={0.6}
+          swirl={0.4}
+          speed={0.3}
+          veilOpacity="bg-black/40"
+        />
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
+          <ThemeToggle />
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: "w-10 h-10 ring-2 ring-white/20",
+              },
+            }}
+          />
+        </div>
       </Authenticated>
 
       <Unauthenticated>
-        <main className="flex flex-col items-center gap-8 p-8 text-center">
-          <h1 className="text-4xl font-bold text-zinc-900 dark:text-zinc-50">
-            75 HARD Tracker
-          </h1>
-          <p className="max-w-md text-lg text-zinc-600 dark:text-zinc-400">
-            Track your 75 HARD challenge journey. Log workouts, water intake,
-            reading, and more. Stay accountable with friends.
-          </p>
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <SignInButton mode="modal">
-              <button className="rounded-full bg-zinc-900 px-6 py-3 text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200">
-                Sign In
-              </button>
-            </SignInButton>
-            <Link
-              href="/sign-up"
-              className="rounded-full border border-zinc-300 px-6 py-3 text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-800"
-            >
-              Create Account
-            </Link>
+        <HeroSection
+          title="Transform Your Life with"
+          highlightText="SeventyFive"
+          description="The ultimate 75 HARD challenge tracker. Two workouts, one gallon of water, clean eating, reading, and progress photos — all in one place. Build mental toughness. Stay accountable."
+          buttonText="Start Your Journey"
+          onButtonClick={() => router.push("/sign-up")}
+          colors={["#059669", "#10b981", "#14b8a6", "#0d9488", "#047857", "#065f46"]}
+          distortion={0.5}
+          swirl={0.5}
+          speed={0.25}
+          veilOpacity="bg-black/20"
+        />
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
+          <ThemeToggle />
+          <SignInButton mode="modal">
+            <Button variant="secondary" className="rounded-full">
+              Sign In
+            </Button>
+          </SignInButton>
+        </div>
+
+        {/* Features section */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black/80 to-transparent pb-8 pt-16">
+          <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center gap-6 px-6 text-sm text-white/80">
+            <div className="flex items-center gap-2">
+              <span>💪</span>
+              <span>2 Daily Workouts</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>💧</span>
+              <span>Water Tracking</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>📚</span>
+              <span>Reading Log</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>📸</span>
+              <span>Progress Photos</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>👥</span>
+              <span>Social Accountability</span>
+            </div>
           </div>
-        </main>
+        </div>
       </Unauthenticated>
-    </div>
+    </>
   );
 }
