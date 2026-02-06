@@ -112,32 +112,36 @@ export default function FriendsPage() {
           </Card>
         )}
         <div className="grid gap-4 sm:grid-cols-2">
-          {friendProgress?.map((friend) => (
-            <Card key={friend.user._id}>
+          {friendProgress?.filter((friend) => friend !== null).map((friend) => (
+            <Card key={friend!.user._id}>
               <CardContent className="pt-4">
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarImage src={friend.user.avatarUrl} alt={friend.user.displayName} />
+                    <AvatarImage src={friend!.user.avatarUrl} alt={friend!.user.displayName} />
                     <AvatarFallback>
-                      {friend.user.displayName.charAt(0).toUpperCase()}
+                      {friend!.user.displayName.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="font-medium">{friend.user.displayName}</p>
+                    <p className="font-medium">{friend!.user.displayName}</p>
                     <p className="text-sm text-muted-foreground">
-                      Day {friend.challenge.currentDay} / 75
+                      {friend!.challenge.currentDay != null
+                        ? `Day ${friend!.challenge.currentDay} / 75`
+                        : "Challenge in progress"}
                     </p>
                   </div>
-                  {friend.todayComplete && (
-                    <div className="h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                      <Check className="h-4 w-4 text-emerald-600" />
+                  {friend!.todayComplete && (
+                    <div className="h-6 w-6 rounded-full bg-success/10 flex items-center justify-center">
+                      <Check className="h-4 w-4 text-success" />
                     </div>
                   )}
                 </div>
-                <Progress
-                  value={(friend.challenge.currentDay / 75) * 100}
-                  className="mt-3 h-2"
-                />
+                {friend!.challenge.currentDay != null && (
+                  <Progress
+                    value={(friend!.challenge.currentDay / 75) * 100}
+                    className="mt-3 h-2"
+                  />
+                )}
               </CardContent>
             </Card>
           ))}
@@ -272,7 +276,7 @@ function PendingRequest({
             <Button
               onClick={handleAccept}
               size="sm"
-              className="bg-emerald-500 hover:bg-emerald-600"
+              variant="success"
             >
               Accept
             </Button>

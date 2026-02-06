@@ -92,11 +92,7 @@ export const Sidebar = ({
 }: {
   children: React.ReactNode;
 }) => {
-  return (
-    <SidebarProvider>
-      {children}
-    </SidebarProvider>
-  );
+  return <>{children}</>;
 };
 
 export const SidebarBody = (props: React.ComponentProps<"div">) => {
@@ -118,7 +114,7 @@ export const DesktopSidebar = ({
   return (
     <div
       className={cn(
-        "sticky top-0 h-screen px-3 py-3 hidden md:flex md:flex-col bg-sidebar flex-shrink-0 border-r border-sidebar-border",
+        "fixed top-0 left-0 h-screen px-3 py-3 hidden md:flex md:flex-col bg-sidebar flex-shrink-0 border-r border-sidebar-border z-30",
         "transition-[width] duration-200 ease-in-out",
         className
       )}
@@ -155,7 +151,8 @@ export const MobileSidebar = ({
         </Link>
         <button
           onClick={() => setOpen(!open)}
-          className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
+          className="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg hover:bg-sidebar-accent transition-colors cursor-pointer"
+          aria-label="Open menu"
         >
           <Menu className="h-5 w-5 text-sidebar-foreground" />
         </button>
@@ -193,8 +190,9 @@ export const MobileSidebar = ({
                   <span className="font-bold text-foreground text-base">75 Proof</span>
                 </Link>
                 <button
-                  className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
+                  className="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg hover:bg-sidebar-accent transition-colors cursor-pointer"
                   onClick={() => setOpen(false)}
+                  aria-label="Close menu"
                 >
                   <X className="h-5 w-5 text-sidebar-foreground" />
                 </button>
@@ -209,21 +207,38 @@ export const MobileSidebar = ({
 };
 
 export const SidebarToggleButton = () => {
-  const { open, toggle } = useSidebar();
+  const { open, toggle, mounted } = useSidebar();
+  const isCollapsed = mounted && !open;
+  const label = open ? "Collapse sidebar" : "Expand sidebar";
 
-  return (
+  const button = (
     <button
       onClick={toggle}
-      className="p-1.5 rounded-md hover:bg-sidebar-accent transition-colors text-sidebar-foreground/60 hover:text-sidebar-foreground"
-      title={open ? "Collapse sidebar (⌘B)" : "Expand sidebar (⌘B)"}
+      className="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md hover:bg-sidebar-accent transition-colors cursor-pointer text-sidebar-foreground/60 hover:text-sidebar-foreground"
+      aria-label={label}
     >
       {open ? (
-        <PanelLeftClose className="h-4 w-4" />
+        <PanelLeftClose className="h-5 w-5" />
       ) : (
-        <PanelLeft className="h-4 w-4" />
+        <PanelLeft className="h-5 w-5" />
       )}
     </button>
   );
+
+  if (isCollapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {button}
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8}>
+          {label} <kbd className="ml-1 text-[10px] opacity-60">⌘B</kbd>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return button;
 };
 
 export const SidebarLink = ({
@@ -244,7 +259,7 @@ export const SidebarLink = ({
     <Link
       href={link.href}
       className={cn(
-        "relative flex items-center group/sidebar rounded-lg transition-all duration-200",
+        "relative flex items-center group/sidebar rounded-lg transition-all duration-200 cursor-pointer",
         isCollapsed
           ? "w-10 h-10 justify-center mx-auto"
           : "justify-start gap-2 px-2 py-2.5",

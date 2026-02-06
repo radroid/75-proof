@@ -10,18 +10,23 @@ import {
   SidebarBody,
   SidebarLink,
   SidebarToggleButton,
+  SidebarProvider,
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
   TrendingUp,
-  Calendar,
   Users,
   Settings,
   Dumbbell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const navItems = [
   {
@@ -35,19 +40,9 @@ const navItems = [
     icon: <TrendingUp className="h-5 w-5 flex-shrink-0" />,
   },
   {
-    label: "History",
-    href: "/dashboard/history",
-    icon: <Calendar className="h-5 w-5 flex-shrink-0" />,
-  },
-  {
     label: "Friends",
     href: "/dashboard/friends",
     icon: <Users className="h-5 w-5 flex-shrink-0" />,
-  },
-  {
-    label: "Settings",
-    href: "/dashboard/settings",
-    icon: <Settings className="h-5 w-5 flex-shrink-0" />,
   },
 ];
 
@@ -103,8 +98,39 @@ function SidebarFooter() {
   const { open, mounted } = useSidebar();
   const isCollapsed = mounted && !open;
 
+  const settingsLink = (
+    <Link
+      href="/dashboard/settings"
+      className={cn(
+        "flex items-center rounded-lg transition-colors text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+        isCollapsed
+          ? "w-10 h-10 justify-center mx-auto"
+          : "gap-2 px-2 py-2.5"
+      )}
+    >
+      <Settings className="h-5 w-5 flex-shrink-0" />
+      {!isCollapsed && (
+        <span className="text-sm">Settings</span>
+      )}
+    </Link>
+  );
+
   return (
     <div className="flex flex-col gap-3">
+      {/* Settings link */}
+      {isCollapsed ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {settingsLink}
+          </TooltipTrigger>
+          <TooltipContent side="right" sideOffset={8}>
+            Settings
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        settingsLink
+      )}
+
       {/* Account */}
       <div className={cn(
         "flex items-center gap-3",
@@ -114,6 +140,17 @@ function SidebarFooter() {
           appearance={{
             elements: {
               avatarBox: "w-8 h-8",
+              userButtonPopoverCard: "!bg-[var(--card)] !border-[var(--border)]",
+              userButtonPopoverActionButton: "!text-[var(--foreground)]",
+              userButtonPopoverActionButtonText: "!text-[var(--foreground)]",
+              userButtonPopoverActionButtonIcon: "!text-[var(--muted-foreground)]",
+              userButtonPopoverFooter: "!hidden",
+            },
+            variables: {
+              colorPrimary: "var(--primary)",
+              colorBackground: "var(--card)",
+              colorText: "var(--foreground)",
+              colorTextSecondary: "var(--muted-foreground)",
             },
           }}
         />
@@ -132,6 +169,21 @@ function SidebarFooter() {
         <SidebarToggleButton />
       </div>
     </div>
+  );
+}
+
+const SIDEBAR_EXPANDED_WIDTH = 260;
+const SIDEBAR_COLLAPSED_WIDTH = 60;
+
+function SidebarSpacer() {
+  const { open, mounted } = useSidebar();
+  return (
+    <div
+      className="hidden md:block flex-shrink-0 transition-[width] duration-200 ease-in-out"
+      style={{
+        width: mounted ? (open ? SIDEBAR_EXPANDED_WIDTH : SIDEBAR_COLLAPSED_WIDTH) : SIDEBAR_EXPANDED_WIDTH,
+      }}
+    />
   );
 }
 
@@ -156,33 +208,37 @@ export default function DashboardLayout({
       </Unauthenticated>
 
       <Authenticated>
-        <div
-          className={cn(
-            "flex flex-col md:flex-row bg-background w-full flex-1 mx-auto overflow-hidden",
-            "min-h-screen"
-          )}
-        >
-          <Sidebar>
-            <SidebarBody className="justify-between gap-4">
-              <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-                <SidebarHeader />
-                <div className="mt-6 flex flex-col gap-1">
-                  {navItems.map((link, idx) => (
-                    <SidebarLink key={idx} link={link} />
-                  ))}
+        <SidebarProvider>
+          <div
+            className={cn(
+              "flex flex-col md:flex-row bg-background w-full flex-1 mx-auto",
+              "min-h-screen"
+            )}
+          >
+            <Sidebar>
+              <SidebarBody className="justify-between gap-4">
+                <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+                  <SidebarHeader />
+                  <div className="mt-6 flex flex-col gap-1">
+                    {navItems.map((link, idx) => (
+                      <SidebarLink key={idx} link={link} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <SidebarFooter />
-            </SidebarBody>
-          </Sidebar>
+                <SidebarFooter />
+              </SidebarBody>
+            </Sidebar>
 
-          {/* Main content */}
-          <main className="flex-1 overflow-auto">
-            <div className="p-4 md:p-8 bg-background min-h-full">
-              {children}
-            </div>
-          </main>
-        </div>
+            <SidebarSpacer />
+
+            {/* Main content */}
+            <main className="flex-1 overflow-auto">
+              <div className="p-4 md:p-8 bg-background min-h-full">
+                {children}
+              </div>
+            </main>
+          </div>
+        </SidebarProvider>
       </Authenticated>
     </>
   );

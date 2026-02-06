@@ -242,3 +242,135 @@ export const getProgressPhotoUrl = query({
     return await ctx.storage.getUrl(args.storageId);
   },
 });
+
+export const getProgressPhotos = query({
+  args: { challengeId: v.id("challenges") },
+  handler: async (ctx, args) => {
+    const logs = await ctx.db
+      .query("dailyLogs")
+      .withIndex("by_challenge", (q) => q.eq("challengeId", args.challengeId))
+      .collect();
+
+    const photosWithUrls = [];
+    for (const log of logs) {
+      if (log.progressPhotoId) {
+        const url = await ctx.storage.getUrl(log.progressPhotoId);
+        if (url) {
+          photosWithUrls.push({
+            dayNumber: log.dayNumber,
+            date: log.date,
+            url,
+            storageId: log.progressPhotoId,
+          });
+        }
+      }
+    }
+    return photosWithUrls.sort((a, b) => b.dayNumber - a.dayNumber);
+  },
+});
+
+export const clearWorkout = mutation({
+  args: {
+    challengeId: v.id("challenges"),
+    dayNumber: v.number(),
+    workoutNumber: v.union(v.literal(1), v.literal(2)),
+  },
+  handler: async (ctx, args) => {
+    const existingLog = await ctx.db
+      .query("dailyLogs")
+      .withIndex("by_challenge_day", (q) =>
+        q.eq("challengeId", args.challengeId).eq("dayNumber", args.dayNumber)
+      )
+      .unique();
+
+    if (!existingLog) return;
+
+    const workout1 = args.workoutNumber === 1 ? undefined : existingLog.workout1;
+    const workout2 = args.workoutNumber === 2 ? undefined : existingLog.workout2;
+    const outdoorWorkoutCompleted =
+      (workout1?.isOutdoor ?? false) || (workout2?.isOutdoor ?? false);
+
+    await ctx.db.patch(existingLog._id, {
+      ...(args.workoutNumber === 1 ? { workout1: undefined } : { workout2: undefined }),
+      outdoorWorkoutCompleted,
+      allRequirementsMet: false,
+      completedAt: undefined,
+    });
+
+    return existingLog._id;
+  },
+});
+
+export const quickLogWorkout = mutation({
+  args: {
+    challengeId: v.id("challenges"),
+    userId: v.id("users"),
+    dayNumber: v.number(),
+    date: v.string(),
+    workoutNumber: v.union(v.literal(1), v.literal(2)),
+  },
+  handler: async (ctx, args) => {
+    const existingLog = await ctx.db
+      .query("dailyLogs")
+      .withIndex("by_challenge_day", (q) =>
+        q.eq("challengeId", args.challengeId).eq("dayNumber", args.dayNumber)
+      )
+      .unique();
+
+    const workoutData = {
+      type: "other" as const,
+      name: "Workout",
+      durationMinutes: 45,
+      isOutdoor: false,
+    };
+
+    const workoutField = args.workoutNumber === 1 ? "workout1" : "workout2";
+
+    if (existingLog) {
+      // Don't overwrite if workout already logged
+      if (existingLog[workoutField]) {
+        return existingLog._id;
+      }
+
+      const workout1 = workoutField === "workout1" ? workoutData : existingLog.workout1;
+      const workout2 = workoutField === "workout2" ? workoutData : existingLog.workout2;
+      const outdoorWorkoutCompleted =
+        (workout1?.isOutdoor ?? false) || (workout2?.isOutdoor ?? false);
+
+      const workout1Complete = workout1 !== undefined && workout1.durationMinutes >= 45;
+      const workout2Complete = workout2 !== undefined && workout2.durationMinutes >= 45;
+
+      const allRequirementsMet =
+        workout1Complete &&
+        workout2Complete &&
+        outdoorWorkoutCompleted &&
+        existingLog.dietFollowed &&
+        existingLog.noAlcohol &&
+        existingLog.waterIntakeOz >= 128 &&
+        existingLog.readingMinutes >= 20 &&
+        existingLog.progressPhotoId !== undefined;
+
+      await ctx.db.patch(existingLog._id, {
+        [workoutField]: workoutData,
+        outdoorWorkoutCompleted,
+        allRequirementsMet,
+        completedAt: allRequirementsMet ? new Date().toISOString() : undefined,
+      });
+      return existingLog._id;
+    } else {
+      return await ctx.db.insert("dailyLogs", {
+        challengeId: args.challengeId,
+        userId: args.userId,
+        dayNumber: args.dayNumber,
+        date: args.date,
+        [workoutField]: workoutData,
+        outdoorWorkoutCompleted: false,
+        dietFollowed: false,
+        noAlcohol: false,
+        waterIntakeOz: 0,
+        readingMinutes: 0,
+        allRequirementsMet: false,
+      });
+    }
+  },
+});

@@ -2,15 +2,16 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Id } from "@/convex/_generated/dataModel";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Confetti, useConfetti } from "@/components/ui/confetti";
 import {
   Select,
   SelectContent,
@@ -18,8 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Dumbbell, Droplets, BookOpen, Utensils, Wine, Camera, TreePine } from "lucide-react";
+import { Check, Dumbbell, Droplets, BookOpen, TreePine, Sparkles, Brain, Apple } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface DailyChecklistProps {
   challengeId: Id<"challenges">;
@@ -40,6 +42,17 @@ export function DailyChecklist({
   });
   const updateLog = useMutation(api.dailyLogs.createOrUpdateDailyLog);
   const updateWater = useMutation(api.dailyLogs.updateWaterIntake);
+  const quickLog = useMutation(api.dailyLogs.quickLogWorkout);
+  const clearWorkout = useMutation(api.dailyLogs.clearWorkout);
+  const { isActive: confettiActive, trigger: triggerConfetti } = useConfetti();
+  const prevAllMetRef = useRef(false);
+
+  useEffect(() => {
+    if (dailyLog?.allRequirementsMet && !prevAllMetRef.current) {
+      triggerConfetti();
+    }
+    prevAllMetRef.current = dailyLog?.allRequirementsMet ?? false;
+  }, [dailyLog?.allRequirementsMet, triggerConfetti]);
 
   const handleToggle = async (
     field: "dietFollowed" | "noAlcohol",
@@ -56,6 +69,34 @@ export function DailyChecklist({
       toast.success(value ? "Marked as complete!" : "Unmarked");
     } catch {
       toast.error("Failed to update");
+    }
+  };
+
+  const handleQuickWorkout = async (workoutNumber: 1 | 2) => {
+    try {
+      await quickLog({
+        challengeId,
+        userId,
+        dayNumber,
+        date,
+        workoutNumber,
+      });
+      toast.success("Workout logged!");
+    } catch {
+      toast.error("Failed to log workout");
+    }
+  };
+
+  const handleClearWorkout = async (workoutNumber: 1 | 2) => {
+    try {
+      await clearWorkout({
+        challengeId,
+        dayNumber,
+        workoutNumber,
+      });
+      toast.success("Workout cleared");
+    } catch {
+      toast.error("Failed to clear workout");
     }
   };
 
@@ -84,248 +125,406 @@ export function DailyChecklist({
   const waterProgress = Math.min(100, ((dailyLog?.waterIntakeOz ?? 0) / 128) * 100);
   const readingProgress = Math.min(100, ((dailyLog?.readingMinutes ?? 0) / 20) * 100);
 
+  const workout1Done = !!dailyLog?.workout1 && dailyLog.workout1.durationMinutes >= 45;
+  const workout2Done = !!dailyLog?.workout2 && dailyLog.workout2.durationMinutes >= 45;
+
+  const fitnessComplete =
+    workout1Done && workout2Done && (dailyLog?.outdoorWorkoutCompleted ?? false);
+
+  const fitnessCount = [
+    workout1Done,
+    workout2Done,
+    dailyLog?.outdoorWorkoutCompleted ?? false,
+  ].filter(Boolean).length;
+
+  const nutritionComplete =
+    (dailyLog?.waterIntakeOz ?? 0) >= 128 &&
+    (dailyLog?.dietFollowed ?? false) &&
+    (dailyLog?.noAlcohol ?? false);
+
+  const nutritionCount = [
+    (dailyLog?.waterIntakeOz ?? 0) >= 128,
+    dailyLog?.dietFollowed ?? false,
+    dailyLog?.noAlcohol ?? false,
+  ].filter(Boolean).length;
+
+  const mindProgressComplete =
+    (dailyLog?.readingMinutes ?? 0) >= 20 &&
+    !!dailyLog?.progressPhotoId;
+
+  const mindProgressCount = [
+    (dailyLog?.readingMinutes ?? 0) >= 20,
+    !!dailyLog?.progressPhotoId,
+  ].filter(Boolean).length;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Today&apos;s Checklist</h2>
-        {dailyLog?.allRequirementsMet && (
-          <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600">
-            <Check className="mr-1 h-3 w-3" /> All Complete
-          </Badge>
-        )}
-      </div>
+    <>
+      <Confetti isActive={confettiActive} />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Workout 1 */}
-        <ChecklistCard
-          title="Workout 1"
-          icon={<Dumbbell className="h-5 w-5" />}
-          completed={!!dailyLog?.workout1 && dailyLog.workout1.durationMinutes >= 45}
-          subtitle={dailyLog?.workout1 ? `${dailyLog.workout1.name} - ${dailyLog.workout1.durationMinutes} min` : "45 minutes required"}
+      <div className="space-y-10">
+        {/* Fitness Section */}
+        <CategorySection
+          title="Fitness"
+          icon={<Dumbbell className="h-4 w-4" />}
+          completedCount={fitnessCount}
+          totalCount={3}
+          isComplete={fitnessComplete}
         >
-          <WorkoutButton
-            challengeId={challengeId}
-            userId={userId}
-            dayNumber={dayNumber}
-            date={date}
-            workoutNumber={1}
-            existingWorkout={dailyLog?.workout1}
-          />
-        </ChecklistCard>
-
-        {/* Workout 2 */}
-        <ChecklistCard
-          title="Workout 2"
-          icon={<Dumbbell className="h-5 w-5" />}
-          completed={!!dailyLog?.workout2 && dailyLog.workout2.durationMinutes >= 45}
-          subtitle={dailyLog?.workout2 ? `${dailyLog.workout2.name} - ${dailyLog.workout2.durationMinutes} min` : "45 minutes required"}
-        >
-          <WorkoutButton
-            challengeId={challengeId}
-            userId={userId}
-            dayNumber={dayNumber}
-            date={date}
-            workoutNumber={2}
-            existingWorkout={dailyLog?.workout2}
-          />
-        </ChecklistCard>
-
-        {/* Outdoor Workout */}
-        <ChecklistCard
-          title="Outdoor Workout"
-          icon={<TreePine className="h-5 w-5" />}
-          completed={dailyLog?.outdoorWorkoutCompleted ?? false}
-          subtitle="One workout must be outside"
-        >
-          <p className="text-sm text-muted-foreground">
-            {dailyLog?.outdoorWorkoutCompleted
-              ? "Completed!"
-              : "Mark a workout as outdoor above"}
-          </p>
-        </ChecklistCard>
-
-        {/* Water Intake */}
-        <ChecklistCard
-          title="Water Intake"
-          icon={<Droplets className="h-5 w-5 text-blue-500" />}
-          completed={(dailyLog?.waterIntakeOz ?? 0) >= 128}
-          subtitle={`${dailyLog?.waterIntakeOz ?? 0} / 128 oz`}
-        >
-          <div className="space-y-3">
-            <Progress value={waterProgress} className="h-2" />
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleWaterChange(8)}
-                className="flex-1"
-              >
-                +8 oz
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleWaterChange(16)}
-                className="flex-1"
-              >
-                +16 oz
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleWaterChange(-8)}
-              >
-                -8
-              </Button>
-            </div>
-          </div>
-        </ChecklistCard>
-
-        {/* Reading */}
-        <ChecklistCard
-          title="Reading"
-          icon={<BookOpen className="h-5 w-5 text-amber-500" />}
-          completed={(dailyLog?.readingMinutes ?? 0) >= 20}
-          subtitle={`${dailyLog?.readingMinutes ?? 0} / 20 min (10 pages)`}
-        >
-          <div className="space-y-3">
-            <Progress value={readingProgress} className="h-2" />
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleReadingChange(5)}
-                className="flex-1"
-              >
-                +5 min
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleReadingChange(10)}
-                className="flex-1"
-              >
-                +10 min
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleReadingChange(-5)}
-              >
-                -5
-              </Button>
-            </div>
-          </div>
-        </ChecklistCard>
-
-        {/* Diet */}
-        <ChecklistCard
-          title="Follow Diet"
-          icon={<Utensils className="h-5 w-5 text-green-500" />}
-          completed={dailyLog?.dietFollowed ?? false}
-          subtitle="Stick to your chosen diet"
-        >
-          <Button
-            variant={dailyLog?.dietFollowed ? "default" : "outline"}
-            className={dailyLog?.dietFollowed ? "w-full bg-emerald-500 hover:bg-emerald-600" : "w-full"}
-            onClick={() => handleToggle("dietFollowed", !dailyLog?.dietFollowed)}
+          <TodoItem
+            label="Workout 1"
+            detail={dailyLog?.workout1 ? `${dailyLog.workout1.name} — ${dailyLog.workout1.durationMinutes} min` : "45 minutes required"}
+            done={workout1Done}
+            onTap={workout1Done ? () => handleClearWorkout(1) : () => handleQuickWorkout(1)}
+            isLast={false}
           >
-            {dailyLog?.dietFollowed ? (
-              <>
-                <Check className="mr-2 h-4 w-4" /> Completed
-              </>
+            {workout1Done ? (
+              <WorkoutButton
+                challengeId={challengeId}
+                userId={userId}
+                dayNumber={dayNumber}
+                date={date}
+                workoutNumber={1}
+                existingWorkout={dailyLog?.workout1}
+                label="Edit Workout"
+              />
             ) : (
-              "Mark Complete"
+              <WorkoutButton
+                challengeId={challengeId}
+                userId={userId}
+                dayNumber={dayNumber}
+                date={date}
+                workoutNumber={1}
+                existingWorkout={dailyLog?.workout1}
+                label="Add details"
+                variant="ghost"
+              />
             )}
-          </Button>
-        </ChecklistCard>
+          </TodoItem>
 
-        {/* No Alcohol */}
-        <ChecklistCard
-          title="No Alcohol"
-          icon={<Wine className="h-5 w-5 text-red-500" />}
-          completed={dailyLog?.noAlcohol ?? false}
-          subtitle="Stay alcohol-free"
-        >
-          <Button
-            variant={dailyLog?.noAlcohol ? "default" : "outline"}
-            className={dailyLog?.noAlcohol ? "w-full bg-emerald-500 hover:bg-emerald-600" : "w-full"}
-            onClick={() => handleToggle("noAlcohol", !dailyLog?.noAlcohol)}
+          <TodoItem
+            label="Workout 2"
+            detail={dailyLog?.workout2 ? `${dailyLog.workout2.name} — ${dailyLog.workout2.durationMinutes} min` : "45 minutes required"}
+            done={workout2Done}
+            onTap={workout2Done ? () => handleClearWorkout(2) : () => handleQuickWorkout(2)}
+            isLast={false}
           >
-            {dailyLog?.noAlcohol ? (
-              <>
-                <Check className="mr-2 h-4 w-4" /> Completed
-              </>
+            {workout2Done ? (
+              <WorkoutButton
+                challengeId={challengeId}
+                userId={userId}
+                dayNumber={dayNumber}
+                date={date}
+                workoutNumber={2}
+                existingWorkout={dailyLog?.workout2}
+                label="Edit Workout"
+              />
             ) : (
-              "Mark Complete"
+              <WorkoutButton
+                challengeId={challengeId}
+                userId={userId}
+                dayNumber={dayNumber}
+                date={date}
+                workoutNumber={2}
+                existingWorkout={dailyLog?.workout2}
+                label="Add details"
+                variant="ghost"
+              />
             )}
-          </Button>
-        </ChecklistCard>
+          </TodoItem>
 
-        {/* Progress Photo */}
-        <ChecklistCard
-          title="Progress Photo"
-          icon={<Camera className="h-5 w-5 text-purple-500" />}
-          completed={!!dailyLog?.progressPhotoId}
-          subtitle="Take your daily photo"
-        >
-          <PhotoUpload
-            challengeId={challengeId}
-            userId={userId}
-            dayNumber={dayNumber}
-            date={date}
-            hasPhoto={!!dailyLog?.progressPhotoId}
-          />
-        </ChecklistCard>
-      </div>
-
-      {/* All requirements status */}
-      {dailyLog?.allRequirementsMet && (
-        <Card className="border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/20">
-          <CardContent className="pt-6 text-center">
-            <p className="text-3xl mb-2">🎉</p>
-            <p className="text-lg font-semibold text-emerald-700 dark:text-emerald-400">
-              All requirements completed for today!
+          <TodoItem
+            label="Outdoor Workout"
+            detail={dailyLog?.outdoorWorkoutCompleted ? "Fulfilled" : "One workout must be outside"}
+            done={dailyLog?.outdoorWorkoutCompleted ?? false}
+            isLast={true}
+          >
+            <p className="text-sm text-muted-foreground">
+              {dailyLog?.outdoorWorkoutCompleted
+                ? "Completed!"
+                : "Mark a workout as outdoor above"}
             </p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          </TodoItem>
+        </CategorySection>
+
+        {/* Nutrition Section */}
+        <CategorySection
+          title="Nutrition"
+          icon={<Apple className="h-4 w-4" />}
+          completedCount={nutritionCount}
+          totalCount={3}
+          isComplete={nutritionComplete}
+        >
+          <TodoItem
+            label="Water Intake"
+            detail={`${dailyLog?.waterIntakeOz ?? 0} / 128 oz`}
+            done={(dailyLog?.waterIntakeOz ?? 0) >= 128}
+            progress={waterProgress}
+            isLast={false}
+          >
+            <div className="space-y-3">
+              <Progress value={waterProgress} variant="gradient" showGlow className="h-1.5" />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleWaterChange(8)}
+                  className="flex-1"
+                >
+                  +8 oz
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleWaterChange(16)}
+                  className="flex-1"
+                >
+                  +16 oz
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleWaterChange(-8)}
+                >
+                  -8
+                </Button>
+              </div>
+            </div>
+          </TodoItem>
+
+          <TodoItem
+            label="Follow Diet"
+            detail={dailyLog?.dietFollowed ? "Diet followed" : "Stick to your chosen diet"}
+            done={dailyLog?.dietFollowed ?? false}
+            onTap={() => handleToggle("dietFollowed", !dailyLog?.dietFollowed)}
+            isLast={false}
+          />
+
+          <TodoItem
+            label="No Alcohol"
+            detail={dailyLog?.noAlcohol ? "Sobriety maintained" : "Stay alcohol-free"}
+            done={dailyLog?.noAlcohol ?? false}
+            onTap={() => handleToggle("noAlcohol", !dailyLog?.noAlcohol)}
+            isLast={true}
+          />
+        </CategorySection>
+
+        {/* Mind & Progress Section */}
+        <CategorySection
+          title="Mind & Progress"
+          icon={<Brain className="h-4 w-4" />}
+          completedCount={mindProgressCount}
+          totalCount={2}
+          isComplete={mindProgressComplete}
+        >
+          <TodoItem
+            label="Reading"
+            detail={`${dailyLog?.readingMinutes ?? 0} / 20 min (10 pages)`}
+            done={(dailyLog?.readingMinutes ?? 0) >= 20}
+            progress={readingProgress}
+            isLast={false}
+          >
+            <div className="space-y-3">
+              <Progress value={readingProgress} variant="gradient" showGlow className="h-1.5" />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleReadingChange(5)}
+                  className="flex-1"
+                >
+                  +5 min
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleReadingChange(10)}
+                  className="flex-1"
+                >
+                  +10 min
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleReadingChange(-5)}
+                >
+                  -5
+                </Button>
+              </div>
+            </div>
+          </TodoItem>
+
+          <TodoItem
+            label="Progress Photo"
+            detail={dailyLog?.progressPhotoId ? "Photo captured" : "Take your daily photo"}
+            done={!!dailyLog?.progressPhotoId}
+            isLast={true}
+          >
+            <PhotoUpload
+              challengeId={challengeId}
+              userId={userId}
+              dayNumber={dayNumber}
+              date={date}
+              hasPhoto={!!dailyLog?.progressPhotoId}
+            />
+          </TodoItem>
+        </CategorySection>
+
+        {/* All requirements status */}
+        <AnimatePresence>
+          {dailyLog?.allRequirementsMet && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="flex items-center justify-center gap-2 py-6 text-center"
+            >
+              <Sparkles className="h-5 w-5 text-success" />
+              <p className="text-sm font-medium text-success">
+                All requirements completed for today!
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
   );
 }
 
-function ChecklistCard({
+function CategorySection({
   title,
   icon,
-  completed,
-  subtitle,
+  completedCount,
+  totalCount,
+  isComplete,
   children,
 }: {
   title: string;
   icon: React.ReactNode;
-  completed: boolean;
-  subtitle: string;
+  completedCount: number;
+  totalCount: number;
+  isComplete: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <Card className={completed ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/20" : ""}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {icon}
-            <CardTitle className="text-base">{title}</CardTitle>
-          </div>
-          {completed && (
-            <Badge variant="outline" className="border-emerald-500 text-emerald-600">
-              <Check className="mr-1 h-3 w-3" />
-              Done
-            </Badge>
-          )}
+    <div>
+      {/* Section header */}
+      <div className="flex items-center justify-between mb-1 pb-3 border-b border-border">
+        <div className="flex items-center gap-2.5">
+          <span className="text-muted-foreground">{icon}</span>
+          <h3 className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
+            {title}
+          </h3>
+          <span className="text-xs text-muted-foreground">
+            {completedCount}/{totalCount}
+          </span>
         </div>
-        <CardDescription>{subtitle}</CardDescription>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+        {isComplete && (
+          <Badge variant="outline" className="border-success text-success bg-success/10 text-[10px] h-5">
+            <Check className="mr-1 h-2.5 w-2.5" />
+            Complete
+          </Badge>
+        )}
+      </div>
+
+      {/* Items list */}
+      <div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function TodoItem({
+  label,
+  detail,
+  done,
+  progress,
+  isLast,
+  onTap,
+  children,
+}: {
+  label: string;
+  detail: string;
+  done: boolean;
+  progress?: number;
+  isLast: boolean;
+  onTap?: () => void;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-3 py-4",
+        !isLast && "border-b border-border/50",
+        onTap && "cursor-pointer hover:bg-muted/30 -mx-2 px-2 rounded-lg transition-colors"
+      )}
+      onClick={onTap}
+      role={onTap ? "button" : undefined}
+      tabIndex={onTap ? 0 : undefined}
+      onKeyDown={onTap ? (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onTap();
+        }
+      } : undefined}
+    >
+      {/* Left accent bar */}
+      <div
+        className={cn(
+          "w-[3px] rounded-full self-stretch mt-0.5 min-h-[24px] transition-colors",
+          done ? "bg-primary" : "bg-muted"
+        )}
+      />
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p
+              className={cn(
+                "text-sm font-medium transition-colors",
+                done ? "text-muted-foreground" : "text-foreground"
+              )}
+            >
+              {label}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {detail}
+            </p>
+            {onTap && (
+              <p className={cn("text-xs mt-1", done ? "text-muted-foreground" : "text-primary")}>
+                {done ? "Tap to undo" : "Tap to complete"}
+              </p>
+            )}
+          </div>
+
+          {/* Done indicator */}
+          <AnimatePresence>
+            {done && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                className="flex-shrink-0"
+              >
+                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                  <Check className="h-3 w-3 text-primary-foreground" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Action area — stop propagation so clicks on children don't trigger onTap */}
+        {children && (
+          <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+            {children}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -336,6 +535,8 @@ function WorkoutButton({
   date,
   workoutNumber,
   existingWorkout,
+  label: buttonLabel,
+  variant: buttonVariant,
 }: {
   challengeId: Id<"challenges">;
   userId: Id<"users">;
@@ -348,6 +549,8 @@ function WorkoutButton({
     durationMinutes: number;
     isOutdoor: boolean;
   };
+  label?: string;
+  variant?: "outline" | "ghost";
 }) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState(existingWorkout?.name ?? "");
@@ -387,17 +590,22 @@ function WorkoutButton({
   if (!showForm) {
     return (
       <Button
-        variant="outline"
-        className="w-full"
+        variant={buttonVariant ?? "outline"}
+        size="sm"
         onClick={() => setShowForm(true)}
       >
-        {existingWorkout ? "Edit Workout" : "Log Workout"}
+        {buttonLabel ?? (existingWorkout ? "Edit Workout" : "Log Workout")}
       </Button>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      className="space-y-3"
+    >
       <div className="space-y-2">
         <Label htmlFor={`workout-name-${workoutNumber}`}>Workout Name</Label>
         <Input
@@ -447,19 +655,21 @@ function WorkoutButton({
       <div className="flex gap-2">
         <Button
           onClick={handleSave}
-          disabled={isSaving}
+          loading={isSaving}
+          size="sm"
           className="flex-1"
         >
-          {isSaving ? "Saving..." : "Save"}
+          Save
         </Button>
         <Button
           variant="outline"
+          size="sm"
           onClick={() => setShowForm(false)}
         >
           Cancel
         </Button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -511,8 +721,8 @@ function PhotoUpload({
 
   return (
     <Button
-      variant={hasPhoto ? "default" : "outline"}
-      className={hasPhoto ? "w-full bg-emerald-500 hover:bg-emerald-600" : "w-full"}
+      variant={hasPhoto ? "success" : "outline"}
+      size="sm"
       asChild
     >
       <label className="cursor-pointer">
@@ -527,7 +737,7 @@ function PhotoUpload({
           "Uploading..."
         ) : hasPhoto ? (
           <>
-            <Check className="mr-2 h-4 w-4" /> Photo Uploaded
+            <Check className="mr-1.5 h-3.5 w-3.5" /> Photo Uploaded
           </>
         ) : (
           "Upload Photo"

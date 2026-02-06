@@ -4,7 +4,6 @@ import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { SignInButton, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { HeroSection } from "@/components/ui/hero-section-with-smooth-bg-shader";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -14,14 +13,14 @@ export default function Home() {
     <>
       <AuthLoading>
         <div className="flex min-h-screen items-center justify-center">
-          <div className="animate-pulse text-zinc-500">Loading...</div>
+          <div className="animate-pulse text-muted-foreground">Loading...</div>
         </div>
       </AuthLoading>
 
       <Authenticated>
         <HeroSection
           title="Welcome back to"
-          highlightText="SeventyFive"
+          highlightText="75 Proof"
           description="You're on your journey to mental toughness. Keep pushing, stay consistent, and crush your goals today."
           buttonText="Go to Dashboard"
           onButtonClick={() => router.push("/dashboard")}
@@ -32,7 +31,6 @@ export default function Home() {
           veilOpacity="bg-black/40"
         />
         <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
-          <ThemeToggle />
           <UserButton
             appearance={{
               elements: {
@@ -46,7 +44,7 @@ export default function Home() {
       <Unauthenticated>
         <HeroSection
           title="Transform Your Life with"
-          highlightText="SeventyFive"
+          highlightText="75 Proof"
           description="The ultimate 75 HARD challenge tracker. Two workouts, one gallon of water, clean eating, reading, and progress photos — all in one place. Build mental toughness. Stay accountable."
           buttonText="Start Your Journey"
           onButtonClick={() => router.push("/sign-up")}
@@ -57,7 +55,6 @@ export default function Home() {
           veilOpacity="bg-black/20"
         />
         <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
-          <ThemeToggle />
           <SignInButton mode="modal">
             <Button variant="secondary" className="rounded-full">
               Sign In

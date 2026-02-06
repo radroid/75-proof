@@ -59,6 +59,11 @@ export const createOrGetUser = mutation({
       preferences: {
         timezone: "America/New_York",
         waterUnit: "oz",
+        sharing: {
+          showStreak: true,
+          showDayNumber: true,
+          showCompletionStatus: true,
+        },
       },
     });
 
@@ -75,6 +80,11 @@ export const updateUser = mutation({
         timezone: v.string(),
         reminderTime: v.optional(v.string()),
         waterUnit: v.union(v.literal("oz"), v.literal("ml")),
+        sharing: v.optional(v.object({
+          showStreak: v.boolean(),
+          showDayNumber: v.boolean(),
+          showCompletionStatus: v.boolean(),
+        })),
       })
     ),
   },

@@ -149,15 +149,25 @@ export const getFriendProgress = query({
           return null;
         }
 
-        // Get today's log
-        const today = new Date().toISOString().split("T")[0];
-        const todayLog = await ctx.db
-          .query("dailyLogs")
-          .withIndex("by_date", (q) =>
-            q.eq("userId", friendId).eq("date", today)
-          )
-          .unique();
+        // Respect sharing preferences (default to true if not set)
+        const sharing = friend.preferences?.sharing;
+        const showDayNumber = sharing?.showDayNumber ?? true;
+        const showCompletionStatus = sharing?.showCompletionStatus ?? true;
 
+        // Get today's log only if sharing completion status
+        let todayComplete = false;
+        if (showCompletionStatus) {
+          const today = new Date().toISOString().split("T")[0];
+          const todayLog = await ctx.db
+            .query("dailyLogs")
+            .withIndex("by_date", (q) =>
+              q.eq("userId", friendId).eq("date", today)
+            )
+            .unique();
+          todayComplete = todayLog?.allRequirementsMet ?? false;
+        }
+
+        // Never include progressPhotoId in friend-facing data
         return {
           user: {
             _id: friend._id,
@@ -165,10 +175,10 @@ export const getFriendProgress = query({
             avatarUrl: friend.avatarUrl,
           },
           challenge: {
-            currentDay: activeChallenge.currentDay,
+            currentDay: showDayNumber ? activeChallenge.currentDay : null,
             startDate: activeChallenge.startDate,
           },
-          todayComplete: todayLog?.allRequirementsMet ?? false,
+          todayComplete: showCompletionStatus ? todayComplete : null,
         };
       })
     );

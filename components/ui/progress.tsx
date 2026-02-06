@@ -1,15 +1,25 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as ProgressPrimitive from "@radix-ui/react-progress"
+import * as React from "react";
+import * as ProgressPrimitive from "@radix-ui/react-progress";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
-import { cn } from "@/lib/utils"
+interface ProgressProps
+  extends React.ComponentProps<typeof ProgressPrimitive.Root> {
+  variant?: "default" | "gradient" | "success";
+  showGlow?: boolean;
+}
 
 function Progress({
   className,
   value,
+  variant = "default",
+  showGlow = false,
   ...props
-}: React.ComponentProps<typeof ProgressPrimitive.Root>) {
+}: ProgressProps) {
+  const isNearComplete = (value ?? 0) >= 90;
+
   return (
     <ProgressPrimitive.Root
       data-slot="progress"
@@ -19,13 +29,26 @@ function Progress({
       )}
       {...props}
     >
-      <ProgressPrimitive.Indicator
+      <motion.div
         data-slot="progress-indicator"
-        className="bg-primary h-full w-full flex-1 transition-all"
-        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+        className={cn(
+          "h-full rounded-full",
+          variant === "default" && "bg-primary",
+          variant === "gradient" && "bg-[var(--gradient-primary)]",
+          variant === "success" && "bg-success",
+          showGlow && isNearComplete && "shadow-[0_0_8px_var(--primary)]"
+        )}
+        initial={{ width: 0 }}
+        animate={{ width: `${value ?? 0}%` }}
+        transition={{
+          type: "spring",
+          stiffness: 100,
+          damping: 20,
+          mass: 0.5,
+        }}
       />
     </ProgressPrimitive.Root>
-  )
+  );
 }
 
-export { Progress }
+export { Progress };

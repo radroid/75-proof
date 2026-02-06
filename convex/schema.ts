@@ -12,6 +12,11 @@ export default defineSchema({
       timezone: v.string(),
       reminderTime: v.optional(v.string()),
       waterUnit: v.union(v.literal("oz"), v.literal("ml")),
+      sharing: v.optional(v.object({
+        showStreak: v.boolean(),
+        showDayNumber: v.boolean(),
+        showCompletionStatus: v.boolean(),
+      })),
     }),
   })
     .index("by_clerk_id", ["clerkId"]),

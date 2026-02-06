@@ -3,13 +3,30 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useEffect, useState } from "react";
-import { DailyChecklist } from "@/components/DailyChecklist";
+import { motion } from "framer-motion";
 import { StartChallengeModal } from "@/components/StartChallengeModal";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PageContainer } from "@/components/layout/page-container";
+import { HeroSkeleton, ChecklistSkeleton } from "@/components/ui/skeleton-enhanced";
+import { MotionItem } from "@/components/ui/motion";
 import { Rocket } from "lucide-react";
+import { useThemePersonality } from "@/components/theme-provider";
+
+// Themed dashboard components
+import { ArcticDashboard } from "@/components/themes/arctic-dashboard";
+import { BroadsheetDashboard } from "@/components/themes/broadsheet-dashboard";
+import { MilitaryDashboard } from "@/components/themes/military-dashboard";
+import { ZenDashboard } from "@/components/themes/zen-dashboard";
+
+import type { ThemePersonality } from "@/lib/themes";
+
+const dashboardComponents: Record<ThemePersonality, React.ComponentType<{ user: any; challenge: any }>> = {
+  arctic: ArcticDashboard,
+  broadsheet: BroadsheetDashboard,
+  military: MilitaryDashboard,
+  zen: ZenDashboard,
+};
 
 export default function DashboardPage() {
   const user = useQuery(api.users.getCurrentUser);
@@ -24,135 +41,89 @@ export default function DashboardPage() {
     }
   }, [user, createOrGetUser, isCreatingUser]);
 
-  // Loading state
-  if (user === undefined || isCreatingUser) {
+  // Loading state - also handle user === null during creation
+  if (user === undefined || user === null || isCreatingUser) {
     return (
       <div className="max-w-4xl space-y-6">
         <div>
-          <Skeleton className="h-9 w-64" />
-          <Skeleton className="h-5 w-96 mt-2" />
+          <div className="h-9 w-64 rounded-md bg-muted animate-pulse" />
+          <div className="h-5 w-96 mt-2 rounded-md bg-muted animate-pulse" />
         </div>
-        <Skeleton className="h-40 w-full" />
-        <div className="grid gap-4 md:grid-cols-2">
-          <Skeleton className="h-48" />
-          <Skeleton className="h-48" />
-        </div>
+        <HeroSkeleton />
+        <ChecklistSkeleton />
       </div>
     );
   }
 
-  return (
-    <div className="max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">
-          Welcome back{user?.displayName ? `, ${user.displayName}` : ""}!
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          Track your daily progress and stay on top of your 75 HARD challenge.
-        </p>
-      </div>
-
-      {user?.currentChallengeId ? (
-        <ActiveChallenge userId={user._id} challengeId={user.currentChallengeId} />
-      ) : (
-        <NoActiveChallenge />
-      )}
-    </div>
+  return user?.currentChallengeId ? (
+    <ActiveChallenge userId={user._id} challengeId={user.currentChallengeId} user={user} />
+  ) : (
+    <NoActiveChallenge />
   );
 }
 
 function ActiveChallenge({
   userId,
   challengeId,
+  user,
 }: {
   userId: string;
   challengeId: string;
+  user: any;
 }) {
   const challenge = useQuery(api.challenges.getChallenge, {
     challengeId: challengeId as any,
   });
+  const { personality } = useThemePersonality();
 
   if (!challenge) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-40 w-full" />
-        <div className="grid gap-4 md:grid-cols-2">
-          <Skeleton className="h-48" />
-          <Skeleton className="h-48" />
-        </div>
+        <HeroSkeleton />
+        <ChecklistSkeleton />
       </div>
     );
   }
 
-  const today = new Date().toISOString().split("T")[0];
-  const progressPercent = (challenge.currentDay / 75) * 100;
+  const ThemedDashboard = dashboardComponents[personality];
 
-  return (
-    <div className="space-y-6">
-      {/* Progress header */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardDescription>Current Progress</CardDescription>
-              <CardTitle className="text-4xl mt-1">
-                Day {challenge.currentDay}
-                <span className="text-lg font-normal text-muted-foreground"> / 75</span>
-              </CardTitle>
-            </div>
-            <div className="text-right">
-              <CardDescription>Started</CardDescription>
-              <p className="text-lg font-semibold mt-1">
-                {new Date(challenge.startDate).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Progress value={progressPercent} className="h-3" />
-          <p className="mt-2 text-sm text-muted-foreground">
-            {75 - challenge.currentDay} days remaining
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Daily checklist */}
-      <DailyChecklist
-        challengeId={challengeId as any}
-        userId={userId as any}
-        dayNumber={challenge.currentDay}
-        date={today}
-      />
-    </div>
-  );
+  return <ThemedDashboard user={user} challenge={challenge} />;
 }
 
 function NoActiveChallenge() {
   const [showModal, setShowModal] = useState(false);
 
   return (
-    <>
-      <Card className="border-2 border-dashed border-emerald-300 dark:border-emerald-800">
-        <CardContent className="pt-12 pb-12 text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
-            <Rocket className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <h2 className="text-2xl font-bold">Ready to Transform?</h2>
-          <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-            Begin your 75 HARD journey today. Track your workouts, water intake,
-            reading, and build unbreakable mental toughness.
-          </p>
-          <Button
-            onClick={() => setShowModal(true)}
-            size="lg"
-            className="mt-6 bg-emerald-500 hover:bg-emerald-600"
-          >
-            Start 75 HARD Challenge
-          </Button>
-        </CardContent>
-      </Card>
+    <PageContainer>
+      <MotionItem>
+        <Card variant="bordered" className="border-2 border-dashed border-primary/30">
+          <CardContent className="pt-12 pb-12 text-center">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="mx-auto w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6"
+            >
+              <Rocket className="h-10 w-10 text-primary" />
+            </motion.div>
+            <h2 className="text-2xl font-bold">Ready to Transform?</h2>
+            <p className="mt-3 text-muted-foreground max-w-md mx-auto">
+              Begin your 75 HARD journey today. Track your workouts, water intake,
+              reading, and build unbreakable mental toughness.
+            </p>
+            <Button
+              onClick={() => setShowModal(true)}
+              size="xl"
+              variant="gradient"
+              className="mt-8"
+            >
+              Start 75 HARD Challenge
+            </Button>
+          </CardContent>
+        </Card>
+      </MotionItem>
 
       <StartChallengeModal open={showModal} onOpenChange={setShowModal} />
-    </>
+    </PageContainer>
   );
 }
