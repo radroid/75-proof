@@ -1,9 +1,7 @@
 "use client";
 
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
-import { SignInButton, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const DISEASES = [
   "Type 2 Diabetes", "Heart Disease", "Stroke", "Hypertension", "Obesity",
@@ -46,6 +44,7 @@ function NewspaperClipping() {
       className="bg-[#f4efe6] text-[#1a1410] p-8 md:p-10 border border-[#1a1410]/15"
       style={{ transform: "rotate(-0.5deg)", boxShadow: "4px 4px 0 rgba(0,0,0,0.1)" }}
     >
+      {/* Masthead */}
       <div className="border-b-2 border-[#1a1410] pb-3 mb-6">
         <div className="flex items-center justify-between">
           <span className="text-[10px] tracking-wider text-[#1a1410]/40" style={{ fontFamily: "'Space Mono', monospace" }}>
@@ -70,6 +69,7 @@ function NewspaperClipping() {
         </div>
       </div>
 
+      {/* Two column newspaper content */}
       <div className="columns-1 md:columns-2 gap-8 mb-6">
         <p
           className="text-[14px] leading-[1.85] text-[#1a1410]/65 mb-4"
@@ -99,6 +99,7 @@ function NewspaperClipping() {
         </p>
       </div>
 
+      {/* Disease list in newspaper style */}
       <div className="border-t border-[#1a1410]/15 pt-4">
         <span className="text-[9px] tracking-widest uppercase text-[#1a1410]/30 block mb-3"
           style={{ fontFamily: "'Space Mono', monospace" }}>
@@ -120,7 +121,7 @@ function NewspaperClipping() {
   );
 }
 
-function LandingPage() {
+export default function LandingV14() {
   const router = useRouter();
 
   return (
@@ -137,52 +138,21 @@ function LandingPage() {
         }
       `}</style>
 
-      {/* Nav */}
+      {/* Scotch tape nav */}
       <nav className="relative z-20 flex items-center justify-between px-6 md:px-10 py-6">
         <span className="text-xl font-black" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           75 Proof
         </span>
-        <div className="flex items-center gap-3">
-          <Authenticated>
-            <button
-              onClick={() => router.push("/dashboard")}
-              className="text-[13px] font-bold px-6 py-3 bg-[#4ECDC4] text-white rounded-none hover:bg-[#3dbdb5] transition-all"
-              style={{
-                fontFamily: "'Space Mono', monospace",
-                transform: "rotate(1deg)",
-              }}
-            >
-              DASHBOARD →
-            </button>
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: "w-9 h-9 ring-2 ring-[#1a1a1a]/10",
-                },
-              }}
-            />
-          </Authenticated>
-          <Unauthenticated>
-            <SignInButton mode="modal">
-              <button
-                className="text-[13px] font-bold px-5 py-3 border-2 border-[#1a1a1a]/15 text-[#1a1a1a] rounded-none hover:border-[#1a1a1a]/30 transition-all mr-2"
-                style={{ fontFamily: "'Space Mono', monospace" }}
-              >
-                SIGN IN
-              </button>
-            </SignInButton>
-            <button
-              onClick={() => router.push("/sign-up")}
-              className="text-[13px] font-bold px-6 py-3 bg-[#FF6154] text-white rounded-none hover:bg-[#e5534b] transition-all"
-              style={{
-                fontFamily: "'Space Mono', monospace",
-                transform: "rotate(1deg)",
-              }}
-            >
-              JOIN FREE →
-            </button>
-          </Unauthenticated>
-        </div>
+        <button
+          onClick={() => router.push("/sign-up")}
+          className="text-[13px] font-bold px-6 py-3 bg-[#FF6154] text-white rounded-none hover:bg-[#e5534b] transition-all"
+          style={{
+            fontFamily: "'Space Mono', monospace",
+            transform: "rotate(1deg)",
+          }}
+        >
+          JOIN FREE →
+        </button>
       </nav>
 
       {/* Hero — collage style */}
@@ -228,24 +198,13 @@ function LandingPage() {
                 celebrates your commitment without spying on your data.
               </p>
 
-              <Unauthenticated>
-                <button
-                  onClick={() => router.push("/sign-up")}
-                  className="px-10 py-5 bg-[#1a1a1a] text-white text-lg font-black hover:bg-[#FF6154] transition-all duration-300"
-                  style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
-                >
-                  Let&apos;s DO This →
-                </button>
-              </Unauthenticated>
-              <Authenticated>
-                <button
-                  onClick={() => router.push("/dashboard")}
-                  className="px-10 py-5 bg-[#1a1a1a] text-white text-lg font-black hover:bg-[#4ECDC4] transition-all duration-300"
-                  style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
-                >
-                  Go to Dashboard →
-                </button>
-              </Authenticated>
+              <button
+                onClick={() => router.push("/sign-up")}
+                className="px-10 py-5 bg-[#1a1a1a] text-white text-lg font-black hover:bg-[#FF6154] transition-all duration-300"
+                style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
+              >
+                Let&apos;s DO This →
+              </button>
             </div>
 
             {/* Tilted cards on right */}
@@ -490,24 +449,13 @@ function LandingPage() {
         >
           Day 1 starts when you decide it does.
         </p>
-        <Unauthenticated>
-          <button
-            onClick={() => router.push("/sign-up")}
-            className="px-14 py-6 bg-[#FF6154] text-white text-xl font-black hover:scale-105 active:scale-95 transition-all"
-            style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
-          >
-            START NOW — FREE
-          </button>
-        </Unauthenticated>
-        <Authenticated>
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="px-14 py-6 bg-[#4ECDC4] text-white text-xl font-black hover:scale-105 active:scale-95 transition-all"
-            style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
-          >
-            GO TO DASHBOARD
-          </button>
-        </Authenticated>
+        <button
+          onClick={() => router.push("/sign-up")}
+          className="px-14 py-6 bg-[#FF6154] text-white text-xl font-black hover:scale-105 active:scale-95 transition-all"
+          style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
+        >
+          START NOW — FREE
+        </button>
       </section>
 
       <footer className="border-t border-[#1a1a1a]/8 py-6 px-6 text-center">
@@ -516,28 +464,5 @@ function LandingPage() {
         </span>
       </footer>
     </div>
-  );
-}
-
-export default function Home() {
-  useEffect(() => {
-    document.documentElement.style.backgroundColor = "#FFFBF0";
-    document.body.style.backgroundColor = "#FFFBF0";
-    return () => {
-      document.documentElement.style.backgroundColor = "";
-      document.body.style.backgroundColor = "";
-    };
-  }, []);
-
-  return (
-    <>
-      <AuthLoading>
-        <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: "#FFFBF0" }}>
-          <div className="animate-pulse text-[#1a1a1a]/40" style={{ fontFamily: "'DM Sans', sans-serif" }}>Loading...</div>
-        </div>
-      </AuthLoading>
-
-      <LandingPage />
-    </>
   );
 }
