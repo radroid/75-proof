@@ -44,13 +44,8 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
   const romanNumerals = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII","XVIII","XIX","XX","XXI","XXII","XXIII","XXIV","XXV","XXVI","XXVII","XXVIII","XXIX","XXX","XXXI","XXXII","XXXIII","XXXIV","XXXV","XXXVI","XXXVII","XXXVIII","XXXIX","XL","XLI","XLII","XLIII","XLIV","XLV","XLVI","XLVII","XLVIII","XLIX","L","LI","LII","LIII","LIV","LV","LVI","LVII","LVIII","LIX","LX","LXI","LXII","LXIII","LXIV","LXV","LXVI","LXVII","LXVIII","LXIX","LXX","LXXI","LXXII","LXXIII","LXXIV","LXXV"];
   const vol = romanNumerals[Math.min(dayNumber - 1, 74)] || String(dayNumber);
 
-  const headline = totalDone === totalItems
-    ? `Day ${dayNumber}: All Objectives Fulfilled`
-    : `Day ${dayNumber}: ${totalDone} of ${totalItems} Objectives Complete`;
-
-  const subhead = totalDone === totalItems
-    ? "A perfect day recorded in the chronicles of discipline and perseverance"
-    : `Progress continues as ${totalItems - totalDone} objective${totalItems - totalDone !== 1 ? "s" : ""} remain${totalItems - totalDone === 1 ? "s" : ""} for the day`;
+  const hours = today.getHours();
+  const edition = hours < 12 ? "Morning Edition" : hours < 17 ? "Afternoon Edition" : "Evening Edition";
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -76,7 +71,7 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           {/* Date & edition bar */}
           <div className="flex items-center justify-between py-2 text-[11px] tracking-wider uppercase text-muted-foreground border-b border-border">
             <span>{formattedDate}</span>
-            <span>Morning Edition</span>
+            <span>{edition}</span>
             <span>Vol. {vol} — No. {dayNumber}</span>
           </div>
 
@@ -112,40 +107,6 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
             </div>
           </div>
         </motion.header>
-
-        {/* Headline */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="mt-8 mb-6"
-        >
-          <h2
-            className="text-3xl md:text-4xl leading-tight font-bold text-foreground"
-            style={{
-              fontFamily: "var(--font-heading)",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            {headline}
-          </h2>
-          <p
-            className="mt-2 text-lg leading-relaxed italic text-muted-foreground"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
-            {subhead}
-          </p>
-          <div className="mt-4 flex items-center gap-3 text-[11px] text-muted-foreground">
-            <span className="tracking-wider uppercase font-medium text-accent">
-              {totalDone === totalItems ? "Complete" : "Breaking"}
-            </span>
-            <span>|</span>
-            <span>{totalDone} of {totalItems} objectives fulfilled as of press time</span>
-          </div>
-        </motion.div>
-
-        {/* Divider */}
-        <div className="border-t border-border" />
 
         {/* Checklist area */}
         <motion.div

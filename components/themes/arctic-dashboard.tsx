@@ -101,23 +101,6 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
               </div>
             </div>
 
-            {/* Today's progress */}
-            <div className="mt-8">
-              <div className="flex items-baseline gap-2">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Today</p>
-                <p className="text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-                  {totalDone}/{totalItems}
-                </p>
-              </div>
-              <div className="mt-2 h-[3px] rounded-full bg-muted max-w-[200px]">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(totalDone / totalItems) * 100}%` }}
-                  transition={{ duration: 0.8, delay: 0.5 }}
-                  className="h-full rounded-full bg-primary"
-                />
-              </div>
-            </div>
           </div>
 
           {/* Right: SVG progress ring */}
@@ -158,7 +141,7 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
       </motion.div>
 
       {/* Geometric divider */}
-      <div className="flex items-center gap-3 mb-12">
+      <div className="flex items-center gap-3 mb-8">
         <div className="h-px flex-1 bg-border" />
         <div className="flex gap-1.5">
           <div className="w-2 h-2 rotate-45 bg-primary" />
@@ -166,6 +149,24 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
           <div className="w-2 h-2 rotate-45 bg-primary/30" />
         </div>
         <div className="h-px flex-1 bg-border" />
+      </div>
+
+      {/* Today's progress — centered */}
+      <div className="text-center mb-12">
+        <div className="flex items-baseline justify-center gap-2">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Today</p>
+          <p className="text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
+            {totalDone}/{totalItems}
+          </p>
+        </div>
+        <div className="mt-2 h-[3px] rounded-full bg-muted max-w-[200px] mx-auto">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${(totalDone / totalItems) * 100}%` }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            className="h-full rounded-full bg-primary"
+          />
+        </div>
       </div>
 
       {/* Daily Checklist */}

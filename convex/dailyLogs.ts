@@ -319,9 +319,9 @@ export const quickLogWorkout = mutation({
 
     const workoutData = {
       type: "other" as const,
-      name: "Workout",
+      name: args.workoutNumber === 2 ? "Outdoor Workout" : "Workout",
       durationMinutes: 45,
-      isOutdoor: false,
+      isOutdoor: args.workoutNumber === 2,
     };
 
     const workoutField = args.workoutNumber === 1 ? "workout1" : "workout2";
@@ -364,7 +364,7 @@ export const quickLogWorkout = mutation({
         dayNumber: args.dayNumber,
         date: args.date,
         [workoutField]: workoutData,
-        outdoorWorkoutCompleted: false,
+        outdoorWorkoutCompleted: workoutData.isOutdoor,
         dietFollowed: false,
         noAlcohol: false,
         waterIntakeOz: 0,

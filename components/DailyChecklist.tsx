@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { Badge } from "@/components/ui/badge";
 import { Confetti, useConfetti } from "@/components/ui/confetti";
 import {
@@ -126,8 +126,7 @@ export function DailyChecklist({
   const workout1Done = !!dailyLog?.workout1 && dailyLog.workout1.durationMinutes >= 45;
   const workout2Done = !!dailyLog?.workout2 && dailyLog.workout2.durationMinutes >= 45;
 
-  const fitnessComplete =
-    workout1Done && workout2Done && (dailyLog?.outdoorWorkoutCompleted ?? false);
+  const fitnessComplete = workout1Done && workout2Done;
 
   const nutritionComplete =
     (dailyLog?.waterIntakeOz ?? 0) >= 128 &&
@@ -150,7 +149,7 @@ export function DailyChecklist({
           isComplete={fitnessComplete}
         >
           <TodoItem
-            label="Workout 1"
+            label="Indoor Workout"
             detail={dailyLog?.workout1 ? `${dailyLog.workout1.name} — ${dailyLog.workout1.durationMinutes} min` : "45 min"}
             done={workout1Done}
             onTap={workout1Done ? () => handleClearWorkout(1) : () => handleQuickWorkout(1)}
@@ -165,6 +164,7 @@ export function DailyChecklist({
                 workoutNumber={1}
                 existingWorkout={dailyLog?.workout1}
                 label="Edit Workout"
+                forceOutdoor={false}
               />
             ) : (
               <WorkoutButton
@@ -176,16 +176,17 @@ export function DailyChecklist({
                 existingWorkout={dailyLog?.workout1}
                 label="Add details"
                 variant="ghost"
+                forceOutdoor={false}
               />
             )}
           </TodoItem>
 
           <TodoItem
-            label="Workout 2"
-            detail={dailyLog?.workout2 ? `${dailyLog.workout2.name} — ${dailyLog.workout2.durationMinutes} min` : "45 min"}
+            label="Outdoor Workout"
+            detail={dailyLog?.workout2 ? `${dailyLog.workout2.name} — ${dailyLog.workout2.durationMinutes} min` : "45 min, must be outside"}
             done={workout2Done}
             onTap={workout2Done ? () => handleClearWorkout(2) : () => handleQuickWorkout(2)}
-            isLast={false}
+            isLast={true}
           >
             {workout2Done ? (
               <WorkoutButton
@@ -196,6 +197,7 @@ export function DailyChecklist({
                 workoutNumber={2}
                 existingWorkout={dailyLog?.workout2}
                 label="Edit Workout"
+                forceOutdoor={true}
               />
             ) : (
               <WorkoutButton
@@ -207,16 +209,10 @@ export function DailyChecklist({
                 existingWorkout={dailyLog?.workout2}
                 label="Add details"
                 variant="ghost"
+                forceOutdoor={true}
               />
             )}
           </TodoItem>
-
-          <TodoItem
-            label="Outdoor Workout"
-            detail="Mark a workout as outdoor above"
-            done={dailyLog?.outdoorWorkoutCompleted ?? false}
-            isLast={true}
-          />
         </CategorySection>
 
         {/* Nutrition Section */}
@@ -646,6 +642,7 @@ function WorkoutButton({
   existingWorkout,
   label: buttonLabel,
   variant: buttonVariant,
+  forceOutdoor,
 }: {
   challengeId: Id<"challenges">;
   userId: Id<"users">;
@@ -660,11 +657,12 @@ function WorkoutButton({
   };
   label?: string;
   variant?: "outline" | "ghost";
+  forceOutdoor?: boolean;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState(existingWorkout?.name ?? "");
   const [duration, setDuration] = useState(existingWorkout?.durationMinutes ?? 45);
-  const [isOutdoor, setIsOutdoor] = useState(existingWorkout?.isOutdoor ?? false);
+  const isOutdoor = forceOutdoor ?? (existingWorkout?.isOutdoor ?? false);
   const [type, setType] = useState<string>(existingWorkout?.type ?? "strength");
 
   const updateLog = useMutation(api.dailyLogs.createOrUpdateDailyLog);
@@ -750,16 +748,6 @@ function WorkoutButton({
             min={1}
           />
         </div>
-      </div>
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id={`outdoor-${workoutNumber}`}
-          checked={isOutdoor}
-          onCheckedChange={(checked) => setIsOutdoor(checked as boolean)}
-        />
-        <Label htmlFor={`outdoor-${workoutNumber}`} className="text-sm font-normal">
-          This is an outdoor workout
-        </Label>
       </div>
       <div className="flex gap-2">
         <Button
