@@ -32,14 +32,45 @@ export default function RootLayout({
         {/* Google Fonts for all themes */}
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&family=Black+Ops+One&family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Karla:wght@300;400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&family=Black+Ops+One&family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Karla:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
           rel="stylesheet"
         />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ClerkProvider>
+        <ClerkProvider
+          appearance={{
+            layout: {
+              socialButtonsPlacement: "top",
+              socialButtonsVariant: "blockButton",
+            },
+            variables: {
+              borderRadius: "0px",
+              colorPrimary: "#FF6154",
+              colorBackground: "#FFFBF0",
+              colorText: "#1a1a1a",
+              colorInputBackground: "#FFFBF0",
+              colorInputText: "#1a1a1a",
+              fontFamily: "'DM Sans', sans-serif",
+            },
+            elements: {
+              rootBox: "w-full max-w-[min(400px,calc(100vw-2rem))]",
+              card: "shadow-none border border-[#1a1a1a]/10 rounded-none",
+              socialButtonsBlockButton:
+                "min-h-[44px] rounded-none border-[#1a1a1a]/15 font-bold text-[14px]",
+              socialButtonsBlockButtonText: "font-bold",
+              formButtonPrimary:
+                "min-h-[44px] rounded-none bg-[#FF6154] hover:bg-[#e5534b] font-bold text-[14px]",
+              formFieldInput:
+                "min-h-[44px] rounded-none border-[#1a1a1a]/15 text-[16px]",
+              headerTitle: "font-black text-[#1a1a1a]",
+              headerSubtitle: "text-[#1a1a1a]/55",
+              footerActionLink: "text-[#FF6154] hover:text-[#e5534b] font-bold",
+              modalBackdrop: "backdrop-blur-sm",
+            },
+          }}
+        >
           <ThemeProvider>
             <ConvexClientProvider>{children}</ConvexClientProvider>
             <Toaster />

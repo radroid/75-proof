@@ -1,7 +1,7 @@
 "use client";
 
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
-import { SignInButton, UserButton } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -142,7 +142,7 @@ function LandingPage() {
         <span className="text-xl font-black" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           75 Proof
         </span>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Authenticated>
             <button
               onClick={() => router.push("/dashboard")}
@@ -165,22 +165,23 @@ function LandingPage() {
           <Unauthenticated>
             <SignInButton mode="modal">
               <button
-                className="text-[13px] font-bold px-5 py-3 border-2 border-[#1a1a1a]/15 text-[#1a1a1a] rounded-none hover:border-[#1a1a1a]/30 transition-all mr-2"
+                className="hidden sm:inline-block text-[13px] font-bold px-5 py-3 border-2 border-[#1a1a1a]/15 text-[#1a1a1a] rounded-none hover:border-[#1a1a1a]/30 transition-all"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 SIGN IN
               </button>
             </SignInButton>
-            <button
-              onClick={() => router.push("/sign-up")}
-              className="text-[13px] font-bold px-6 py-3 bg-[#FF6154] text-white rounded-none hover:bg-[#e5534b] transition-all"
-              style={{
-                fontFamily: "'Space Mono', monospace",
-                transform: "rotate(1deg)",
-              }}
-            >
-              JOIN FREE →
-            </button>
+            <SignUpButton mode="modal">
+              <button
+                className="text-[13px] font-bold px-6 py-3 bg-[#FF6154] text-white rounded-none hover:bg-[#e5534b] transition-all"
+                style={{
+                  fontFamily: "'Space Mono', monospace",
+                  transform: "rotate(1deg)",
+                }}
+              >
+                JOIN FREE →
+              </button>
+            </SignUpButton>
           </Unauthenticated>
         </div>
       </nav>
@@ -229,13 +230,14 @@ function LandingPage() {
               </p>
 
               <Unauthenticated>
-                <button
-                  onClick={() => router.push("/sign-up")}
-                  className="px-10 py-5 bg-[#1a1a1a] text-white text-lg font-black hover:bg-[#FF6154] transition-all duration-300"
-                  style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
-                >
-                  Let&apos;s DO This →
-                </button>
+                <SignUpButton mode="modal">
+                  <button
+                    className="w-full sm:w-auto px-10 py-5 bg-[#1a1a1a] text-white text-lg font-black hover:bg-[#FF6154] transition-all duration-300"
+                    style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
+                  >
+                    Let&apos;s DO This →
+                  </button>
+                </SignUpButton>
               </Unauthenticated>
               <Authenticated>
                 <button
@@ -491,13 +493,14 @@ function LandingPage() {
           Day 1 starts when you decide it does.
         </p>
         <Unauthenticated>
-          <button
-            onClick={() => router.push("/sign-up")}
-            className="px-14 py-6 bg-[#FF6154] text-white text-xl font-black hover:scale-105 active:scale-95 transition-all"
-            style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
-          >
-            START NOW — FREE
-          </button>
+          <SignUpButton mode="modal">
+            <button
+              className="px-14 py-6 bg-[#FF6154] text-white text-xl font-black hover:scale-105 active:scale-95 transition-all"
+              style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
+            >
+              START NOW — FREE
+            </button>
+          </SignUpButton>
         </Unauthenticated>
         <Authenticated>
           <button
