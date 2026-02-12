@@ -4,8 +4,8 @@ import { cn } from "@/lib/utils";
 import Link, { LinkProps } from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState, createContext, useContext, useEffect, useCallback } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Menu, X, PanelLeft, PanelLeftClose } from "lucide-react";
+import { motion } from "framer-motion";
+import { PanelLeft, PanelLeftClose } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -129,81 +129,11 @@ export const DesktopSidebar = ({
 };
 
 export const MobileSidebar = ({
-  className,
   children,
 }: React.ComponentProps<"div">) => {
-  const { open, setOpen } = useSidebar();
-
-  return (
-    <>
-      {/* Mobile top bar */}
-      <div
-        className="h-14 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-sidebar border-b border-sidebar-border w-full"
-      >
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2"
-        >
-          <div className="h-7 w-7 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground"><path d="M14.4 14.4 9.6 9.6"/><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"/><path d="m21.5 21.5-1.4-1.4"/><path d="M3.9 3.9 2.5 2.5"/><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z"/></svg>
-          </div>
-          <span className="font-bold text-foreground text-base">75 Proof</span>
-        </Link>
-        <button
-          onClick={() => setOpen(!open)}
-          className="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg hover:bg-sidebar-accent transition-colors cursor-pointer"
-          aria-label="Open menu"
-        >
-          <Menu className="h-5 w-5 text-sidebar-foreground" />
-        </button>
-      </div>
-
-      {/* Mobile overlay panel */}
-      <AnimatePresence>
-        {open && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/40 z-[99] md:hidden"
-              onClick={() => setOpen(false)}
-            />
-            {/* Panel */}
-            <motion.div
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "tween", duration: 0.2, ease: "easeInOut" }}
-              className={cn(
-                "fixed top-0 left-0 h-full w-[80vw] max-w-[320px] bg-sidebar p-6 z-[100] flex flex-col justify-between md:hidden",
-                className
-              )}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <Link href="/dashboard" className="flex items-center gap-2">
-                  <div className="h-7 w-7 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground"><path d="M14.4 14.4 9.6 9.6"/><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"/><path d="m21.5 21.5-1.4-1.4"/><path d="M3.9 3.9 2.5 2.5"/><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z"/></svg>
-                  </div>
-                  <span className="font-bold text-foreground text-base">75 Proof</span>
-                </Link>
-                <button
-                  className="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg hover:bg-sidebar-accent transition-colors cursor-pointer"
-                  onClick={() => setOpen(false)}
-                  aria-label="Close menu"
-                >
-                  <X className="h-5 w-5 text-sidebar-foreground" />
-                </button>
-              </div>
-              {children}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </>
-  );
+  // Mobile sidebar is replaced by MobileBottomNav in the dashboard layout.
+  // This component now only renders children on desktop (handled by SidebarBody).
+  return null;
 };
 
 export const SidebarToggleButton = () => {

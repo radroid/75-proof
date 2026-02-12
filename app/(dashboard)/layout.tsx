@@ -13,6 +13,7 @@ import {
   SidebarProvider,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -232,11 +233,14 @@ export default function DashboardLayout({
             <SidebarSpacer />
 
             {/* Main content */}
-            <main className="flex-1 overflow-auto">
-              <div className="p-4 md:p-8 bg-background min-h-full">
+            <main className="flex-1 overflow-auto scrollbar-gutter-stable">
+              <div className="p-4 pb-24 md:p-8 md:pb-8 bg-background min-h-full">
                 {children}
               </div>
             </main>
+
+            {/* Mobile bottom tab bar */}
+            <MobileBottomNav />
           </div>
         </SidebarProvider>
       </Authenticated>

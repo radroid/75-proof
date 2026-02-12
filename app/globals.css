@@ -138,6 +138,12 @@
 
   --gradient-primary: linear-gradient(135deg, #2563eb, #3b82f6);
   --gradient-accent: linear-gradient(135deg, #2563eb, #60a5fa);
+
+  /* Mobile bottom nav */
+  --nav-bg: rgba(255, 255, 255, 0.72);
+  --nav-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.06);
+  --nav-indicator: rgba(37, 99, 235, 0.12);
+  --nav-radius: 16px;
 }
 
 /* ==========================================
@@ -219,6 +225,12 @@
 
   --gradient-primary: linear-gradient(135deg, #1a1410, #2a2018);
   --gradient-accent: linear-gradient(135deg, #9e2a2b, #b83a3b);
+
+  /* Mobile bottom nav */
+  --nav-bg: rgba(240, 233, 223, 0.78);
+  --nav-shadow: 0 4px 20px rgba(26,20,16,0.1), 0 0 0 0.5px rgba(26,20,16,0.08);
+  --nav-indicator: rgba(26, 20, 16, 0.08);
+  --nav-radius: 2px;
 }
 
 /* ==========================================
@@ -300,6 +312,12 @@
 
   --gradient-primary: linear-gradient(135deg, #4ade80, #22c55e);
   --gradient-accent: linear-gradient(135deg, #c2b280, #a39660);
+
+  /* Mobile bottom nav */
+  --nav-bg: rgba(21, 26, 16, 0.85);
+  --nav-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(74,222,128,0.08);
+  --nav-indicator: rgba(74, 222, 128, 0.12);
+  --nav-radius: 0px;
 }
 
 /* ==========================================
@@ -381,6 +399,12 @@
 
   --gradient-primary: linear-gradient(135deg, #6b7c5e, #5a6b4e);
   --gradient-accent: linear-gradient(135deg, #c4956a, #a87a52);
+
+  /* Mobile bottom nav */
+  --nav-bg: rgba(242, 237, 230, 0.75);
+  --nav-shadow: 0 4px 24px rgba(43,38,34,0.08), 0 0 0 0.5px rgba(43,38,34,0.05);
+  --nav-indicator: rgba(107, 124, 94, 0.12);
+  --nav-radius: 12px;
 }
 
 /* ==========================================
@@ -485,6 +509,15 @@
   .glow-success {
     box-shadow: var(--glow-success);
   }
+
+  /* Safe area utilities for mobile devices with notches / home indicators */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
 }
 
 /* ==========================================
@@ -508,6 +541,13 @@
    ========================================== */
 .grid-cols-15 {
   grid-template-columns: repeat(15, minmax(0, 1fr));
+}
+
+/* ==========================================
+   SCROLLBAR GUTTER - Prevents layout shift when scrollbar appears/disappears
+   ========================================== */
+.scrollbar-gutter-stable {
+  scrollbar-gutter: stable;
 }
 
 /* ==========================================
