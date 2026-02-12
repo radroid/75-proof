@@ -4,12 +4,10 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { PageContainer, PageHeader } from "@/components/layout/page-container";
-import { Section } from "@/components/layout/section";
+import { PageContainer } from "@/components/layout/page-container";
 import { MotionItem, MotionGrid, MotionList, MotionListItem, fadeUp, staggerContainerFast } from "@/components/ui/motion";
 import { StatSkeleton, HeroSkeleton } from "@/components/ui/skeleton-enhanced";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -143,10 +141,12 @@ export default function ProgressPage() {
   if (!user || !challenge) {
     return (
       <PageContainer>
-        <PageHeader
-          title="Progress"
-          description="Start a challenge to see your progress here."
-        />
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+          Progress
+        </h1>
+        <p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground mt-2">
+          Start a challenge to see your progress here.
+        </p>
       </PageContainer>
     );
   }
@@ -163,88 +163,98 @@ export default function ProgressPage() {
 
   return (
     <PageContainer>
-      <PageHeader
-        title="Progress"
-        description="Track your journey through 75 HARD."
-      />
+      <div className="mb-16">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+          Progress
+        </h1>
+        <p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground mt-2">
+          Your 75 Hard Journey
+        </p>
+      </div>
 
       {/* Stats grid */}
-      <MotionGrid className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <motion.div variants={fadeUp}>
-          <StatCard
-            label="Days Completed"
-            value={completedDays}
-            suffix="/ 75"
-            icon={<Calendar className="h-5 w-5 text-primary" />}
-          />
+      <MotionGrid className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <motion.div variants={fadeUp} className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Calendar className="h-5 w-5 text-primary" />
+            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Days Completed</span>
+          </div>
+          <p className="text-4xl md:text-5xl font-light tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
+            {completedDays}
+            <span className="text-lg text-muted-foreground/50 ml-1">/ 75</span>
+          </p>
         </motion.div>
-        <motion.div variants={fadeUp}>
-          <StatCard
-            label="Total Workouts"
-            value={totalWorkouts}
-            icon={<Dumbbell className="h-5 w-5 text-chart-1" />}
-          />
+        <motion.div variants={fadeUp} className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Dumbbell className="h-5 w-5 text-chart-1" />
+            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Total Workouts</span>
+          </div>
+          <p className="text-4xl md:text-5xl font-light tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
+            {totalWorkouts}
+          </p>
         </motion.div>
-        <motion.div variants={fadeUp}>
-          <StatCard
-            label="Water Consumed"
-            value={Math.round(totalWater / 128)}
-            suffix="gallons"
-            icon={<Droplets className="h-5 w-5 text-chart-2" />}
-          />
+        <motion.div variants={fadeUp} className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Droplets className="h-5 w-5 text-chart-2" />
+            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Water Consumed</span>
+          </div>
+          <p className="text-4xl md:text-5xl font-light tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
+            {Math.round(totalWater / 128)}
+            <span className="text-lg text-muted-foreground/50 ml-1">gallons</span>
+          </p>
         </motion.div>
-        <motion.div variants={fadeUp}>
-          <StatCard
-            label="Reading Time"
-            value={totalReading}
-            suffix="min"
-            icon={<BookOpen className="h-5 w-5 text-chart-3" />}
-          />
+        <motion.div variants={fadeUp} className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <BookOpen className="h-5 w-5 text-chart-3" />
+            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Reading Time</span>
+          </div>
+          <p className="text-4xl md:text-5xl font-light tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
+            {totalReading}
+            <span className="text-lg text-muted-foreground/50 ml-1">min</span>
+          </p>
         </motion.div>
       </MotionGrid>
 
       {/* Progress Photos Gallery */}
-      <Section title="Progress Photos">
+      <div className="h-px bg-border my-16" />
+      <div>
+        <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-8">Progress Photos</p>
         <MotionItem>
-          <Card>
-            <CardContent className="pt-6">
-              {photos && photos.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-                    {photos.map((photo) => (
-                      <button
-                        key={photo.storageId}
-                        className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
-                        onClick={() => setSelectedPhoto(photo)}
-                      >
-                        <img
-                          src={photo.url}
-                          alt={`Day ${photo.dayNumber}`}
-                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <Badge className="absolute bottom-1 left-1 text-[10px] h-5 bg-black/70 text-white border-0">
-                          Day {photo.dayNumber}
-                        </Badge>
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-3">
-                    Photos are private and never shared with friends.
-                  </p>
-                </>
-              ) : (
-                <EmptyState
-                  icon={<Camera className="h-8 w-8" />}
-                  title="No progress photos yet"
-                  description="Your daily photos will appear here as you upload them."
-                />
-              )}
-            </CardContent>
-          </Card>
+          {photos && photos.length > 0 ? (
+            <>
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+                {photos.map((photo) => (
+                  <button
+                    key={photo.storageId}
+                    className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
+                    onClick={() => setSelectedPhoto(photo)}
+                  >
+                    <img
+                      src={photo.url}
+                      alt={`Day ${photo.dayNumber}`}
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Badge className="absolute bottom-1 left-1 text-[10px] h-5 bg-black/70 text-white border-0">
+                      Day {photo.dayNumber}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                Photos are private and never shared with friends.
+              </p>
+            </>
+          ) : (
+            <EmptyState
+              icon={<Camera className="h-8 w-8" />}
+              title="No progress photos yet"
+              description="Your daily photos will appear here as you upload them."
+            />
+          )}
         </MotionItem>
-      </Section>
+      </div>
 
       {/* Photo Preview Dialog */}
       <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
@@ -272,75 +282,75 @@ export default function ProgressPage() {
       </Dialog>
 
       {/* Calendar view */}
-      <Section title="75-Day Calendar">
+      <div className="h-px bg-border my-16" />
+      <div>
+        <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-8">75-Day Calendar</p>
         <MotionItem>
-          <Card>
-            <CardContent className="pt-6">
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={staggerContainerFast}
-                className="grid grid-cols-15 gap-1"
-              >
-                {Array.from({ length: 75 }, (_, i) => {
-                  const dayNumber = i + 1;
-                  const log = logs?.find((l) => l.dayNumber === dayNumber);
-                  const isComplete = log?.allRequirementsMet;
-                  const isCurrent = dayNumber === challenge.currentDay;
-                  const isPast = dayNumber < challenge.currentDay;
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainerFast}
+            className="grid grid-cols-15 gap-1.5"
+          >
+            {Array.from({ length: 75 }, (_, i) => {
+              const dayNumber = i + 1;
+              const log = logs?.find((l) => l.dayNumber === dayNumber);
+              const isComplete = log?.allRequirementsMet;
+              const isCurrent = dayNumber === challenge.currentDay;
+              const isPast = dayNumber < challenge.currentDay;
 
-                  return (
-                    <motion.div
-                      key={dayNumber}
-                      variants={fadeUp}
-                      whileHover={{ scale: 1.1 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                      className={cn(
-                        "aspect-square rounded-md flex items-center justify-center text-xs font-medium cursor-default transition-all",
-                        isComplete
-                          ? "bg-success text-success-foreground shadow-sm"
-                          : isCurrent
-                          ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30"
-                          : isPast
-                          ? "bg-destructive/10 text-destructive"
-                          : "bg-muted text-muted-foreground"
-                      )}
-                      title={`Day ${dayNumber}${isComplete ? " - Complete" : ""}`}
-                    >
-                      {isComplete ? (
-                        <Check className="h-3 w-3" />
-                      ) : (
-                        dayNumber
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
-              <div className="mt-6 flex flex-wrap items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded-md bg-success shadow-sm" />
-                  <span className="text-muted-foreground">Completed</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded-md bg-primary ring-2 ring-primary/30" />
-                  <span className="text-muted-foreground">Today</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded-md bg-destructive/10" />
-                  <span className="text-muted-foreground">Missed</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded-md bg-muted" />
-                  <span className="text-muted-foreground">Upcoming</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              return (
+                <motion.div
+                  key={dayNumber}
+                  variants={fadeUp}
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className={cn(
+                    "aspect-square rounded-md flex items-center justify-center text-xs font-medium cursor-default transition-all",
+                    isComplete
+                      ? "bg-success text-success-foreground shadow-sm"
+                      : isCurrent
+                      ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30"
+                      : isPast
+                      ? "bg-destructive/10 text-destructive"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                  title={`Day ${dayNumber}${isComplete ? " - Complete" : ""}`}
+                >
+                  {isComplete ? (
+                    <Check className="h-3 w-3" />
+                  ) : (
+                    dayNumber
+                  )}
+                </motion.div>
+              );
+            })}
+          </motion.div>
+          <div className="mt-6 flex flex-wrap items-center gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="h-3.5 w-3.5 rounded-md bg-success shadow-sm" />
+              <span className="text-muted-foreground">Completed</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3.5 w-3.5 rounded-md bg-primary ring-2 ring-primary/30" />
+              <span className="text-muted-foreground">Today</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3.5 w-3.5 rounded-md bg-destructive/10" />
+              <span className="text-muted-foreground">Missed</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3.5 w-3.5 rounded-md bg-muted" />
+              <span className="text-muted-foreground">Upcoming</span>
+            </div>
+          </div>
         </MotionItem>
-      </Section>
+      </div>
 
-      {/* Day-by-Day History (merged from History page) */}
-      <Section title="Day-by-Day History">
+      {/* Day-by-Day History */}
+      <div className="h-px bg-border my-16" />
+      <div>
+        <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-8">Day-by-Day History</p>
         {/* Challenge Selector and Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           {challenges && challenges.length > 1 && (
@@ -411,62 +421,58 @@ export default function ProgressPage() {
           </div>
         </div>
 
-        {/* Challenge Overview Card (for non-active challenges) */}
+        {/* Challenge Overview (for non-active challenges) */}
         {selectedHistoryChallenge && selectedHistoryChallenge._id !== user?.currentChallengeId && (
-          <Card className="mb-6">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Badge
-                    className={cn(
-                      selectedHistoryChallenge.status === "active" && "bg-primary text-primary-foreground",
-                      selectedHistoryChallenge.status === "completed" && "bg-success text-success-foreground",
-                      selectedHistoryChallenge.status === "failed" && "bg-destructive text-destructive-foreground"
-                    )}
-                  >
-                    {selectedHistoryChallenge.status.charAt(0).toUpperCase() + selectedHistoryChallenge.status.slice(1)}
-                  </Badge>
-                  <CardDescription className="mt-2">
-                    Started {new Date(selectedHistoryChallenge.startDate).toLocaleDateString("en-US", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </CardDescription>
-                </div>
-                <div className="text-right">
-                  <p className="text-3xl font-bold tabular-nums">
-                    Day {selectedHistoryChallenge.currentDay}
-                    <span className="text-sm font-normal text-muted-foreground"> / 75</span>
-                  </p>
-                  {selectedHistoryChallenge.failedOnDay && (
-                    <p className="text-sm text-destructive mt-1">
-                      Ended on Day {selectedHistoryChallenge.failedOnDay}
-                    </p>
+          <div className="rounded-xl border p-5 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <Badge
+                  className={cn(
+                    selectedHistoryChallenge.status === "active" && "bg-primary text-primary-foreground",
+                    selectedHistoryChallenge.status === "completed" && "bg-success text-success-foreground",
+                    selectedHistoryChallenge.status === "failed" && "bg-destructive text-destructive-foreground"
                   )}
-                </div>
+                >
+                  {selectedHistoryChallenge.status.charAt(0).toUpperCase() + selectedHistoryChallenge.status.slice(1)}
+                </Badge>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Started {new Date(selectedHistoryChallenge.startDate).toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
               </div>
-            </CardHeader>
-            <CardContent>
-              <Progress
-                value={(selectedHistoryChallenge.currentDay / 75) * 100}
-                variant={selectedHistoryChallenge.status === "completed" ? "success" : "default"}
-                className={cn(
-                  "h-2",
-                  selectedHistoryChallenge.status === "failed" && "[&>div]:bg-destructive"
+              <div className="text-right">
+                <p className="text-3xl font-bold tabular-nums">
+                  Day {selectedHistoryChallenge.currentDay}
+                  <span className="text-sm font-normal text-muted-foreground"> / 75</span>
+                </p>
+                {selectedHistoryChallenge.failedOnDay && (
+                  <p className="text-sm text-destructive mt-1">
+                    Ended on Day {selectedHistoryChallenge.failedOnDay}
+                  </p>
                 )}
-              />
-              <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
-                <span>
-                  {Math.round((selectedHistoryChallenge.currentDay / 75) * 100)}% complete
-                </span>
-                <span>
-                  {effectiveHistoryLogs?.filter((l) => l.allRequirementsMet).length ?? 0} days fully completed
-                </span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <Progress
+              value={(selectedHistoryChallenge.currentDay / 75) * 100}
+              variant={selectedHistoryChallenge.status === "completed" ? "success" : "default"}
+              className={cn(
+                "h-2",
+                selectedHistoryChallenge.status === "failed" && "[&>div]:bg-destructive"
+              )}
+            />
+            <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
+              <span>
+                {Math.round((selectedHistoryChallenge.currentDay / 75) * 100)}% complete
+              </span>
+              <span>
+                {effectiveHistoryLogs?.filter((l) => l.allRequirementsMet).length ?? 0} days fully completed
+              </span>
+            </div>
+          </div>
         )}
 
         {/* Timeline */}
@@ -511,64 +517,62 @@ export default function ProgressPage() {
                       )}
                     </motion.div>
 
-                    <Card
+                    <div
                       className={cn(
-                        "cursor-pointer transition-all hover:shadow-[var(--shadow-card-hover)]",
-                        isComplete && "bg-success/5 dark:bg-success/10 border-success/30"
+                        "rounded-lg p-3 cursor-pointer transition-colors hover:bg-muted/50",
+                        isComplete && "bg-success/5 dark:bg-success/10"
                       )}
                       onClick={() => toggleExpanded(day)}
                     >
-                      <CardHeader className="py-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-1">
-                              {isExpanded ? (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </div>
-                            <div>
-                              <CardTitle className="text-base">Day {day}</CardTitle>
-                              {log?.date && (
-                                <CardDescription className="text-xs">
-                                  {new Date(log.date).toLocaleDateString("en-US", {
-                                    weekday: "short",
-                                    month: "short",
-                                    day: "numeric",
-                                  })}
-                                </CardDescription>
-                              )}
-                            </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1">
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            )}
                           </div>
-
-                          <div className="flex items-center gap-2">
-                            <div className="hidden sm:flex items-center gap-1">
-                              <RequirementDot completed={!!log?.workout1 && log.workout1.durationMinutes >= 45} icon={<Dumbbell className="h-2.5 w-2.5" />} />
-                              <RequirementDot completed={!!log?.workout2 && log.workout2.durationMinutes >= 45} icon={<Dumbbell className="h-2.5 w-2.5" />} />
-                              <RequirementDot completed={log?.outdoorWorkoutCompleted ?? false} icon={<TreePine className="h-2.5 w-2.5" />} />
-                              <RequirementDot completed={(log?.waterIntakeOz ?? 0) >= 128} icon={<Droplets className="h-2.5 w-2.5" />} />
-                              <RequirementDot completed={(log?.readingMinutes ?? 0) >= 20} icon={<BookOpen className="h-2.5 w-2.5" />} />
-                              <RequirementDot completed={log?.dietFollowed ?? false} icon={<Utensils className="h-2.5 w-2.5" />} />
-                              <RequirementDot completed={log?.noAlcohol ?? false} icon={<Wine className="h-2.5 w-2.5" />} />
-                              <RequirementDot completed={!!log?.progressPhotoId} icon={<Camera className="h-2.5 w-2.5" />} />
-                            </div>
-
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                isComplete
-                                  ? "border-success text-success"
-                                  : log
-                                  ? "border-warning text-warning"
-                                  : "border-muted-foreground text-muted-foreground"
-                              )}
-                            >
-                              {isComplete ? "Complete" : log ? "Partial" : "No data"}
-                            </Badge>
+                          <div>
+                            <p className="text-base font-semibold">Day {day}</p>
+                            {log?.date && (
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(log.date).toLocaleDateString("en-US", {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </p>
+                            )}
                           </div>
                         </div>
-                      </CardHeader>
+
+                        <div className="flex items-center gap-2">
+                          <div className="hidden sm:flex items-center gap-1">
+                            <RequirementDot completed={!!log?.workout1 && log.workout1.durationMinutes >= 45} icon={<Dumbbell className="h-2.5 w-2.5" />} />
+                            <RequirementDot completed={!!log?.workout2 && log.workout2.durationMinutes >= 45} icon={<Dumbbell className="h-2.5 w-2.5" />} />
+                            <RequirementDot completed={log?.outdoorWorkoutCompleted ?? false} icon={<TreePine className="h-2.5 w-2.5" />} />
+                            <RequirementDot completed={(log?.waterIntakeOz ?? 0) >= 128} icon={<Droplets className="h-2.5 w-2.5" />} />
+                            <RequirementDot completed={(log?.readingMinutes ?? 0) >= 20} icon={<BookOpen className="h-2.5 w-2.5" />} />
+                            <RequirementDot completed={log?.dietFollowed ?? false} icon={<Utensils className="h-2.5 w-2.5" />} />
+                            <RequirementDot completed={log?.noAlcohol ?? false} icon={<Wine className="h-2.5 w-2.5" />} />
+                            <RequirementDot completed={!!log?.progressPhotoId} icon={<Camera className="h-2.5 w-2.5" />} />
+                          </div>
+
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              isComplete
+                                ? "border-success text-success"
+                                : log
+                                ? "border-warning text-warning"
+                                : "border-muted-foreground text-muted-foreground"
+                            )}
+                          >
+                            {isComplete ? "Complete" : log ? "Partial" : "No data"}
+                          </Badge>
+                        </div>
+                      </div>
 
                       <AnimatePresence>
                         {isExpanded && log && (
@@ -578,8 +582,8 @@ export default function ProgressPage() {
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.2 }}
                           >
-                            <CardContent className="pt-0 pb-4">
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t">
+                            <div className="pt-3 mt-3 border-t">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 <RequirementCard
                                   label="Workout 1"
                                   icon={<Dumbbell className="h-4 w-4" />}
@@ -638,52 +642,19 @@ export default function ProgressPage() {
                                   })}
                                 </p>
                               )}
-                            </CardContent>
+                            </div>
                           </motion.div>
                         )}
                       </AnimatePresence>
-                    </Card>
+                    </div>
                   </MotionListItem>
                 );
               })}
             </MotionList>
           </div>
         )}
-      </Section>
+      </div>
     </PageContainer>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  suffix,
-  icon,
-}: {
-  label: string;
-  value: number;
-  suffix?: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <Card className="hover:shadow-[var(--shadow-card-hover)] transition-shadow">
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          {icon}
-          <CardDescription>{label}</CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-3xl font-bold tabular-nums">
-          {value}
-          {suffix && (
-            <span className="text-lg font-normal text-muted-foreground ml-1">
-              {suffix}
-            </span>
-          )}
-        </p>
-      </CardContent>
-    </Card>
   );
 }
 
