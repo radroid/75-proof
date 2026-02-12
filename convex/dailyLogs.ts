@@ -1,5 +1,11 @@
-import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { v, ConvexError } from "convex/values";
+import { mutation, query, MutationCtx } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
+import {
+  getTodayInTimezone,
+  computeDayNumber,
+  isDayEditable,
+} from "./lib/dayCalculation";
 
 const workoutValidator = v.object({
   type: v.union(
@@ -23,6 +29,29 @@ const workoutValidator = v.object({
   ),
   externalId: v.optional(v.string()),
 });
+
+/** Validate that the given day is still within the edit window. Throws ConvexError if not. */
+async function validateEditWindow(
+  ctx: MutationCtx,
+  challengeId: Id<"challenges">,
+  dayNumber: number,
+  userTimezone: string
+) {
+  const challenge = await ctx.db.get(challengeId);
+  if (!challenge) {
+    throw new Error("Challenge not found");
+  }
+
+  const todayStr = getTodayInTimezone(userTimezone);
+  const todayDayNumber = computeDayNumber(challenge.startDate, todayStr);
+
+  if (!isDayEditable(dayNumber, todayDayNumber)) {
+    throw new ConvexError({
+      code: "EDIT_WINDOW_CLOSED",
+      message: `Day ${dayNumber} is no longer editable. You can only edit days within 2 days of today.`,
+    });
+  }
+}
 
 export const getDailyLog = query({
   args: {
@@ -70,6 +99,7 @@ export const createOrUpdateDailyLog = mutation({
     userId: v.id("users"),
     dayNumber: v.number(),
     date: v.string(),
+    userTimezone: v.optional(v.string()),
     workout1: v.optional(workoutValidator),
     workout2: v.optional(workoutValidator),
     dietFollowed: v.optional(v.boolean()),
@@ -79,6 +109,10 @@ export const createOrUpdateDailyLog = mutation({
     progressPhotoId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
+    if (args.userTimezone) {
+      await validateEditWindow(ctx, args.challengeId, args.dayNumber, args.userTimezone);
+    }
+
     const existingLog = await ctx.db
       .query("dailyLogs")
       .withIndex("by_challenge_day", (q) =>
@@ -201,8 +235,13 @@ export const updateWaterIntake = mutation({
     dayNumber: v.number(),
     date: v.string(),
     waterIntakeOz: v.number(),
+    userTimezone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    if (args.userTimezone) {
+      await validateEditWindow(ctx, args.challengeId, args.dayNumber, args.userTimezone);
+    }
+
     const existingLog = await ctx.db
       .query("dailyLogs")
       .withIndex("by_challenge_day", (q) =>
@@ -274,8 +313,13 @@ export const clearWorkout = mutation({
     challengeId: v.id("challenges"),
     dayNumber: v.number(),
     workoutNumber: v.union(v.literal(1), v.literal(2)),
+    userTimezone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    if (args.userTimezone) {
+      await validateEditWindow(ctx, args.challengeId, args.dayNumber, args.userTimezone);
+    }
+
     const existingLog = await ctx.db
       .query("dailyLogs")
       .withIndex("by_challenge_day", (q) =>
@@ -308,8 +352,13 @@ export const quickLogWorkout = mutation({
     dayNumber: v.number(),
     date: v.string(),
     workoutNumber: v.union(v.literal(1), v.literal(2)),
+    userTimezone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    if (args.userTimezone) {
+      await validateEditWindow(ctx, args.challengeId, args.dayNumber, args.userTimezone);
+    }
+
     const existingLog = await ctx.db
       .query("dailyLogs")
       .withIndex("by_challenge_day", (q) =>

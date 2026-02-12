@@ -18,8 +18,15 @@ export function useDailyChecklist(
   challengeId: Id<"challenges">,
   userId: Id<"users">,
   dayNumber: number,
-  date: string
+  date: string,
+  options?: {
+    isEditable?: boolean;
+    userTimezone?: string;
+  }
 ) {
+  const isEditable = options?.isEditable ?? true;
+  const userTimezone = options?.userTimezone;
+
   const dailyLog = useQuery(api.dailyLogs.getDailyLog, {
     challengeId,
     dayNumber,
@@ -38,64 +45,94 @@ export function useDailyChecklist(
     prevAllMetRef.current = dailyLog?.allRequirementsMet ?? false;
   }, [dailyLog?.allRequirementsMet, triggerConfetti]);
 
+  // Guard: if not editable, warn and return early
+  const guardEdit = (): boolean => {
+    if (!isEditable) {
+      toast.error("This day is locked and can no longer be edited.");
+      return false;
+    }
+    return true;
+  };
+
   // Toggle boolean fields
   const toggle = async (field: "dietFollowed" | "noAlcohol", value: boolean) => {
+    if (!guardEdit()) return;
     try {
       await updateLog({
         challengeId,
         userId,
         dayNumber,
         date,
+        userTimezone,
         [field]: value,
       });
       toast.success(value ? "Marked as complete!" : "Unmarked");
-    } catch {
-      toast.error("Failed to update");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to update";
+      toast.error(msg.includes("EDIT_WINDOW_CLOSED") ? "This day is locked." : msg);
     }
   };
 
   // Add/subtract water
   const addWater = async (amount: number) => {
+    if (!guardEdit()) return;
     const newAmount = Math.max(0, (dailyLog?.waterIntakeOz ?? 0) + amount);
-    await updateWater({
-      challengeId,
-      userId,
-      dayNumber,
-      date,
-      waterIntakeOz: newAmount,
-    });
+    try {
+      await updateWater({
+        challengeId,
+        userId,
+        dayNumber,
+        date,
+        waterIntakeOz: newAmount,
+        userTimezone,
+      });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to update";
+      toast.error(msg.includes("EDIT_WINDOW_CLOSED") ? "This day is locked." : msg);
+    }
   };
 
   // Add/subtract reading
   const addReading = async (minutes: number) => {
+    if (!guardEdit()) return;
     const newMinutes = Math.max(0, (dailyLog?.readingMinutes ?? 0) + minutes);
-    await updateLog({
-      challengeId,
-      userId,
-      dayNumber,
-      date,
-      readingMinutes: newMinutes,
-    });
-  };
-
-  // Save workout
-  const saveWorkout = async (workoutNumber: 1 | 2, data: WorkoutData) => {
     try {
       await updateLog({
         challengeId,
         userId,
         dayNumber,
         date,
+        userTimezone,
+        readingMinutes: newMinutes,
+      });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to update";
+      toast.error(msg.includes("EDIT_WINDOW_CLOSED") ? "This day is locked." : msg);
+    }
+  };
+
+  // Save workout
+  const saveWorkout = async (workoutNumber: 1 | 2, data: WorkoutData) => {
+    if (!guardEdit()) return;
+    try {
+      await updateLog({
+        challengeId,
+        userId,
+        dayNumber,
+        date,
+        userTimezone,
         ...(workoutNumber === 1 ? { workout1: data } : { workout2: data }),
       });
       toast.success("Workout logged!");
-    } catch {
-      toast.error("Failed to save workout");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to save workout";
+      toast.error(msg.includes("EDIT_WINDOW_CLOSED") ? "This day is locked." : msg);
     }
   };
 
   // Upload photo
   const uploadPhoto = async (file: File) => {
+    if (!guardEdit()) return;
     try {
       const uploadUrl = await generateUploadUrl();
       const result = await fetch(uploadUrl, {
@@ -109,11 +146,13 @@ export function useDailyChecklist(
         userId,
         dayNumber,
         date,
+        userTimezone,
         progressPhotoId: storageId,
       });
       toast.success("Photo uploaded!");
-    } catch {
-      toast.error("Failed to upload photo");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to upload photo";
+      toast.error(msg.includes("EDIT_WINDOW_CLOSED") ? "This day is locked." : msg);
     }
   };
 

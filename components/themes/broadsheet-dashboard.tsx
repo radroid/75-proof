@@ -1,9 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { DailyChecklist } from "@/components/DailyChecklist";
+import { DayNavigator } from "@/components/DayNavigator";
+import { ChallengeFailedDialog } from "@/components/ChallengeFailedDialog";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useChallengeStatus } from "@/hooks/use-challenge-status";
+import { isDayEditable, getDateForDay } from "@/lib/day-utils";
 
 interface ThemedDashboardProps {
   user: any;
@@ -11,29 +16,38 @@ interface ThemedDashboardProps {
 }
 
 export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
-  const today = new Date();
-  const startDate = new Date(challenge.startDate);
-  const dayNumber = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  const dateStr = today.toISOString().split("T")[0];
-  const completion = Math.round((dayNumber / 75) * 100);
+  const { todayDayNumber, userTimezone, statusResult } = useChallengeStatus(
+    challenge._id,
+    challenge.startDate
+  );
+
+  const [selectedDayNumber, setSelectedDayNumber] = useState<number | null>(null);
+  const displayDay = selectedDayNumber ?? todayDayNumber;
+  const dateStr = getDateForDay(challenge.startDate, displayDay);
+  const isEditable = isDayEditable(displayDay, todayDayNumber);
+  const completion = Math.round((todayDayNumber / 75) * 100);
+
+  const [showFailedDialog, setShowFailedDialog] = useState(true);
+  const hasFailed = statusResult?.status === "failed";
 
   const logs = useQuery(
     api.dailyLogs.getChallengeLogs,
     { challengeId: challenge._id }
   );
-  const todayLog = logs?.find((l: any) => l.dayNumber === dayNumber);
-  const totalDone = todayLog ? [
-    !!todayLog.workout1 && todayLog.workout1.durationMinutes >= 45,
-    !!todayLog.workout2 && todayLog.workout2.durationMinutes >= 45,
-    todayLog.outdoorWorkoutCompleted,
-    (todayLog.waterIntakeOz ?? 0) >= 128,
-    todayLog.dietFollowed,
-    todayLog.noAlcohol,
-    (todayLog.readingMinutes ?? 0) >= 20,
-    !!todayLog.progressPhotoId,
+  const selectedLog = logs?.find((l: any) => l.dayNumber === displayDay);
+  const totalDone = selectedLog ? [
+    !!selectedLog.workout1 && selectedLog.workout1.durationMinutes >= 45,
+    !!selectedLog.workout2 && selectedLog.workout2.durationMinutes >= 45,
+    selectedLog.outdoorWorkoutCompleted,
+    (selectedLog.waterIntakeOz ?? 0) >= 128,
+    selectedLog.dietFollowed,
+    selectedLog.noAlcohol,
+    (selectedLog.readingMinutes ?? 0) >= 20,
+    !!selectedLog.progressPhotoId,
   ].filter(Boolean).length : 0;
   const totalItems = 8;
 
+  const today = new Date();
   const formattedDate = today.toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -42,13 +56,25 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
   });
 
   const romanNumerals = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII","XVIII","XIX","XX","XXI","XXII","XXIII","XXIV","XXV","XXVI","XXVII","XXVIII","XXIX","XXX","XXXI","XXXII","XXXIII","XXXIV","XXXV","XXXVI","XXXVII","XXXVIII","XXXIX","XL","XLI","XLII","XLIII","XLIV","XLV","XLVI","XLVII","XLVIII","XLIX","L","LI","LII","LIII","LIV","LV","LVI","LVII","LVIII","LIX","LX","LXI","LXII","LXIII","LXIV","LXV","LXVI","LXVII","LXVIII","LXIX","LXX","LXXI","LXXII","LXXIII","LXXIV","LXXV"];
-  const vol = romanNumerals[Math.min(dayNumber - 1, 74)] || String(dayNumber);
+  const vol = romanNumerals[Math.min(todayDayNumber - 1, 74)] || String(todayDayNumber);
 
   const hours = today.getHours();
   const edition = hours < 12 ? "Morning Edition" : hours < 17 ? "Afternoon Edition" : "Evening Edition";
 
   return (
     <div className="max-w-4xl mx-auto">
+      {hasFailed && (
+        <ChallengeFailedDialog
+          open={showFailedDialog}
+          failedOnDay={statusResult.failedOnDay!}
+          onStartNew={() => {
+            setShowFailedDialog(false);
+            window.location.reload();
+          }}
+          onDismiss={() => setShowFailedDialog(false)}
+        />
+      )}
+
       {/* Newsprint texture overlay */}
       <div
         className="fixed inset-0 pointer-events-none"
@@ -72,7 +98,7 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           <div className="flex items-center justify-between py-2 text-[11px] tracking-wider uppercase text-muted-foreground border-b border-border">
             <span>{formattedDate}</span>
             <span>{edition}</span>
-            <span>Vol. {vol} — No. {dayNumber}</span>
+            <span>Vol. {vol} — No. {todayDayNumber}</span>
           </div>
 
           {/* Newspaper title */}
@@ -97,7 +123,7 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
               <span className="text-foreground text-[16px] font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
                 {totalDone}/{totalItems}
               </span>
-              {" "}Objectives Today
+              {" "}Objectives
             </div>
             <div>
               <span className="text-foreground text-[16px] font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
@@ -107,6 +133,16 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
             </div>
           </div>
         </motion.header>
+
+        {/* Day navigator */}
+        <div className="mt-6 mb-2">
+          <DayNavigator
+            selectedDayNumber={displayDay}
+            todayDayNumber={todayDayNumber}
+            startDate={challenge.startDate}
+            onDayChange={setSelectedDayNumber}
+          />
+        </div>
 
         {/* Checklist area */}
         <motion.div
@@ -118,8 +154,10 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           <DailyChecklist
             challengeId={challenge._id}
             userId={user._id}
-            dayNumber={dayNumber}
+            dayNumber={displayDay}
             date={dateStr}
+            isEditable={isEditable}
+            userTimezone={userTimezone}
           />
         </motion.div>
 
@@ -156,9 +194,9 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
                 key={i}
                 className="flex-1"
                 style={{
-                  height: i < dayNumber ? "100%" : "20%",
-                  background: i < dayNumber ? "var(--foreground)" : "var(--border)",
-                  opacity: i < dayNumber ? 1 : 0.4,
+                  height: i < todayDayNumber ? "100%" : "20%",
+                  background: i < todayDayNumber ? "var(--foreground)" : "var(--border)",
+                  opacity: i < todayDayNumber ? 1 : 0.4,
                 }}
               />
             ))}

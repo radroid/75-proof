@@ -32,6 +32,7 @@ export default defineSchema({
       v.literal("failed")
     ),
     failedOnDay: v.optional(v.number()),
+    restartCount: v.optional(v.number()),
     visibility: v.union(
       v.literal("private"),
       v.literal("friends"),

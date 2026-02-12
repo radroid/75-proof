@@ -9,9 +9,11 @@
  */
 
 import type * as challenges from "../challenges.js";
+import type * as crons from "../crons.js";
 import type * as dailyLogs from "../dailyLogs.js";
 import type * as feed from "../feed.js";
 import type * as friends from "../friends.js";
+import type * as lib_dayCalculation from "../lib/dayCalculation.js";
 import type * as users from "../users.js";
 
 import type {
@@ -22,9 +24,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   challenges: typeof challenges;
+  crons: typeof crons;
   dailyLogs: typeof dailyLogs;
   feed: typeof feed;
   friends: typeof friends;
+  "lib/dayCalculation": typeof lib_dayCalculation;
   users: typeof users;
 }>;
 

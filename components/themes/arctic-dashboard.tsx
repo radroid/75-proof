@@ -1,9 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { DailyChecklist } from "@/components/DailyChecklist";
+import { DayNavigator } from "@/components/DayNavigator";
+import { ChallengeFailedDialog } from "@/components/ChallengeFailedDialog";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useChallengeStatus } from "@/hooks/use-challenge-status";
+import { isDayEditable, getDateForDay } from "@/lib/day-utils";
 
 interface ThemedDashboardProps {
   user: any;
@@ -11,26 +16,34 @@ interface ThemedDashboardProps {
 }
 
 export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
-  const today = new Date();
-  const startDate = new Date(challenge.startDate);
-  const dayNumber = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  const dateStr = today.toISOString().split("T")[0];
-  const completion = Math.round((dayNumber / 75) * 100);
+  const { todayDayNumber, userTimezone, statusResult } = useChallengeStatus(
+    challenge._id,
+    challenge.startDate
+  );
+
+  const [selectedDayNumber, setSelectedDayNumber] = useState<number | null>(null);
+  const displayDay = selectedDayNumber ?? todayDayNumber;
+  const dateStr = getDateForDay(challenge.startDate, displayDay);
+  const isEditable = isDayEditable(displayDay, todayDayNumber);
+  const completion = Math.round((todayDayNumber / 75) * 100);
+
+  const [showFailedDialog, setShowFailedDialog] = useState(true);
+  const hasFailed = statusResult?.status === "failed";
 
   const logs = useQuery(
     api.dailyLogs.getChallengeLogs,
     { challengeId: challenge._id }
   );
-  const todayLog = logs?.find((l: any) => l.dayNumber === dayNumber);
-  const totalDone = todayLog ? [
-    !!todayLog.workout1 && todayLog.workout1.durationMinutes >= 45,
-    !!todayLog.workout2 && todayLog.workout2.durationMinutes >= 45,
-    todayLog.outdoorWorkoutCompleted,
-    (todayLog.waterIntakeOz ?? 0) >= 128,
-    todayLog.dietFollowed,
-    todayLog.noAlcohol,
-    (todayLog.readingMinutes ?? 0) >= 20,
-    !!todayLog.progressPhotoId,
+  const selectedLog = logs?.find((l: any) => l.dayNumber === displayDay);
+  const totalDone = selectedLog ? [
+    !!selectedLog.workout1 && selectedLog.workout1.durationMinutes >= 45,
+    !!selectedLog.workout2 && selectedLog.workout2.durationMinutes >= 45,
+    selectedLog.outdoorWorkoutCompleted,
+    (selectedLog.waterIntakeOz ?? 0) >= 128,
+    selectedLog.dietFollowed,
+    selectedLog.noAlcohol,
+    (selectedLog.readingMinutes ?? 0) >= 20,
+    !!selectedLog.progressPhotoId,
   ].filter(Boolean).length : 0;
   const totalItems = 8;
 
@@ -39,6 +52,18 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
 
   return (
     <div className="max-w-5xl mx-auto">
+      {hasFailed && (
+        <ChallengeFailedDialog
+          open={showFailedDialog}
+          failedOnDay={statusResult.failedOnDay!}
+          onStartNew={() => {
+            setShowFailedDialog(false);
+            window.location.reload();
+          }}
+          onDismiss={() => setShowFailedDialog(false)}
+        />
+      )}
+
       {/* Hero section — day number with blue backdrop */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -56,7 +81,7 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
             lineHeight: 0.85,
           }}
         >
-          {dayNumber}
+          {displayDay}
         </div>
 
         <div className="relative flex items-start gap-12">
@@ -67,7 +92,7 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
                 className="text-[140px] md:text-[180px] font-bold leading-[0.85] tracking-tight text-foreground"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                {dayNumber}
+                {displayDay}
               </h1>
               <div className="pb-6">
                 <p className="text-4xl font-light text-muted-foreground/40">/75</p>
@@ -79,14 +104,14 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
               <div className="flex gap-1">
                 {Array.from({ length: 15 }).map((_, i) => {
                   const segmentDays = 5;
-                  const filled = dayNumber >= (i + 1) * segmentDays;
-                  const partial = !filled && dayNumber > i * segmentDays;
+                  const filled = todayDayNumber >= (i + 1) * segmentDays;
+                  const partial = !filled && todayDayNumber > i * segmentDays;
                   return (
                     <div key={i} className="flex-1 h-3 rounded-sm overflow-hidden bg-muted">
                       <div
                         className="h-full rounded-sm bg-primary"
                         style={{
-                          width: filled ? "100%" : partial ? `${((dayNumber % segmentDays) / segmentDays) * 100}%` : "0%",
+                          width: filled ? "100%" : partial ? `${((todayDayNumber % segmentDays) / segmentDays) * 100}%` : "0%",
                           opacity: filled ? 1 : partial ? 0.7 : 0,
                         }}
                       />
@@ -151,14 +176,21 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
         <div className="h-px flex-1 bg-border" />
       </div>
 
+      {/* Day navigator */}
+      <div className="mb-8">
+        <DayNavigator
+          selectedDayNumber={displayDay}
+          todayDayNumber={todayDayNumber}
+          startDate={challenge.startDate}
+          onDayChange={setSelectedDayNumber}
+        />
+      </div>
+
       {/* Today's progress — centered */}
       <div className="text-center mb-12">
-        <div className="flex items-baseline justify-center gap-2">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Today</p>
-          <p className="text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-            {totalDone}/{totalItems}
-          </p>
-        </div>
+        <p className="text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
+          {totalDone}/{totalItems}
+        </p>
         <div className="mt-2 h-[3px] rounded-full bg-muted max-w-[200px] mx-auto">
           <motion.div
             initial={{ width: 0 }}
@@ -173,8 +205,10 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
       <DailyChecklist
         challengeId={challenge._id}
         userId={user._id}
-        dayNumber={dayNumber}
+        dayNumber={displayDay}
         date={dateStr}
+        isEditable={isEditable}
+        userTimezone={userTimezone}
       />
     </div>
   );

@@ -1,5 +1,11 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation, MutationCtx } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
+import {
+  getTodayInTimezone,
+  computeDayNumber,
+  getEditableDays,
+} from "./lib/dayCalculation";
 
 export const getActiveChallenge = query({
   args: { userId: v.id("users") },
@@ -58,6 +64,7 @@ export const startChallenge = mutation({
       currentDay: 1,
       status: "active",
       visibility: args.visibility,
+      restartCount: 0,
     });
 
     // Update user's current challenge
@@ -134,29 +141,200 @@ export const failChallenge = mutation({
     failedOnDay: v.number(),
   },
   handler: async (ctx, args) => {
+    await failChallengeInternal(ctx, args.challengeId, args.failedOnDay);
+  },
+});
+
+/** Shared helper: fail a challenge and clean up. Used by both the public mutation and auto-reset. */
+async function failChallengeInternal(
+  ctx: MutationCtx,
+  challengeId: Id<"challenges">,
+  failedOnDay: number
+) {
+  const challenge = await ctx.db.get(challengeId);
+  if (!challenge) {
+    throw new Error("Challenge not found");
+  }
+
+  await ctx.db.patch(challengeId, {
+    status: "failed",
+    failedOnDay,
+    restartCount: (challenge.restartCount ?? 0) + 1,
+  });
+
+  // Clear user's current challenge
+  await ctx.db.patch(challenge.userId, {
+    currentChallengeId: undefined,
+  });
+
+  await ctx.db.insert("activityFeed", {
+    userId: challenge.userId,
+    type: "challenge_failed",
+    challengeId,
+    dayNumber: failedOnDay,
+    message: `Challenge ended on Day ${failedOnDay}. Ready to start again!`,
+    createdAt: new Date().toISOString(),
+  });
+}
+
+/**
+ * Lazy-eval challenge status check. Called on client visit.
+ * Scans expired-grace days, triggers auto-reset or syncs currentDay.
+ * Returns { status, failedOnDay? } so the client can react.
+ */
+export const checkChallengeStatus = mutation({
+  args: {
+    challengeId: v.id("challenges"),
+    userTimezone: v.string(),
+  },
+  handler: async (ctx, args) => {
     const challenge = await ctx.db.get(args.challengeId);
-    if (!challenge) {
-      throw new Error("Challenge not found");
+    if (!challenge || challenge.status !== "active") {
+      return { status: challenge?.status ?? "not_found" };
     }
 
-    await ctx.db.patch(args.challengeId, {
-      status: "failed",
-      failedOnDay: args.failedOnDay,
-    });
+    const todayStr = getTodayInTimezone(args.userTimezone);
+    const todayDayNumber = computeDayNumber(challenge.startDate, todayStr);
 
-    // Clear user's current challenge
-    await ctx.db.patch(challenge.userId, {
-      currentChallengeId: undefined,
-    });
+    // If challenge hasn't started yet or is day 1-3, no grace periods expired
+    const lastExpiredDay = todayDayNumber - 3;
+    if (lastExpiredDay < 1) {
+      // Sync currentDay
+      const syncDay = Math.min(Math.max(todayDayNumber, 1), 75);
+      if (challenge.currentDay !== syncDay) {
+        await ctx.db.patch(args.challengeId, { currentDay: syncDay });
+      }
+      return { status: "active" };
+    }
 
-    await ctx.db.insert("activityFeed", {
-      userId: challenge.userId,
-      type: "challenge_failed",
-      challengeId: args.challengeId,
-      dayNumber: args.failedOnDay,
-      message: `Challenge ended on Day ${args.failedOnDay}. Ready to start again!`,
-      createdAt: new Date().toISOString(),
-    });
+    // Scan from day 1 to lastExpiredDay for incomplete days
+    const upperBound = Math.min(lastExpiredDay, 75);
+    for (let day = 1; day <= upperBound; day++) {
+      const log = await ctx.db
+        .query("dailyLogs")
+        .withIndex("by_challenge_day", (q) =>
+          q.eq("challengeId", args.challengeId).eq("dayNumber", day)
+        )
+        .unique();
+
+      if (!log || !log.allRequirementsMet) {
+        // This day is incomplete and grace period has expired — fail
+        await failChallengeInternal(ctx, args.challengeId, day);
+        return { status: "failed", failedOnDay: day };
+      }
+    }
+
+    // All expired days are complete — check for challenge completion
+    if (todayDayNumber > 75) {
+      // Verify all 75 days are complete
+      let allComplete = true;
+      for (let day = upperBound + 1; day <= 75; day++) {
+        const log = await ctx.db
+          .query("dailyLogs")
+          .withIndex("by_challenge_day", (q) =>
+            q.eq("challengeId", args.challengeId).eq("dayNumber", day)
+          )
+          .unique();
+        if (!log || !log.allRequirementsMet) {
+          allComplete = false;
+          break;
+        }
+      }
+
+      if (allComplete) {
+        await ctx.db.patch(args.challengeId, {
+          currentDay: 75,
+          status: "completed",
+        });
+        await ctx.db.insert("activityFeed", {
+          userId: challenge.userId,
+          type: "challenge_completed",
+          challengeId: args.challengeId,
+          dayNumber: 75,
+          message: "Completed the 75 HARD challenge!",
+          createdAt: new Date().toISOString(),
+        });
+        return { status: "completed" };
+      }
+    }
+
+    // Sync currentDay
+    const syncDay = Math.min(Math.max(todayDayNumber, 1), 75);
+    if (challenge.currentDay !== syncDay) {
+      await ctx.db.patch(args.challengeId, { currentDay: syncDay });
+    }
+
+    return { status: "active" };
+  },
+});
+
+/** Cron-callable: check all active challenges using UTC as fallback timezone. */
+export const checkAllActiveChallenges = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const activeChallenges = await ctx.db
+      .query("challenges")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .collect();
+
+    for (const challenge of activeChallenges) {
+      // Look up user's timezone preference
+      const user = await ctx.db.get(challenge.userId);
+      const tz = user?.preferences?.timezone ?? "UTC";
+
+      const todayStr = getTodayInTimezone(tz);
+      const todayDayNumber = computeDayNumber(challenge.startDate, todayStr);
+
+      const lastExpiredDay = todayDayNumber - 3;
+      if (lastExpiredDay < 1) {
+        // Sync currentDay
+        const syncDay = Math.min(Math.max(todayDayNumber, 1), 75);
+        if (challenge.currentDay !== syncDay) {
+          await ctx.db.patch(challenge._id, { currentDay: syncDay });
+        }
+        continue;
+      }
+
+      const upperBound = Math.min(lastExpiredDay, 75);
+      let failed = false;
+      for (let day = 1; day <= upperBound; day++) {
+        const log = await ctx.db
+          .query("dailyLogs")
+          .withIndex("by_challenge_day", (q) =>
+            q.eq("challengeId", challenge._id).eq("dayNumber", day)
+          )
+          .unique();
+
+        if (!log || !log.allRequirementsMet) {
+          await failChallengeInternal(ctx, challenge._id, day);
+          failed = true;
+          break;
+        }
+      }
+
+      if (!failed) {
+        const syncDay = Math.min(Math.max(todayDayNumber, 1), 75);
+        if (challenge.currentDay !== syncDay) {
+          await ctx.db.patch(challenge._id, { currentDay: syncDay });
+        }
+      }
+    }
+  },
+});
+
+/** Query: return editable day numbers for the client's current day. */
+export const getEditableWindow = query({
+  args: {
+    challengeId: v.id("challenges"),
+    userTimezone: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const challenge = await ctx.db.get(args.challengeId);
+    if (!challenge) return [];
+
+    const todayStr = getTodayInTimezone(args.userTimezone);
+    const todayDayNumber = computeDayNumber(challenge.startDate, todayStr);
+    return getEditableDays(todayDayNumber);
   },
 });
 

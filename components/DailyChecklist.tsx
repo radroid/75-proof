@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Dumbbell, Sparkles, Brain, Apple, Camera, Loader2 } from "lucide-react";
+import { Check, Dumbbell, Sparkles, Brain, Apple, Camera, Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,8 @@ interface DailyChecklistProps {
   userId: Id<"users">;
   dayNumber: number;
   date: string;
+  isEditable?: boolean;
+  userTimezone?: string;
 }
 
 export function DailyChecklist({
@@ -35,6 +37,8 @@ export function DailyChecklist({
   userId,
   dayNumber,
   date,
+  isEditable = true,
+  userTimezone,
 }: DailyChecklistProps) {
   const dailyLog = useQuery(api.dailyLogs.getDailyLog, {
     challengeId,
@@ -54,16 +58,26 @@ export function DailyChecklist({
     prevAllMetRef.current = dailyLog?.allRequirementsMet ?? false;
   }, [dailyLog?.allRequirementsMet, triggerConfetti]);
 
+  const guardEdit = (): boolean => {
+    if (!isEditable) {
+      toast.error("This day is locked and can no longer be edited.");
+      return false;
+    }
+    return true;
+  };
+
   const handleToggle = async (
     field: "dietFollowed" | "noAlcohol",
     value: boolean
   ) => {
+    if (!guardEdit()) return;
     try {
       await updateLog({
         challengeId,
         userId,
         dayNumber,
         date,
+        userTimezone,
         [field]: value,
       });
       toast.success(value ? "Marked as complete!" : "Unmarked");
@@ -73,6 +87,7 @@ export function DailyChecklist({
   };
 
   const handleQuickWorkout = async (workoutNumber: 1 | 2) => {
+    if (!guardEdit()) return;
     try {
       await quickLog({
         challengeId,
@@ -80,6 +95,7 @@ export function DailyChecklist({
         dayNumber,
         date,
         workoutNumber,
+        userTimezone,
       });
       toast.success("Workout logged!");
     } catch {
@@ -88,11 +104,13 @@ export function DailyChecklist({
   };
 
   const handleClearWorkout = async (workoutNumber: 1 | 2) => {
+    if (!guardEdit()) return;
     try {
       await clearWorkout({
         challengeId,
         dayNumber,
         workoutNumber,
+        userTimezone,
       });
       toast.success("Workout cleared");
     } catch {
@@ -101,6 +119,7 @@ export function DailyChecklist({
   };
 
   const handleWaterChange = async (amount: number) => {
+    if (!guardEdit()) return;
     const newAmount = Math.max(0, (dailyLog?.waterIntakeOz ?? 0) + amount);
     await updateWater({
       challengeId,
@@ -108,16 +127,19 @@ export function DailyChecklist({
       dayNumber,
       date,
       waterIntakeOz: newAmount,
+      userTimezone,
     });
   };
 
   const handleReadingChange = async (minutes: number) => {
+    if (!guardEdit()) return;
     const newMinutes = Math.max(0, (dailyLog?.readingMinutes ?? 0) + minutes);
     await updateLog({
       challengeId,
       userId,
       dayNumber,
       date,
+      userTimezone,
       readingMinutes: newMinutes,
     });
   };
@@ -141,7 +163,16 @@ export function DailyChecklist({
     <>
       <Confetti isActive={confettiActive} />
 
-      <div className="space-y-10">
+      {!isEditable && (
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-4 py-3 mb-4">
+          <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+          <p className="text-sm text-muted-foreground">
+            This day is locked. You can only view past entries.
+          </p>
+        </div>
+      )}
+
+      <div className={cn("space-y-10", !isEditable && "opacity-75 pointer-events-none")}>
         {/* Fitness Section */}
         <CategorySection
           title="Fitness"

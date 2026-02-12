@@ -1,9 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { DailyChecklist } from "@/components/DailyChecklist";
+import { DayNavigator } from "@/components/DayNavigator";
+import { ChallengeFailedDialog } from "@/components/ChallengeFailedDialog";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useChallengeStatus } from "@/hooks/use-challenge-status";
+import { isDayEditable, getDateForDay } from "@/lib/day-utils";
 
 interface ThemedDashboardProps {
   user: any;
@@ -11,26 +16,34 @@ interface ThemedDashboardProps {
 }
 
 export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
-  const today = new Date();
-  const startDate = new Date(challenge.startDate);
-  const dayNumber = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  const dateStr = today.toISOString().split("T")[0];
-  const completion = Math.round((dayNumber / 75) * 100);
+  const { todayDayNumber, userTimezone, statusResult } = useChallengeStatus(
+    challenge._id,
+    challenge.startDate
+  );
+
+  const [selectedDayNumber, setSelectedDayNumber] = useState<number | null>(null);
+  const displayDay = selectedDayNumber ?? todayDayNumber;
+  const dateStr = getDateForDay(challenge.startDate, displayDay);
+  const isEditable = isDayEditable(displayDay, todayDayNumber);
+  const completion = Math.round((todayDayNumber / 75) * 100);
+
+  const [showFailedDialog, setShowFailedDialog] = useState(true);
+  const hasFailed = statusResult?.status === "failed";
 
   const logs = useQuery(
     api.dailyLogs.getChallengeLogs,
     { challengeId: challenge._id }
   );
-  const todayLog = logs?.find((l: any) => l.dayNumber === dayNumber);
-  const totalDone = todayLog ? [
-    !!todayLog.workout1 && todayLog.workout1.durationMinutes >= 45,
-    !!todayLog.workout2 && todayLog.workout2.durationMinutes >= 45,
-    todayLog.outdoorWorkoutCompleted,
-    (todayLog.waterIntakeOz ?? 0) >= 128,
-    todayLog.dietFollowed,
-    todayLog.noAlcohol,
-    (todayLog.readingMinutes ?? 0) >= 20,
-    !!todayLog.progressPhotoId,
+  const selectedLog = logs?.find((l: any) => l.dayNumber === displayDay);
+  const totalDone = selectedLog ? [
+    !!selectedLog.workout1 && selectedLog.workout1.durationMinutes >= 45,
+    !!selectedLog.workout2 && selectedLog.workout2.durationMinutes >= 45,
+    selectedLog.outdoorWorkoutCompleted,
+    (selectedLog.waterIntakeOz ?? 0) >= 128,
+    selectedLog.dietFollowed,
+    selectedLog.noAlcohol,
+    (selectedLog.readingMinutes ?? 0) >= 20,
+    !!selectedLog.progressPhotoId,
   ].filter(Boolean).length : 0;
   const totalItems = 8;
 
@@ -39,6 +52,18 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
 
   return (
     <div className="max-w-3xl mx-auto">
+      {hasFailed && (
+        <ChallengeFailedDialog
+          open={showFailedDialog}
+          failedOnDay={statusResult.failedOnDay!}
+          onStartNew={() => {
+            setShowFailedDialog(false);
+            window.location.reload();
+          }}
+          onDismiss={() => setShowFailedDialog(false)}
+        />
+      )}
+
       {/* Subtle washi paper texture */}
       <div
         className="fixed inset-0 pointer-events-none opacity-[0.03]"
@@ -58,7 +83,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
             Seventy-Five Hard
           </p>
           <p className="text-xs text-muted-foreground">
-            Day {dayNumber}
+            Day {displayDay}
           </p>
         </motion.div>
 
@@ -103,7 +128,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
                 className="text-6xl font-light leading-none text-foreground"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                {dayNumber}
+                {displayDay}
               </span>
               <span className="text-[10px] tracking-[0.3em] uppercase mt-2 text-muted-foreground">
                 of seventy-five
@@ -120,7 +145,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
               {totalDone}/{totalItems}
             </p>
             <p className="text-[10px] tracking-[0.2em] uppercase mt-1 text-muted-foreground">
-              fulfilled today
+              fulfilled
             </p>
           </div>
         </motion.div>
@@ -138,6 +163,16 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
           </svg>
         </div>
 
+        {/* Day navigator */}
+        <div className="mb-12">
+          <DayNavigator
+            selectedDayNumber={displayDay}
+            todayDayNumber={todayDayNumber}
+            startDate={challenge.startDate}
+            onDayChange={setSelectedDayNumber}
+          />
+        </div>
+
         {/* Daily Checklist with generous spacing */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -148,8 +183,10 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
           <DailyChecklist
             challengeId={challenge._id}
             userId={user._id}
-            dayNumber={dayNumber}
+            dayNumber={displayDay}
             date={dateStr}
+            isEditable={isEditable}
+            userTimezone={userTimezone}
           />
         </motion.div>
 
