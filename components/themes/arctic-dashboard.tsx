@@ -15,8 +15,6 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
   const startDate = new Date(challenge.startDate);
   const dayNumber = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   const dateStr = today.toISOString().split("T")[0];
-  const streak = challenge.currentDay - 1;
-  const remaining = 75 - dayNumber;
   const completion = Math.round((dayNumber / 75) * 100);
 
   const logs = useQuery(
@@ -103,30 +101,22 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
               </div>
             </div>
 
-            {/* Stats with accent bars */}
-            <div className="flex gap-10 mt-8">
-              {[
-                { label: "Streak", value: `${streak}d`, width: streak > 0 ? "100%" : "0%" },
-                { label: "Remaining", value: `${remaining}d`, width: `${(remaining / 75) * 100}%` },
-                { label: "Done Today", value: `${totalDone}/${totalItems}`, width: `${(totalDone / totalItems) * 100}%` },
-              ].map((stat) => (
-                <div key={stat.label} className="flex-1">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                    {stat.label}
-                  </p>
-                  <p className="text-xl font-semibold mt-1" style={{ fontFamily: "var(--font-heading)" }}>
-                    {stat.value}
-                  </p>
-                  <div className="mt-2 h-[3px] rounded-full bg-muted">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: stat.width }}
-                      transition={{ duration: 0.8, delay: 0.5 }}
-                      className="h-full rounded-full bg-primary"
-                    />
-                  </div>
-                </div>
-              ))}
+            {/* Today's progress */}
+            <div className="mt-8">
+              <div className="flex items-baseline gap-2">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">Today</p>
+                <p className="text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
+                  {totalDone}/{totalItems}
+                </p>
+              </div>
+              <div className="mt-2 h-[3px] rounded-full bg-muted max-w-[200px]">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(totalDone / totalItems) * 100}%` }}
+                  transition={{ duration: 0.8, delay: 0.5 }}
+                  className="h-full rounded-full bg-primary"
+                />
+              </div>
             </div>
           </div>
 

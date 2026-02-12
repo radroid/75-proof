@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Dumbbell, Droplets, BookOpen, TreePine, Sparkles, Brain, Apple } from "lucide-react";
+import { Check, Dumbbell, Sparkles, Brain, Apple, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -122,8 +122,6 @@ export function DailyChecklist({
     });
   };
 
-  const waterProgress = Math.min(100, ((dailyLog?.waterIntakeOz ?? 0) / 128) * 100);
-  const readingProgress = Math.min(100, ((dailyLog?.readingMinutes ?? 0) / 20) * 100);
 
   const workout1Done = !!dailyLog?.workout1 && dailyLog.workout1.durationMinutes >= 45;
   const workout2Done = !!dailyLog?.workout2 && dailyLog.workout2.durationMinutes >= 45;
@@ -131,31 +129,14 @@ export function DailyChecklist({
   const fitnessComplete =
     workout1Done && workout2Done && (dailyLog?.outdoorWorkoutCompleted ?? false);
 
-  const fitnessCount = [
-    workout1Done,
-    workout2Done,
-    dailyLog?.outdoorWorkoutCompleted ?? false,
-  ].filter(Boolean).length;
-
   const nutritionComplete =
     (dailyLog?.waterIntakeOz ?? 0) >= 128 &&
     (dailyLog?.dietFollowed ?? false) &&
     (dailyLog?.noAlcohol ?? false);
 
-  const nutritionCount = [
-    (dailyLog?.waterIntakeOz ?? 0) >= 128,
-    dailyLog?.dietFollowed ?? false,
-    dailyLog?.noAlcohol ?? false,
-  ].filter(Boolean).length;
-
   const mindProgressComplete =
     (dailyLog?.readingMinutes ?? 0) >= 20 &&
     !!dailyLog?.progressPhotoId;
-
-  const mindProgressCount = [
-    (dailyLog?.readingMinutes ?? 0) >= 20,
-    !!dailyLog?.progressPhotoId,
-  ].filter(Boolean).length;
 
   return (
     <>
@@ -166,13 +147,11 @@ export function DailyChecklist({
         <CategorySection
           title="Fitness"
           icon={<Dumbbell className="h-4 w-4" />}
-          completedCount={fitnessCount}
-          totalCount={3}
           isComplete={fitnessComplete}
         >
           <TodoItem
             label="Workout 1"
-            detail={dailyLog?.workout1 ? `${dailyLog.workout1.name} — ${dailyLog.workout1.durationMinutes} min` : "45 minutes required"}
+            detail={dailyLog?.workout1 ? `${dailyLog.workout1.name} — ${dailyLog.workout1.durationMinutes} min` : "45 min"}
             done={workout1Done}
             onTap={workout1Done ? () => handleClearWorkout(1) : () => handleQuickWorkout(1)}
             isLast={false}
@@ -203,7 +182,7 @@ export function DailyChecklist({
 
           <TodoItem
             label="Workout 2"
-            detail={dailyLog?.workout2 ? `${dailyLog.workout2.name} — ${dailyLog.workout2.durationMinutes} min` : "45 minutes required"}
+            detail={dailyLog?.workout2 ? `${dailyLog.workout2.name} — ${dailyLog.workout2.durationMinutes} min` : "45 min"}
             done={workout2Done}
             onTap={workout2Done ? () => handleClearWorkout(2) : () => handleQuickWorkout(2)}
             isLast={false}
@@ -234,66 +213,27 @@ export function DailyChecklist({
 
           <TodoItem
             label="Outdoor Workout"
-            detail={dailyLog?.outdoorWorkoutCompleted ? "Fulfilled" : "One workout must be outside"}
+            detail="Mark a workout as outdoor above"
             done={dailyLog?.outdoorWorkoutCompleted ?? false}
             isLast={true}
-          >
-            <p className="text-sm text-muted-foreground">
-              {dailyLog?.outdoorWorkoutCompleted
-                ? "Completed!"
-                : "Mark a workout as outdoor above"}
-            </p>
-          </TodoItem>
+          />
         </CategorySection>
 
         {/* Nutrition Section */}
         <CategorySection
           title="Nutrition"
           icon={<Apple className="h-4 w-4" />}
-          completedCount={nutritionCount}
-          totalCount={3}
           isComplete={nutritionComplete}
         >
-          <TodoItem
-            label="Water Intake"
-            detail={`${dailyLog?.waterIntakeOz ?? 0} / 128 oz`}
-            done={(dailyLog?.waterIntakeOz ?? 0) >= 128}
-            progress={waterProgress}
+          <WaterChecklist
+            waterOz={dailyLog?.waterIntakeOz ?? 0}
+            onWaterChange={handleWaterChange}
             isLast={false}
-          >
-            <div className="space-y-3">
-              <Progress value={waterProgress} variant="gradient" showGlow className="h-1.5" />
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleWaterChange(8)}
-                  className="flex-1"
-                >
-                  +8 oz
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleWaterChange(16)}
-                  className="flex-1"
-                >
-                  +16 oz
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleWaterChange(-8)}
-                >
-                  -8
-                </Button>
-              </div>
-            </div>
-          </TodoItem>
+          />
 
           <TodoItem
             label="Follow Diet"
-            detail={dailyLog?.dietFollowed ? "Diet followed" : "Stick to your chosen diet"}
+            detail="No cheat meals"
             done={dailyLog?.dietFollowed ?? false}
             onTap={() => handleToggle("dietFollowed", !dailyLog?.dietFollowed)}
             isLast={false}
@@ -301,7 +241,7 @@ export function DailyChecklist({
 
           <TodoItem
             label="No Alcohol"
-            detail={dailyLog?.noAlcohol ? "Sobriety maintained" : "Stay alcohol-free"}
+            detail="Stay alcohol-free"
             done={dailyLog?.noAlcohol ?? false}
             onTap={() => handleToggle("noAlcohol", !dailyLog?.noAlcohol)}
             isLast={true}
@@ -312,61 +252,21 @@ export function DailyChecklist({
         <CategorySection
           title="Mind & Progress"
           icon={<Brain className="h-4 w-4" />}
-          completedCount={mindProgressCount}
-          totalCount={2}
           isComplete={mindProgressComplete}
         >
-          <TodoItem
-            label="Reading"
-            detail={`${dailyLog?.readingMinutes ?? 0} / 20 min (10 pages)`}
-            done={(dailyLog?.readingMinutes ?? 0) >= 20}
-            progress={readingProgress}
+          <ReadingChecklist
+            readingMinutes={dailyLog?.readingMinutes ?? 0}
+            onReadingChange={handleReadingChange}
             isLast={false}
-          >
-            <div className="space-y-3">
-              <Progress value={readingProgress} variant="gradient" showGlow className="h-1.5" />
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleReadingChange(5)}
-                  className="flex-1"
-                >
-                  +5 min
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleReadingChange(10)}
-                  className="flex-1"
-                >
-                  +10 min
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleReadingChange(-5)}
-                >
-                  -5
-                </Button>
-              </div>
-            </div>
-          </TodoItem>
+          />
 
-          <TodoItem
-            label="Progress Photo"
-            detail={dailyLog?.progressPhotoId ? "Photo captured" : "Take your daily photo"}
-            done={!!dailyLog?.progressPhotoId}
-            isLast={true}
-          >
-            <PhotoUpload
-              challengeId={challengeId}
-              userId={userId}
-              dayNumber={dayNumber}
-              date={date}
-              hasPhoto={!!dailyLog?.progressPhotoId}
-            />
-          </TodoItem>
+          <PhotoRow
+            challengeId={challengeId}
+            userId={userId}
+            dayNumber={dayNumber}
+            date={date}
+            hasPhoto={!!dailyLog?.progressPhotoId}
+          />
         </CategorySection>
 
         {/* All requirements status */}
@@ -394,15 +294,11 @@ export function DailyChecklist({
 function CategorySection({
   title,
   icon,
-  completedCount,
-  totalCount,
   isComplete,
   children,
 }: {
   title: string;
   icon: React.ReactNode;
-  completedCount: number;
-  totalCount: number;
   isComplete: boolean;
   children: React.ReactNode;
 }) {
@@ -411,18 +307,15 @@ function CategorySection({
       {/* Section header */}
       <div className="flex items-center justify-between mb-1 pb-3 border-b border-border">
         <div className="flex items-center gap-2.5">
-          <span className="text-muted-foreground">{icon}</span>
+          <span className={cn("transition-colors", isComplete ? "text-success" : "text-muted-foreground")}>{icon}</span>
           <h3 className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
             {title}
           </h3>
-          <span className="text-xs text-muted-foreground">
-            {completedCount}/{totalCount}
-          </span>
         </div>
         {isComplete && (
           <Badge variant="outline" className="border-success text-success bg-success/10 text-[10px] h-5">
             <Check className="mr-1 h-2.5 w-2.5" />
-            Complete
+            Done
           </Badge>
         )}
       </div>
@@ -455,9 +348,10 @@ function TodoItem({
   return (
     <div
       className={cn(
-        "flex items-start gap-3 py-4",
+        "flex items-start gap-3 py-4 transition-colors",
         !isLast && "border-b border-border/50",
-        onTap && "cursor-pointer hover:bg-muted/30 -mx-2 px-2 rounded-lg transition-colors"
+        onTap && "cursor-pointer hover:bg-muted/30 -mx-2 px-2 rounded-lg",
+        done && "opacity-60"
       )}
       onClick={onTap}
       role={onTap ? "button" : undefined}
@@ -473,7 +367,7 @@ function TodoItem({
       <div
         className={cn(
           "w-[3px] rounded-full self-stretch mt-0.5 min-h-[24px] transition-colors",
-          done ? "bg-primary" : "bg-muted"
+          done ? "bg-success" : "bg-muted"
         )}
       />
 
@@ -484,17 +378,14 @@ function TodoItem({
             <p
               className={cn(
                 "text-sm font-medium transition-colors",
-                done ? "text-muted-foreground" : "text-foreground"
+                done ? "text-muted-foreground line-through" : "text-foreground"
               )}
             >
               {label}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {detail}
-            </p>
-            {onTap && (
-              <p className={cn("text-xs mt-1", done ? "text-muted-foreground" : "text-primary")}>
-                {done ? "Tap to undo" : "Tap to complete"}
+            {!done && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {detail}
               </p>
             )}
           </div>
@@ -509,8 +400,8 @@ function TodoItem({
                 transition={{ type: "spring", stiffness: 400, damping: 20 }}
                 className="flex-shrink-0"
               >
-                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                  <Check className="h-3 w-3 text-primary-foreground" />
+                <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center">
+                  <Check className="h-3 w-3 text-success-foreground" />
                 </div>
               </motion.div>
             )}
@@ -518,9 +409,227 @@ function TodoItem({
         </div>
 
         {/* Action area — stop propagation so clicks on children don't trigger onTap */}
-        {children && (
+        {children && !done && (
           <div className="mt-3" onClick={(e) => e.stopPropagation()}>
             {children}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const GLASSES = 8;
+const OZ_PER_GLASS = 16; // 8 × 16 = 128 oz
+
+function WaterChecklist({
+  waterOz,
+  onWaterChange,
+  isLast,
+}: {
+  waterOz: number;
+  onWaterChange: (amount: number) => void;
+  isLast: boolean;
+}) {
+  const glassesCompleted = Math.min(GLASSES, Math.floor(waterOz / OZ_PER_GLASS));
+  const allDone = waterOz >= 128;
+
+  const handleGlassTap = (glassIndex: number) => {
+    const isChecked = glassIndex < glassesCompleted;
+    if (isChecked) {
+      // Unchecking: set water to this glass's starting amount
+      const newOz = glassIndex * OZ_PER_GLASS;
+      onWaterChange(newOz - waterOz);
+    } else {
+      // Checking: set water to include this glass
+      const newOz = (glassIndex + 1) * OZ_PER_GLASS;
+      onWaterChange(newOz - waterOz);
+    }
+  };
+
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-3 py-4 transition-colors",
+        !isLast && "border-b border-border/50",
+        allDone && "opacity-60"
+      )}
+    >
+      {/* Left accent bar */}
+      <div
+        className={cn(
+          "w-[3px] rounded-full self-stretch mt-0.5 min-h-[24px] transition-colors",
+          allDone ? "bg-success" : "bg-muted"
+        )}
+      />
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p
+              className={cn(
+                "text-sm font-medium transition-colors",
+                allDone ? "text-muted-foreground line-through" : "text-foreground"
+              )}
+            >
+              Water
+            </p>
+            {!allDone && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {waterOz} / 128 oz
+              </p>
+            )}
+          </div>
+
+          {/* Done indicator */}
+          <AnimatePresence>
+            {allDone && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                className="flex-shrink-0"
+              >
+                <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center">
+                  <Check className="h-3 w-3 text-success-foreground" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* 8 glass checklist */}
+        {!allDone && (
+          <div className="flex gap-2 mt-3">
+            {Array.from({ length: GLASSES }).map((_, i) => {
+              const checked = i < glassesCompleted;
+              return (
+                <button
+                  key={i}
+                  onClick={() => handleGlassTap(i)}
+                  className={cn(
+                    "w-8 h-8 rounded-md border text-xs font-medium transition-all",
+                    "hover:scale-105 active:scale-95",
+                    checked
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
+                  )}
+                  title={`${(i + 1) * OZ_PER_GLASS} oz`}
+                >
+                  {checked ? <Check className="h-3.5 w-3.5 mx-auto" /> : i + 1}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const READING_BLOCKS = 4;
+const MIN_PER_BLOCK = 5; // 4 × 5 = 20 min
+
+function ReadingChecklist({
+  readingMinutes,
+  onReadingChange,
+  isLast,
+}: {
+  readingMinutes: number;
+  onReadingChange: (amount: number) => void;
+  isLast: boolean;
+}) {
+  const blocksCompleted = Math.min(READING_BLOCKS, Math.floor(readingMinutes / MIN_PER_BLOCK));
+  const allDone = readingMinutes >= 20;
+
+  const handleBlockTap = (blockIndex: number) => {
+    const isChecked = blockIndex < blocksCompleted;
+    if (isChecked) {
+      const newMin = blockIndex * MIN_PER_BLOCK;
+      onReadingChange(newMin - readingMinutes);
+    } else {
+      const newMin = (blockIndex + 1) * MIN_PER_BLOCK;
+      onReadingChange(newMin - readingMinutes);
+    }
+  };
+
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-3 py-4 transition-colors",
+        !isLast && "border-b border-border/50",
+        allDone && "opacity-60"
+      )}
+    >
+      {/* Left accent bar */}
+      <div
+        className={cn(
+          "w-[3px] rounded-full self-stretch mt-0.5 min-h-[24px] transition-colors",
+          allDone ? "bg-success" : "bg-muted"
+        )}
+      />
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p
+              className={cn(
+                "text-sm font-medium transition-colors",
+                allDone ? "text-muted-foreground line-through" : "text-foreground"
+              )}
+            >
+              Reading
+            </p>
+            {!allDone && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {readingMinutes} / 20 min
+              </p>
+            )}
+          </div>
+
+          {/* Done indicator */}
+          <AnimatePresence>
+            {allDone && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                className="flex-shrink-0"
+              >
+                <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center">
+                  <Check className="h-3 w-3 text-success-foreground" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* 4 block checklist */}
+        {!allDone && (
+          <div className="flex gap-2 mt-3">
+            {Array.from({ length: READING_BLOCKS }).map((_, i) => {
+              const checked = i < blocksCompleted;
+              return (
+                <button
+                  key={i}
+                  onClick={() => handleBlockTap(i)}
+                  className={cn(
+                    "h-8 rounded-md border text-xs font-medium transition-all px-3",
+                    "hover:scale-105 active:scale-95",
+                    checked
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
+                  )}
+                  title={`${(i + 1) * MIN_PER_BLOCK} min`}
+                >
+                  {checked ? <Check className="h-3.5 w-3.5 mx-auto" /> : `${(i + 1) * MIN_PER_BLOCK}m`}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -673,7 +782,7 @@ function WorkoutButton({
   );
 }
 
-function PhotoUpload({
+function PhotoRow({
   challengeId,
   userId,
   dayNumber,
@@ -720,29 +829,81 @@ function PhotoUpload({
   };
 
   return (
-    <Button
-      variant={hasPhoto ? "success" : "outline"}
-      size="sm"
-      asChild
+    <div
+      className={cn(
+        "flex items-center gap-3 py-4 transition-colors",
+        hasPhoto && "opacity-60"
+      )}
     >
-      <label className="cursor-pointer">
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleUpload}
-          disabled={isUploading}
-          className="hidden"
-        />
-        {isUploading ? (
-          "Uploading..."
-        ) : hasPhoto ? (
-          <>
-            <Check className="mr-1.5 h-3.5 w-3.5" /> Photo Uploaded
-          </>
-        ) : (
-          "Upload Photo"
+      {/* Left accent bar */}
+      <div
+        className={cn(
+          "w-[3px] rounded-full self-stretch min-h-[24px] transition-colors",
+          hasPhoto ? "bg-success" : "bg-muted"
         )}
-      </label>
-    </Button>
+      />
+
+      {/* Label */}
+      <div className="flex-1 min-w-0">
+        <p
+          className={cn(
+            "text-sm font-medium transition-colors",
+            hasPhoto ? "text-muted-foreground line-through" : "text-foreground"
+          )}
+        >
+          Progress Photo
+        </p>
+        {!hasPhoto && (
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Take your daily photo
+          </p>
+        )}
+      </div>
+
+      {/* Upload button — right-aligned */}
+      {hasPhoto ? (
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          className="flex-shrink-0"
+        >
+          <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center">
+            <Check className="h-3 w-3 text-success-foreground" />
+          </div>
+        </motion.div>
+      ) : (
+        <label
+          className={cn(
+            "flex-shrink-0 inline-flex items-center gap-2 cursor-pointer",
+            "rounded-lg border border-dashed border-primary/40 bg-primary/5",
+            "px-3 py-2 text-xs font-medium text-primary",
+            "hover:bg-primary/10 hover:border-primary/60 active:scale-95",
+            "transition-all",
+            isUploading && "opacity-50 pointer-events-none"
+          )}
+        >
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleUpload}
+            disabled={isUploading}
+            className="hidden"
+          />
+          {isUploading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Uploading…
+            </>
+          ) : (
+            <>
+              <Camera className="h-4 w-4" />
+              Add Photo
+            </>
+          )}
+        </label>
+      )}
+    </div>
   );
 }

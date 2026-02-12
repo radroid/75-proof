@@ -15,7 +15,7 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| B-1 | Mobile sidebar is non-functional — cannot navigate on mobile screens | | todo | Sidebar does not open/close properly on mobile viewports. Needs a mobile-friendly nav (hamburger menu, bottom nav, or sheet drawer). |
+| B-1 | ~~Mobile sidebar is non-functional~~ — replaced with Glass Pill bottom nav | | done | Replaced sidebar with mobile bottom nav component (`mobile-bottom-nav.tsx`). |
 | B-2 | Overscroll background color mismatch on non-homepage routes | | done | Fixed for homepage. Verify other routes match their backgrounds. |
 
 ---
@@ -24,11 +24,11 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| D-1 | Today page — remove redundant metrics (streak, days done, remaining days) | | todo | Streak and "days done" duplicate the day counter at the top. Remaining days is shown in the progress flow. Remove all three. |
-| D-2 | Today page — remove task category fractions (e.g. "2/3 workouts") | | todo | The fraction of how many tasks are left in each category is unnecessary clutter. |
-| D-3 | Today page — reduce overall text density | | todo | Too much text on the page. Tighten copy, remove labels that are self-evident from the UI. |
-| D-4 | Today page — clear visual feedback for complete vs incomplete tasks | | todo | Completed tasks need a distinct, satisfying visual state (color change, checkmark animation, strikethrough). Incomplete tasks should feel clearly "open." |
-| D-5 | Water intake tracker — simplify to a todo-list style | | todo | Replace the current water tracker with a simple checklist (e.g. 8 x 16oz glasses, tap to check). |
+| D-1 | ~~Today page — remove redundant metrics~~ | | done | Removed streak, days done, remaining days from all 4 themed dashboards. |
+| D-2 | ~~Today page — remove task category fractions~~ | | done | Removed completedCount/totalCount from category headers. |
+| D-3 | ~~Today page — reduce overall text density~~ | | done | Removed "tap to complete/undo" hints, tightened detail copy, hid detail text when done. |
+| D-4 | ~~Today page — clear visual feedback~~ | | done | Added strikethrough + opacity on done items, green accent bar + success checkmark, hide children when done. |
+| D-5 | ~~Water intake tracker — simplify to checklist~~ | | done | Replaced with 8-glass checklist (8 × 16oz = 128oz), tap to check/uncheck. |
 | D-6 | Task detail — support photo upload on all tasks | | todo | "Add details" for each task should allow attaching a photo. |
 | D-7 | Progress photo task — open camera directly on mobile | | todo | On Android/iOS, tapping the progress photo task should open the native camera, not the photo gallery. |
 | D-8 | Progress page — design improvements | | todo | The progress page is functional but needs design polish. Specific improvements TBD after review. |
@@ -42,7 +42,7 @@
 |---|------|----------|--------|-------|
 | A-1 | Browse-first experience — let new users view the full UI without signing up | | todo | Users should be able to explore the dashboard, Today page, and progress page as a guest. Show a persistent "Sign up to save your progress" prompt. |
 | A-2 | One-click sign up process | | todo | Minimize friction: social sign-in (Google, Apple) as primary CTAs, email/password as fallback. No multi-step forms. |
-| A-3 | Core authentication flow (Clerk integration) | | todo | Ensure sign-up, sign-in, sign-out, and session management all work end-to-end. |
+| A-3 | ~~Core authentication flow (Clerk integration)~~ | | done | Clerk fully integrated: sign-up, sign-in, sign-out, session management, middleware protection. |
 | A-4 | Health advisory during onboarding | | todo | Show a caring, well-designed health warning screen. Non-blocking but informative. Include "I've reviewed this with my doctor" optional acknowledgment. |
 
 ---
@@ -51,8 +51,8 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| F-1 | Basic dashboard UI | | todo | Main authenticated view after login. Show current day, daily tasks, streak. |
-| F-2 | Daily check-in card | | todo | Hero component for the Today page. Shows all 6 tasks, tap to complete. |
+| F-1 | ~~Basic dashboard UI~~ | | done | 4 themed dashboards (Arctic, Broadsheet, Military, Zen) with day counter, progress bar, stats. |
+| F-2 | ~~Daily check-in card~~ | | done | DailyChecklist component with 3 categories, tap-to-complete, workout logging, photo upload, confetti. |
 | F-3 | Standard 75 HARD habit tracking | | todo | Track all 6 default tasks: 2 workouts (1 outdoor), diet, water, reading, progress photo. Enforce the reset-on-miss rule. |
 | F-4 | Progress photo upload | | todo | Upload and store daily progress photos via Convex file storage. Generate thumbnails. |
 | F-5 | Swipe through previous days — view any past day's log | | todo | User can slide/swipe back to view any previous day's tasks and completion status. Read-only for days older than 2 days. |
@@ -126,7 +126,7 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| O-1 | Add MIT LICENSE file | | todo | |
+| O-1 | ~~Add MIT LICENSE file~~ | | done | Added MIT LICENSE to project root. |
 | O-2 | Write CONTRIBUTING.md | | todo | Fork → Branch → PR workflow. Lint + typecheck required. Screenshots for UI changes. |
 | O-3 | Write CODE_OF_CONDUCT.md | | todo | |
 | O-4 | Create GitHub issue templates | | todo | Bug report, feature request, design proposal templates. |
@@ -155,6 +155,16 @@
 | ~~L-1~~ | Landing page design (v14 Tropical Zine) | 2026-02-11 |
 | ~~L-2~~ | Cloudflare Workers deployment | 2026-02-11 |
 | ~~L-3~~ | Product plan document | 2026-02-11 |
+| ~~B-1~~ | Mobile Glass Pill bottom nav | 2026-02-11 |
+| ~~A-3~~ | Core authentication flow (Clerk) | 2026-02-11 |
+| ~~F-1~~ | Basic dashboard UI (4 themed dashboards) | 2026-02-11 |
+| ~~F-2~~ | Daily check-in card (DailyChecklist) | 2026-02-11 |
+| ~~D-1~~ | Remove redundant metrics from Today page | 2026-02-11 |
+| ~~D-2~~ | Remove category fractions from checklist | 2026-02-11 |
+| ~~D-3~~ | Reduce text density on Today page | 2026-02-11 |
+| ~~D-4~~ | Visual feedback for complete/incomplete tasks | 2026-02-11 |
+| ~~D-5~~ | Simplify water tracker to 8-glass checklist | 2026-02-11 |
+| ~~O-1~~ | MIT LICENSE file | 2026-02-11 |
 
 ---
 

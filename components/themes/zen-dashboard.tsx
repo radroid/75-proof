@@ -15,8 +15,6 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
   const startDate = new Date(challenge.startDate);
   const dayNumber = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   const dateStr = today.toISOString().split("T")[0];
-  const streak = challenge.currentDay - 1;
-  const remaining = 75 - dayNumber;
   const completion = Math.round((dayNumber / 75) * 100);
 
   const logs = useQuery(
@@ -113,25 +111,17 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
             </div>
           </div>
 
-          {/* Zen-style stats */}
-          <div className="flex items-center gap-12 mt-12">
-            {[
-              { label: "streak", value: `${streak}` },
-              { label: "remaining", value: `${remaining}` },
-              { label: "fulfilled", value: `${totalDone}/${totalItems}` },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <p
-                  className="text-2xl font-light text-foreground"
-                  style={{ fontFamily: "var(--font-heading)" }}
-                >
-                  {stat.value}
-                </p>
-                <p className="text-[10px] tracking-[0.2em] uppercase mt-1 text-muted-foreground">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
+          {/* Today's fulfillment */}
+          <div className="text-center mt-12">
+            <p
+              className="text-2xl font-light text-foreground"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
+              {totalDone}/{totalItems}
+            </p>
+            <p className="text-[10px] tracking-[0.2em] uppercase mt-1 text-muted-foreground">
+              fulfilled today
+            </p>
           </div>
         </motion.div>
 

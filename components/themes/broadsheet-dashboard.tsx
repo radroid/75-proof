@@ -15,8 +15,6 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
   const startDate = new Date(challenge.startDate);
   const dayNumber = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   const dateStr = today.toISOString().split("T")[0];
-  const streak = challenge.currentDay - 1;
-  const remaining = 75 - dayNumber;
   const completion = Math.round((dayNumber / 75) * 100);
 
   const logs = useQuery(
@@ -99,30 +97,18 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           </div>
 
           {/* Stats strip */}
-          <div className="grid grid-cols-4 text-center py-3 text-[10px] tracking-wider uppercase text-muted-foreground border-b-2 border-foreground">
+          <div className="flex items-center justify-between py-3 text-[10px] tracking-wider uppercase text-muted-foreground border-b-2 border-foreground">
             <div>
               <span className="text-foreground text-[16px] font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-                {dayNumber}
+                {totalDone}/{totalItems}
               </span>
-              <br />Days Logged
+              {" "}Objectives Today
             </div>
-            <div className="border-l border-border">
-              <span className="text-foreground text-[16px] font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-                {streak}
-              </span>
-              <br />Day Streak
-            </div>
-            <div className="border-l border-border">
-              <span className="text-foreground text-[16px] font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-                {remaining}
-              </span>
-              <br />Days Left
-            </div>
-            <div className="border-l border-border">
+            <div>
               <span className="text-foreground text-[16px] font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
                 {completion}%
               </span>
-              <br />Complete
+              {" "}Campaign Complete
             </div>
           </div>
         </motion.header>

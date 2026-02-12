@@ -15,8 +15,6 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
   const startDate = new Date(challenge.startDate);
   const dayNumber = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   const dateStr = today.toISOString().split("T")[0];
-  const streak = challenge.currentDay - 1;
-  const remaining = 75 - dayNumber;
   const completion = Math.round((dayNumber / 75) * 100);
 
   const logs = useQuery(
@@ -121,10 +119,8 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
           </div>
 
           {/* Stats grid */}
-          <div className="mt-8 grid grid-cols-4 gap-px rounded overflow-hidden bg-border">
+          <div className="mt-8 grid grid-cols-2 gap-px rounded overflow-hidden bg-border">
             {[
-              { label: "STREAK", value: `${streak}D` },
-              { label: "REMAINING", value: `${remaining}D` },
               { label: "COMPLETION", value: `${completion}%` },
               { label: "OBJECTIVES", value: `${totalDone}/${totalItems}` },
             ].map((stat) => (
