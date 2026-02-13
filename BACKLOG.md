@@ -29,10 +29,10 @@
 | D-3 | ~~Today page — reduce overall text density~~ | | done | Removed "tap to complete/undo" hints, tightened detail copy, hid detail text when done. |
 | D-4 | ~~Today page — clear visual feedback~~ | | done | Added strikethrough + opacity on done items, green accent bar + success checkmark, hide children when done. |
 | D-5 | ~~Water intake tracker — simplify to checklist~~ | | done | Replaced with 8-glass checklist (8 × 16oz = 128oz), tap to check/uncheck. |
-| D-6 | Task detail — support photo upload on all tasks | | todo | "Add details" for each task should allow attaching a photo. |
-| D-7 | Progress photo task — open camera directly on mobile | | todo | On Android/iOS, tapping the progress photo task should open the native camera, not the photo gallery. |
-| D-8 | Progress page — design improvements | | todo | The progress page is functional but needs design polish. Specific improvements TBD after review. |
-| D-9 | Landing page — ensure all mobile breakpoints are polished | | todo | Test the v14 homepage across mobile sizes (320px–428px). |
+| D-6 | Task detail — support photo upload on all tasks | P2 | todo | "Add details" for each task should allow attaching a photo. |
+| D-7 | Progress photo task — open camera directly on mobile | P2 | todo | On Android/iOS, tapping the progress photo task should open the native camera, not the photo gallery. |
+| D-8 | ~~Progress page — design polish~~ | | done | Removed Card/Section/PageHeader wrappers; inline font-heading titles, small-caps section labels, thin dividers, borderless timeline rows, theme-aligned spacing (mb-16/my-16/mb-8). Completed 2026-02-12. |
+| D-9 | Landing page — ensure all mobile breakpoints are polished | P1 | todo | Test the v14 homepage across mobile sizes (320px–428px). |
 
 ---
 
@@ -40,10 +40,10 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| A-1 | Browse-first experience — let new users view the full UI without signing up | | todo | Users should be able to explore the dashboard, Today page, and progress page as a guest. Show a persistent "Sign up to save your progress" prompt. |
-| A-2 | One-click sign up process | | todo | Minimize friction: social sign-in (Google, Apple) as primary CTAs, email/password as fallback. No multi-step forms. |
+| A-1 | Browse-first experience — let new users view the full UI without signing up | P1 | todo | Users should be able to explore the dashboard, Today page, and progress page as a guest. Show a persistent "Sign up to save your progress" prompt. |
+| A-2 | ~~One-click sign up process~~ | | done | Modal sign-up with social buttons top, branded Clerk theming, mobile-optimized touch targets. Implemented 2026-02-12. |
 | A-3 | ~~Core authentication flow (Clerk integration)~~ | | done | Clerk fully integrated: sign-up, sign-in, sign-out, session management, middleware protection. |
-| A-4 | Health advisory during onboarding | | todo | Show a caring, well-designed health warning screen. Non-blocking but informative. Include "I've reviewed this with my doctor" optional acknowledgment. |
+| A-4 | Health advisory during onboarding | P2 | todo | Show a caring, well-designed health warning screen. Non-blocking but informative. Include "I've reviewed this with my doctor" optional acknowledgment. |
 
 ---
 
@@ -53,14 +53,14 @@
 |---|------|----------|--------|-------|
 | F-1 | ~~Basic dashboard UI~~ | | done | 4 themed dashboards (Arctic, Broadsheet, Military, Zen) with day counter, progress bar, stats. |
 | F-2 | ~~Daily check-in card~~ | | done | DailyChecklist component with 3 categories, tap-to-complete, workout logging, photo upload, confetti. |
-| F-3 | Standard 75 HARD habit tracking | | todo | Track all 6 default tasks: 2 workouts (1 outdoor), diet, water, reading, progress photo. Enforce the reset-on-miss rule. |
-| F-4 | Progress photo upload | | todo | Upload and store daily progress photos via Convex file storage. Generate thumbnails. |
-| F-5 | Swipe through previous days — view any past day's log | | todo | User can slide/swipe back to view any previous day's tasks and completion status. Read-only for days older than 2 days. |
-| F-6 | Edit past 2 days of logs | | todo | Users can mark tasks as complete or incomplete for today and the previous 2 days only. Days older than that are locked. |
-| F-7 | Auto-reset on missed hard task after 2-day grace window | | todo | If a hard-rule task is still incomplete 2 days later (i.e. the edit window closes), the challenge automatically resets to Day 1. This is the enforcement mechanism — users get a 2-day buffer to retroactively log, then it's final. |
-| F-8 | Track number of challenge restarts | | todo | Store a `restartCount` on the challenge record. Increment on every reset (whether auto-reset from missed hard task or manual restart). Persist across the lifetime of the user's account, not just the current attempt. |
-| F-9 | Track longest streak (all-time personal best) | | todo | Store `longestStreak` on the user/challenge record. Update whenever the current streak surpasses the previous best. Never resets — this is a lifetime stat. |
-| F-10 | Progress page — show restart history with intuitive UI | | todo | The progress map/timeline should visually show where restarts happened (e.g. a break/crack in the timeline, a "restarted" marker). Show total restart count prominently. Could use a "journey so far" visualization that includes failed attempts as part of the story, not as shame. |
+| F-3 | ~~Standard 75 HARD habit tracking~~ | | done | Day advancement logic, reset-on-miss rule, and full 6-task tracking all implemented. Completed 2026-02-12. |
+| F-4 | Progress photo upload — thumbnail generation | P1 | todo | Upload works (PhotoRow). Still need: generate thumbnails for feed display, gallery view of past photos. |
+| F-5 | Swipe through previous days — view any past day's log | P1 | todo | User can slide/swipe back to view any previous day's tasks and completion status. Read-only for days older than 2 days. |
+| F-6 | ~~Edit past 2 days of logs~~ | | done | 2-day edit window implemented — users can edit today and previous 2 days, older days are locked. Completed 2026-02-12. |
+| F-7 | ~~Auto-reset on missed hard task after 2-day grace window~~ | | done | Auto-reset implemented — if hard-rule tasks are incomplete after 2-day grace window, challenge resets to Day 1. Completed 2026-02-12. |
+| F-8 | ~~Track number of challenge restarts~~ | | done | `lifetimeRestartCount` on users table, incremented in `failChallengeInternal`. Shown as "Attempt #N" on Progress page and in ChallengeFailedDialog. Completed 2026-02-12. |
+| F-9 | ~~Track longest streak (all-time personal best)~~ | | done | `longestStreak` on users table, updated on failure and completion paths. Shown as "Best Streak" on Progress page. `getLifetimeStats` query computes currentStreak on-read. Completed 2026-02-12. |
+| F-10 | Progress page — show restart history with intuitive UI | P2 | todo | The progress map/timeline should visually show where restarts happened (e.g. a break/crack in the timeline, a "restarted" marker). Show total restart count prominently. Could use a "journey so far" visualization that includes failed attempts as part of the story, not as shame. |
 
 ---
 
@@ -68,11 +68,11 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| H-1 | Custom habit creation UI | | todo | Let users add their own habits with name, description, and tracking type (boolean/quantity/duration). |
-| H-2 | Hard vs soft rule system | | todo | Users can toggle any habit between "hard" (miss = reset) and "soft" (miss = marked incomplete, day continues). |
-| H-3 | Challenge templates | | todo | Prebuilt templates: "75 Hard" (strict), "75 Medium" (softer defaults), "Custom" (blank slate). |
-| H-4 | Habit parameter configuration | | todo | Set targets (128 oz, 10 pages, 45 min), units, and frequency for each habit. |
-| H-5 | Remove / reorder default habits | | todo | Let users remove or reorder the standard 75 HARD tasks for modified challenges. |
+| H-1 | Custom habit creation UI | P2 | todo | Let users add their own habits with name, description, and tracking type (boolean/quantity/duration). |
+| H-2 | Hard vs soft rule system | P2 | todo | Users can toggle any habit between "hard" (miss = reset) and "soft" (miss = marked incomplete, day continues). |
+| H-3 | Challenge templates | P3 | todo | Prebuilt templates: "75 Hard" (strict), "75 Medium" (softer defaults), "Custom" (blank slate). |
+| H-4 | Habit parameter configuration | P3 | todo | Set targets (128 oz, 10 pages, 45 min), units, and frequency for each habit. |
+| H-5 | Remove / reorder default habits | P3 | todo | Let users remove or reorder the standard 75 HARD tasks for modified challenges. |
 
 ---
 
@@ -80,11 +80,11 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| S-1 | Friend system — add friends by username, email, or phone number | | todo | Quick-add flow: search by username, email, or phone. Send friend request. Must tie into whatever identity users signed up with. |
-| S-2 | Friend requests — accept / decline / block | | todo | Mutual friendship model. Both parties must accept. |
-| S-3 | Activity feed (real-time) | | todo | Show friend activity via Convex subscriptions. Types: day_completed, challenge_started, challenge_completed, milestone. |
-| S-4 | Milestone celebrations | | todo | Celebrate Day 7, 14, 21, 30, 45, 60, 75 with special UI (confetti, badge, notification to friends). |
-| S-5 | Shared challenge groups | | todo | Create a group with friends doing the same challenge. Group progress view. |
+| S-1 | Friend system — add friends by username, email, or phone number | P2 | todo | Quick-add flow: search by username, email, or phone. Send friend request. Must tie into whatever identity users signed up with. |
+| S-2 | Friend requests — accept / decline / block | P2 | todo | Mutual friendship model. Both parties must accept. |
+| S-3 | Activity feed (real-time) | P3 | todo | Show friend activity via Convex subscriptions. Types: day_completed, challenge_started, challenge_completed, milestone. |
+| S-4 | Milestone celebrations | P3 | todo | Celebrate Day 7, 14, 21, 30, 45, 60, 75 with special UI (confetti, badge, notification to friends). |
+| S-5 | Shared challenge groups | P4 | todo | Create a group with friends doing the same challenge. Group progress view. |
 
 ---
 
@@ -92,10 +92,10 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| I-1 | Apple HealthKit integration | | todo | Import workouts from HealthKit via react-native-health. Normalize to internal schema. |
-| I-2 | Oura Ring API integration | | todo | OAuth + REST API. Import sleep, readiness, activity data. |
-| I-3 | WHOOP API integration | | todo | OAuth + REST API. Import strain, recovery, workout data. |
-| I-4 | Auto-import workouts with duplicate detection | | todo | Check externalId before importing. Allow manual workouts alongside device imports. |
+| I-1 | Apple HealthKit integration | P4 | todo | Import workouts from HealthKit via react-native-health. Normalize to internal schema. Requires mobile app (X-1). |
+| I-2 | Oura Ring API integration | P4 | todo | OAuth + REST API. Import sleep, readiness, activity data. |
+| I-3 | WHOOP API integration | P4 | todo | OAuth + REST API. Import strain, recovery, workout data. |
+| I-4 | Auto-import workouts with duplicate detection | P4 | todo | Check externalId before importing. Allow manual workouts alongside device imports. |
 
 ---
 
@@ -103,11 +103,11 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| G-1 | XP system for completing daily tasks | | todo | Earn XP per habit completed. Bonus XP for completing all habits in a day. XP resets on challenge reset. |
-| G-2 | Level progression with visual level bar | | todo | Level thresholds tied to total XP. Fun level names (Rookie, Grinder, Machine, Legend). |
-| G-3 | Streak multipliers | | todo | Consecutive days increase the XP multiplier. |
-| G-4 | Achievement badges / milestones | | todo | Day milestones, streak achievements, habit-specific badges (Hydration Master, Bookworm), social badges. |
-| G-5 | Optional leaderboards (friends only) | | todo | Opt-in only. No public leaderboards by default. Friends-only comparison. |
+| G-1 | XP system for completing daily tasks | P3 | todo | Earn XP per habit completed. Bonus XP for completing all habits in a day. XP resets on challenge reset. |
+| G-2 | Level progression with visual level bar | P3 | todo | Level thresholds tied to total XP. Fun level names (Rookie, Grinder, Machine, Legend). |
+| G-3 | Streak multipliers | P3 | todo | Consecutive days increase the XP multiplier. |
+| G-4 | Achievement badges / milestones | P3 | todo | Day milestones, streak achievements, habit-specific badges (Hydration Master, Bookworm), social badges. |
+| G-5 | Optional leaderboards (friends only) | P4 | todo | Opt-in only. No public leaderboards by default. Friends-only comparison. |
 
 ---
 
@@ -115,10 +115,10 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| P-1 | CSV/JSON data export | | todo | One-click export of all user data from settings. Human-readable format. |
-| P-2 | Account deletion flow | | todo | "Delete my account and all data" in settings. Cascade delete across all tables + file storage. Confirmation email on completion. |
-| P-3 | Plain-english privacy policy page | | todo | No legalese. Clearly explain what we store, what we don't, and what we'll never do. |
-| P-4 | Data portability documentation | | todo | Include schema docs with exports so users can understand and reuse their data. |
+| P-1 | CSV/JSON data export | P3 | todo | One-click export of all user data from settings. Human-readable format. |
+| P-2 | Account deletion flow | P2 | todo | "Delete my account and all data" in settings. Cascade delete across all tables + file storage. Confirmation email on completion. |
+| P-3 | Plain-english privacy policy page | P2 | todo | No legalese. Clearly explain what we store, what we don't, and what we'll never do. |
+| P-4 | Data portability documentation | P3 | todo | Include schema docs with exports so users can understand and reuse their data. |
 
 ---
 
@@ -127,11 +127,29 @@
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
 | O-1 | ~~Add MIT LICENSE file~~ | | done | Added MIT LICENSE to project root. |
-| O-2 | Write CONTRIBUTING.md | | todo | Fork → Branch → PR workflow. Lint + typecheck required. Screenshots for UI changes. |
-| O-3 | Write CODE_OF_CONDUCT.md | | todo | |
-| O-4 | Create GitHub issue templates | | todo | Bug report, feature request, design proposal templates. |
-| O-5 | Create PR template | | todo | |
-| O-6 | Public GitHub project board for roadmap | | todo | Mirror this backlog as a GitHub Projects board. |
+| O-2 | Write CONTRIBUTING.md | P2 | todo | Fork → Branch → PR workflow. Lint + typecheck required. Screenshots for UI changes. |
+| O-3 | Write CODE_OF_CONDUCT.md | P3 | todo | |
+| O-4 | Create GitHub issue templates | P3 | todo | Bug report, feature request, design proposal templates. |
+| O-5 | Create PR template | P3 | todo | |
+| O-6 | Public GitHub project board for roadmap | P3 | todo | Mirror this backlog as a GitHub Projects board. |
+
+---
+
+## SEO & Online Presence
+
+| # | Item | Priority | Status | Notes |
+|---|------|----------|--------|-------|
+| SEO-1 | ~~Meta tags & Open Graph setup~~ | | done | OG tags added to layout.tsx with dynamic OG image generation via `opengraph-image.tsx`. Completed 2026-02-12. |
+| SEO-2 | ~~Twitter/X meta tags & card preview~~ | | done | Twitter card meta tags (large image summary) added to layout.tsx metadata. Completed 2026-02-12. |
+| SEO-3 | ~~Structured data (JSON-LD)~~ | | done | `SoftwareApplication` JSON-LD schema markup added to homepage. Completed 2026-02-12. |
+| SEO-4 | ~~Sitemap & robots.txt~~ | | done | `sitemap.xml` via `app/sitemap.ts` and `robots.txt` via `app/robots.ts`. Dashboard/auth routes excluded. Completed 2026-02-12. |
+| SEO-5 | Canonical URLs & trailing slash normalization | P2 | todo | Set canonical `<link>` tags on all pages. Configure `next.config.js` `trailingSlash` consistently. Prevent duplicate content from `www` vs non-`www`, trailing slashes, etc. |
+| SEO-6 | LinkedIn meta tags & company page setup | P2 | todo | Ensure OG tags work for LinkedIn sharing (LinkedIn uses OG). Create a LinkedIn company page for 75 Proof with logo, description, and link to the app. |
+| SEO-7 | Meta (Facebook/Instagram) Open Graph optimization | P2 | todo | Verify OG tags render correctly in Facebook Sharing Debugger. Add `fb:app_id` if a Facebook app is created. Consider an Instagram presence linking back to the app. |
+| SEO-8 | LLM & AI search optimization (LLMO) | P1 | todo | Add a `/llms.txt` file (plain-text site summary for LLM crawlers). Include clear, factual descriptions of what 75 Proof is, what it does, who it's for, and how it's different. Add FAQ-style content to the homepage or a `/about` page that LLMs can extract structured answers from (e.g., "What is 75 HARD?", "Is 75 Proof free?", "How does 75 Proof track workouts?"). |
+| SEO-9 | Performance & Core Web Vitals | P2 | todo | Audit LCP, FID, CLS on the homepage. Optimize images (WebP/AVIF, proper sizing), defer non-critical JS, ensure fonts don't cause layout shift. Good CWV directly impacts search ranking. |
+| SEO-10 | Create `/about` page for discoverability | P2 | todo | A public, crawlable page explaining 75 Proof, the 75 HARD challenge, the team, and the open-source mission. Rich keyword content for both traditional search and LLM retrieval. |
+| SEO-11 | Social sharing preview for user milestones | P3 | todo | When users share milestones (Day 30, Day 75, etc.), generate dynamic OG images with their stats. Use Next.js `ImageResponse` (og) API or a Cloudflare Worker for on-the-fly image generation. |
 
 ---
 
@@ -139,12 +157,14 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| X-1 | React Native mobile app (Expo) | | todo | Shared logic with web. Native feel. |
-| X-2 | Push notifications (opt-in only) | | todo | Daily reminders, friend activity, milestone alerts. User controls what they receive. |
-| X-3 | Offline support | | todo | Cache today's tasks. Sync when back online. |
-| X-4 | Performance optimization | | todo | Lighthouse audit, bundle analysis, image optimization. |
-| X-5 | Accessibility audit (WCAG 2.1 AA) | | todo | Full audit and remediation. |
-| X-6 | Pricing implementation (if needed) | | todo | Stripe integration for optional $1/month contribution or commitment fee. Decision pending. |
+| X-1 | React Native mobile app (Expo) | P4 | todo | Shared logic with web. Native feel. |
+| X-2 | Push notifications (opt-in only) | P4 | todo | Daily reminders, friend activity, milestone alerts. User controls what they receive. |
+| X-3 | Offline support | P4 | todo | Cache today's tasks. Sync when back online. |
+| X-4 | Performance optimization | P3 | todo | Lighthouse audit, bundle analysis, image optimization. |
+| X-5 | Accessibility audit (WCAG 2.1 AA) | P3 | todo | Full audit and remediation. |
+| X-6 | Pricing implementation (if needed) | P4 | todo | Stripe integration for optional $1/month contribution or commitment fee. Decision pending. |
+| X-7 | Theme-aware skeleton loading screens | P3 | todo | Add skeleton loading animations that match each theme (Arctic, Broadsheet, Military, Zen). Show styled placeholders for the hero section, stats, and checklist while Convex data loads. Smoother perceived performance. |
+| X-8 | ~~Make the app a PWA~~ | | done | Manifest, programmatic icons (192/512/apple-touch), hand-written service worker (cache-first static, network-first navigation, offline fallback), branded offline page, SW registration. No new deps. Completed 2026-02-12. |
 
 ---
 
@@ -165,6 +185,18 @@
 | ~~D-4~~ | Visual feedback for complete/incomplete tasks | 2026-02-11 |
 | ~~D-5~~ | Simplify water tracker to 8-glass checklist | 2026-02-11 |
 | ~~O-1~~ | MIT LICENSE file | 2026-02-11 |
+| ~~A-2~~ | One-click sign up process (modal + branded Clerk theming) | 2026-02-12 |
+| ~~F-3~~ | Standard 75 HARD habit tracking (day advancement, 6-task tracking) | 2026-02-12 |
+| ~~F-6~~ | Edit past 2 days of logs (2-day edit window) | 2026-02-12 |
+| ~~F-7~~ | Auto-reset on missed hard task after 2-day grace window | 2026-02-12 |
+| ~~D-8~~ | Progress page design polish (open layout, theme-aligned spacing) | 2026-02-12 |
+| ~~SEO-1~~ | Meta tags & Open Graph setup | 2026-02-12 |
+| ~~SEO-2~~ | Twitter/X meta tags & card preview | 2026-02-12 |
+| ~~SEO-3~~ | Structured data (JSON-LD) | 2026-02-12 |
+| ~~SEO-4~~ | Sitemap & robots.txt | 2026-02-12 |
+| ~~F-8~~ | Track number of challenge restarts (lifetime) | 2026-02-12 |
+| ~~F-9~~ | Track longest streak (all-time personal best) | 2026-02-12 |
+| ~~X-8~~ | Make the app a PWA (manifest, icons, service worker, offline page) | 2026-02-12 |
 
 ---
 
