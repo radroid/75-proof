@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 interface ChallengeFailedDialogProps {
   open: boolean;
   failedOnDay: number;
+  streakReached?: number;
+  attemptNumber?: number;
   onStartNew: () => void;
   onDismiss: () => void;
 }
@@ -20,6 +22,8 @@ interface ChallengeFailedDialogProps {
 export function ChallengeFailedDialog({
   open,
   failedOnDay,
+  streakReached,
+  attemptNumber,
   onStartNew,
   onDismiss,
 }: ChallengeFailedDialogProps) {
@@ -33,6 +37,23 @@ export function ChallengeFailedDialog({
             ended. Per the 75 HARD rules, the challenge resets to Day 0.
           </DialogDescription>
         </DialogHeader>
+        {streakReached !== undefined && streakReached > 0 && (
+          <div className="flex items-center justify-between rounded-lg border p-3 text-sm">
+            <div className="text-center flex-1">
+              <p className="text-2xl font-bold tabular-nums">{streakReached}</p>
+              <p className="text-xs text-muted-foreground">day streak</p>
+            </div>
+            {attemptNumber !== undefined && (
+              <>
+                <div className="h-8 w-px bg-border" />
+                <div className="text-center flex-1">
+                  <p className="text-2xl font-bold tabular-nums">#{attemptNumber}</p>
+                  <p className="text-xs text-muted-foreground">next attempt</p>
+                </div>
+              </>
+            )}
+          </div>
+        )}
         <p className="text-sm text-muted-foreground">
           Don&apos;t give up — every restart is another step forward. You&apos;ve
           got this.

@@ -8,6 +8,8 @@ export default defineSchema({
     displayName: v.string(),
     avatarUrl: v.optional(v.string()),
     currentChallengeId: v.optional(v.id("challenges")),
+    lifetimeRestartCount: v.optional(v.number()),
+    longestStreak: v.optional(v.number()),
     preferences: v.object({
       timezone: v.string(),
       reminderTime: v.optional(v.string()),

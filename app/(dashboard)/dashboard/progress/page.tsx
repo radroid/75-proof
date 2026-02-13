@@ -41,6 +41,8 @@ import {
   Trophy,
   Play,
   XCircle,
+  Flame,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Id } from "@/convex/_generated/dataModel";
@@ -70,6 +72,10 @@ export default function ProgressPage() {
     user?.currentChallengeId
       ? { challengeId: user.currentChallengeId }
       : "skip"
+  );
+  const lifetimeStats = useQuery(
+    api.challenges.getLifetimeStats,
+    user ? { userId: user._id } : "skip"
   );
 
   // History state
@@ -127,7 +133,9 @@ export default function ProgressPage() {
           <div className="h-9 w-32 rounded-md bg-muted animate-pulse" />
           <div className="h-5 w-64 mt-2 rounded-md bg-muted animate-pulse" />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <StatSkeleton />
+          <StatSkeleton />
           <StatSkeleton />
           <StatSkeleton />
           <StatSkeleton />
@@ -173,7 +181,7 @@ export default function ProgressPage() {
       </div>
 
       {/* Stats grid */}
-      <MotionGrid className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <MotionGrid className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <motion.div variants={fadeUp} className="text-center">
           <div className="flex items-center justify-center gap-2 mb-3">
             <Calendar className="h-5 w-5 text-primary" />
@@ -182,6 +190,25 @@ export default function ProgressPage() {
           <p className="text-4xl md:text-5xl font-light tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
             {completedDays}
             <span className="text-lg text-muted-foreground/50 ml-1">/ 75</span>
+          </p>
+        </motion.div>
+        <motion.div variants={fadeUp} className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Flame className="h-5 w-5 text-orange-500" />
+            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Best Streak</span>
+          </div>
+          <p className="text-4xl md:text-5xl font-light tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
+            {lifetimeStats?.longestStreak ?? 0}
+            <span className="text-lg text-muted-foreground/50 ml-1">days</span>
+          </p>
+        </motion.div>
+        <motion.div variants={fadeUp} className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <RotateCcw className="h-5 w-5 text-chart-4" />
+            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Attempt</span>
+          </div>
+          <p className="text-4xl md:text-5xl font-light tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
+            #{lifetimeStats?.attemptNumber ?? 1}
           </p>
         </motion.div>
         <motion.div variants={fadeUp} className="text-center">

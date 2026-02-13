@@ -106,6 +106,13 @@ export const advanceDay = mutation({
         status: "completed",
       });
 
+      // Update longest streak on user record
+      const user = await ctx.db.get(challenge.userId);
+      const currentLongest = user?.longestStreak ?? 0;
+      if (75 > currentLongest) {
+        await ctx.db.patch(challenge.userId, { longestStreak: 75 });
+      }
+
       await ctx.db.insert("activityFeed", {
         userId: challenge.userId,
         type: "challenge_completed",
@@ -162,9 +169,14 @@ async function failChallengeInternal(
     restartCount: (challenge.restartCount ?? 0) + 1,
   });
 
-  // Clear user's current challenge
+  // Update lifetime stats on user record
+  const user = await ctx.db.get(challenge.userId);
+  const streakFromAttempt = Math.max(failedOnDay - 1, 0);
+  const currentLongest = user?.longestStreak ?? 0;
   await ctx.db.patch(challenge.userId, {
     currentChallengeId: undefined,
+    lifetimeRestartCount: (user?.lifetimeRestartCount ?? 0) + 1,
+    longestStreak: Math.max(currentLongest, streakFromAttempt),
   });
 
   await ctx.db.insert("activityFeed", {
@@ -246,6 +258,14 @@ export const checkChallengeStatus = mutation({
           currentDay: 75,
           status: "completed",
         });
+
+        // Update longest streak on user record
+        const user = await ctx.db.get(challenge.userId);
+        const currentLongest = user?.longestStreak ?? 0;
+        if (75 > currentLongest) {
+          await ctx.db.patch(challenge.userId, { longestStreak: 75 });
+        }
+
         await ctx.db.insert("activityFeed", {
           userId: challenge.userId,
           type: "challenge_completed",
@@ -335,6 +355,45 @@ export const getEditableWindow = query({
     const todayStr = getTodayInTimezone(args.userTimezone);
     const todayDayNumber = computeDayNumber(challenge.startDate, todayStr);
     return getEditableDays(todayDayNumber);
+  },
+});
+
+export const getLifetimeStats = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return { lifetimeRestartCount: 0, longestStreak: 0, currentStreak: 0, attemptNumber: 1 };
+    }
+
+    const lifetimeRestartCount = user.lifetimeRestartCount ?? 0;
+    const longestStreak = user.longestStreak ?? 0;
+    const attemptNumber = lifetimeRestartCount + 1;
+
+    // Compute current streak from active challenge
+    let currentStreak = 0;
+    if (user.currentChallengeId) {
+      const challenge = await ctx.db.get(user.currentChallengeId);
+      if (challenge && challenge.status === "active") {
+        const logs = await ctx.db
+          .query("dailyLogs")
+          .withIndex("by_challenge", (q) => q.eq("challengeId", challenge._id))
+          .collect();
+        const completedDays = new Set(
+          logs.filter((l) => l.allRequirementsMet).map((l) => l.dayNumber)
+        );
+        // Count consecutive completed days from day 1
+        for (let day = 1; day <= challenge.currentDay; day++) {
+          if (completedDays.has(day)) {
+            currentStreak = day;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+
+    return { lifetimeRestartCount, longestStreak, currentStreak, attemptNumber };
   },
 });
 

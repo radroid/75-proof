@@ -30,6 +30,11 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
   const [showFailedDialog, setShowFailedDialog] = useState(true);
   const hasFailed = statusResult?.status === "failed";
 
+  const lifetimeStats = useQuery(
+    api.challenges.getLifetimeStats,
+    { userId: user._id }
+  );
+
   const logs = useQuery(
     api.dailyLogs.getChallengeLogs,
     { challengeId: challenge._id }
@@ -56,6 +61,8 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
         <ChallengeFailedDialog
           open={showFailedDialog}
           failedOnDay={statusResult.failedOnDay!}
+          streakReached={Math.max((statusResult.failedOnDay ?? 1) - 1, 0)}
+          attemptNumber={(lifetimeStats?.attemptNumber ?? 1) + 1}
           onStartNew={() => {
             setShowFailedDialog(false);
             window.location.reload();
