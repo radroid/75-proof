@@ -1,0 +1,62 @@
+# 75 Proof
+
+> Free, privacy-first web app for tracking the 75 HARD mental toughness challenge.
+
+75 Proof is a free companion app that helps people complete the 75 HARD challenge created by Andy Frisella. It tracks every daily requirement in one place so users can focus on doing the work instead of juggling spreadsheets and notes apps.
+
+## What is 75 HARD?
+
+75 HARD is a 75-day mental toughness program. Every day, participants must complete all six tasks — no exceptions, no substitutions. Missing any single task resets the counter to Day 0.
+
+### The six daily requirements
+
+1. **Two 45-minute workouts** — one must be outdoors
+2. **Follow a diet** — any structured diet, no alcohol, no cheat meals
+3. **Drink 1 gallon (128 oz) of water**
+4. **Read 10 pages** of a non-fiction or self-improvement book (no audiobooks)
+5. **Take a progress photo**
+6. **No missed tasks** — miss one, restart from Day 0
+
+## Key features
+
+- **Daily dashboard** — check off each of the six tasks with a single tap
+- **Water tracker** — visual progress toward 128 oz
+- **Workout logging** — mark indoor/outdoor, duration, and type
+- **Reading tracker** — log pages read each day
+- **Progress photos** — stored privately on-device or in your account
+- **Streak counter** — see your current day and longest streak
+- **Multiple themes** — choose from several dashboard styles (Minimalist, Brutalist, Vaporwave, and more)
+- **Installable PWA** — add to home screen on any phone for an app-like experience
+- **Guest mode** — try the full dashboard before creating an account
+
+## Pricing
+
+75 Proof is **completely free**. No premium tier, no ads, no in-app purchases. Free forever.
+
+## Privacy
+
+- No ads or third-party trackers
+- User data is never sold
+- Progress photos are private by default
+- Users own their data
+
+## Target audience
+
+Anyone attempting the 75 HARD challenge who wants a clean, distraction-free way to track daily tasks. Particularly useful for first-time challengers who need clarity on the rules and a simple way to stay accountable.
+
+## Technology
+
+- Web app built with Next.js (works on all devices with a browser)
+- Real-time backend powered by Convex
+- Authentication via Clerk
+- Installable as a Progressive Web App (PWA)
+
+## Links
+
+- Website: https://75.createplus.club
+- Dashboard: https://75.createplus.club/dashboard
+- Official 75 HARD rules: https://andyfrisella.com/pages/75hard-info
+
+## Contact
+
+Built by Create+ Club.
