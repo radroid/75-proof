@@ -6,6 +6,7 @@ import ConvexClientProvider from "@/components/ConvexClientProvider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { GuestProvider } from "@/components/guest-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -63,6 +64,17 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "75 Proof",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({
@@ -73,6 +85,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="theme-color" content="#FF6154" />
         {/* Google Fonts for all themes */}
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
@@ -113,6 +126,7 @@ export default function RootLayout({
             }),
           }}
         />
+        <ServiceWorkerRegistration />
         <ClerkProvider
           appearance={{
             layout: {
