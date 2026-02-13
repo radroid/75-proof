@@ -23,6 +23,7 @@ import {
   LogIn,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sharedUserProfileProps, userButtonPopoverElements } from "@/lib/clerk-appearance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -130,20 +131,11 @@ function AuthenticatedSidebarFooter() {
         isCollapsed ? "justify-center" : "px-2"
       )}>
         <UserButton
+          userProfileProps={sharedUserProfileProps}
           appearance={{
             elements: {
               avatarBox: "w-8 h-8",
-              userButtonPopoverCard: "!bg-[var(--card)] !border-[var(--border)]",
-              userButtonPopoverActionButton: "!text-[var(--foreground)]",
-              userButtonPopoverActionButtonText: "!text-[var(--foreground)]",
-              userButtonPopoverActionButtonIcon: "!text-[var(--muted-foreground)]",
-              userButtonPopoverFooter: "!hidden",
-            },
-            variables: {
-              colorPrimary: "var(--primary)",
-              colorBackground: "var(--card)",
-              colorText: "var(--foreground)",
-              colorTextSecondary: "var(--muted-foreground)",
+              ...userButtonPopoverElements,
             },
           }}
         />

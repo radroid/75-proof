@@ -27,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { AlertTriangle, Palette, Settings, Shield } from "lucide-react";
 import { useGuest } from "@/components/guest-provider";
+import { sharedUserProfileProps, userButtonPopoverElements } from "@/lib/clerk-appearance";
 
 export default function SettingsPage() {
   const { isGuest, promptSignup } = useGuest();
@@ -167,9 +168,11 @@ export default function SettingsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4 mb-6">
                 <UserButton
+                  userProfileProps={sharedUserProfileProps}
                   appearance={{
                     elements: {
                       avatarBox: "w-16 h-16",
+                      ...userButtonPopoverElements,
                     },
                   }}
                 />

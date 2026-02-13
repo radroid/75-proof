@@ -5,6 +5,7 @@ import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
+import { sharedUserProfileProps } from "@/lib/clerk-appearance";
 
 const DISEASES = [
   "Type 2 Diabetes", "Heart Disease", "Stroke", "Hypertension", "Obesity",
@@ -156,9 +157,10 @@ function LandingPage() {
               DASHBOARD →
             </button>
             <UserButton
+              userProfileProps={sharedUserProfileProps}
               appearance={{
                 elements: {
-                  avatarBox: "w-9 h-9 ring-2 ring-[#1a1a1a]/10",
+                  avatarBox: "w-9 h-9 ring-2 ring-foreground/10",
                 },
               }}
             />

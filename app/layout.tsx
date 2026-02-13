@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { GuestProvider } from "@/components/guest-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
+import { clerkProviderAppearance } from "@/lib/clerk-appearance";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -127,38 +128,7 @@ export default function RootLayout({
           }}
         />
         <ServiceWorkerRegistration />
-        <ClerkProvider
-          appearance={{
-            layout: {
-              socialButtonsPlacement: "top",
-              socialButtonsVariant: "blockButton",
-            },
-            variables: {
-              borderRadius: "0px",
-              colorPrimary: "#FF6154",
-              colorBackground: "#FFFBF0",
-              colorText: "#1a1a1a",
-              colorInputBackground: "#FFFBF0",
-              colorInputText: "#1a1a1a",
-              fontFamily: "'DM Sans', sans-serif",
-            },
-            elements: {
-              rootBox: "w-full max-w-[min(400px,calc(100vw-2rem))]",
-              card: "shadow-none border border-[#1a1a1a]/10 rounded-none",
-              socialButtonsBlockButton:
-                "min-h-[44px] rounded-none border-[#1a1a1a]/15 font-bold text-[14px]",
-              socialButtonsBlockButtonText: "font-bold",
-              formButtonPrimary:
-                "min-h-[44px] rounded-none bg-[#FF6154] hover:bg-[#e5534b] font-bold text-[14px]",
-              formFieldInput:
-                "min-h-[44px] rounded-none border-[#1a1a1a]/15 text-[16px]",
-              headerTitle: "font-black text-[#1a1a1a]",
-              headerSubtitle: "text-[#1a1a1a]/55",
-              footerActionLink: "text-[#FF6154] hover:text-[#e5534b] font-bold",
-              modalBackdrop: "backdrop-blur-sm",
-            },
-          }}
-        >
+        <ClerkProvider appearance={clerkProviderAppearance}>
           <ThemeProvider>
             <ConvexClientProvider>
               <GuestProvider>{children}</GuestProvider>
