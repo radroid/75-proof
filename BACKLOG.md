@@ -147,7 +147,7 @@
 | SEO-5 | Canonical URLs & trailing slash normalization | P2 | todo | Set canonical `<link>` tags on all pages. Configure `next.config.js` `trailingSlash` consistently. Prevent duplicate content from `www` vs non-`www`, trailing slashes, etc. |
 | SEO-6 | LinkedIn meta tags & company page setup | P2 | todo | Ensure OG tags work for LinkedIn sharing (LinkedIn uses OG). Create a LinkedIn company page for 75 Proof with logo, description, and link to the app. |
 | SEO-7 | Meta (Facebook/Instagram) Open Graph optimization | P2 | todo | Verify OG tags render correctly in Facebook Sharing Debugger. Add `fb:app_id` if a Facebook app is created. Consider an Instagram presence linking back to the app. |
-| SEO-8 | LLM & AI search optimization (LLMO) | P1 | todo | Add a `/llms.txt` file (plain-text site summary for LLM crawlers). Include clear, factual descriptions of what 75 Proof is, what it does, who it's for, and how it's different. Add FAQ-style content to the homepage or a `/about` page that LLMs can extract structured answers from (e.g., "What is 75 HARD?", "Is 75 Proof free?", "How does 75 Proof track workouts?"). |
+| SEO-8 | ~~LLM & AI search optimization (LLMO)~~ | | done | Added `public/llms.txt` (plain-text site summary for LLM crawlers), 8-question FAQ accordion on landing page with native `<details>/<summary>`, and `FAQPage` JSON-LD structured data in layout.tsx `@graph`. Completed 2026-02-13. |
 | SEO-9 | Performance & Core Web Vitals | P2 | todo | Audit LCP, FID, CLS on the homepage. Optimize images (WebP/AVIF, proper sizing), defer non-critical JS, ensure fonts don't cause layout shift. Good CWV directly impacts search ranking. |
 | SEO-10 | Create `/about` page for discoverability | P2 | todo | A public, crawlable page explaining 75 Proof, the 75 HARD challenge, the team, and the open-source mission. Rich keyword content for both traditional search and LLM retrieval. |
 | SEO-11 | Social sharing preview for user milestones | P3 | todo | When users share milestones (Day 30, Day 75, etc.), generate dynamic OG images with their stats. Use Next.js `ImageResponse` (og) API or a Cloudflare Worker for on-the-fly image generation. |
@@ -201,6 +201,7 @@
 | ~~A-1~~ | Browse-first guest experience with interactive demo dashboard | 2026-02-12 |
 | ~~D-10~~ | Clerk components — theme-aware styling (shared `lib/clerk-appearance.ts`) | 2026-02-13 |
 | ~~D-9~~ | Landing page mobile breakpoints polish (320px–428px) | 2026-02-13 |
+| ~~SEO-8~~ | LLM & AI search optimization — llms.txt, FAQ section, FAQPage JSON-LD | 2026-02-13 |
 
 ---
 
