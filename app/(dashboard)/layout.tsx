@@ -1,10 +1,8 @@
 "use client";
 
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
+import { useAuth } from "@clerk/nextjs";
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import {
   Sidebar,
   SidebarBody,
@@ -14,22 +12,26 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
+import { GuestSignupBanner } from "@/components/guest-signup-banner";
+import { useGuest } from "@/components/guest-provider";
 import {
   LayoutDashboard,
   TrendingUp,
   Users,
   Settings,
   Dumbbell,
+  LogIn,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const navItems = [
+const allNavItems = [
   {
     label: "Today",
     href: "/dashboard",
@@ -47,17 +49,9 @@ const navItems = [
   },
 ];
 
-function RedirectToHome() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace("/");
-  }, [router]);
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="animate-pulse text-muted-foreground">Redirecting...</div>
-    </div>
-  );
-}
+const guestNavItems = allNavItems.filter((item) => item.label !== "Friends");
+
+// Mobile nav items for guests — built inside component to include signup action
 
 function SidebarHeader() {
   const { open, mounted } = useSidebar();
@@ -95,7 +89,7 @@ function SidebarHeader() {
   );
 }
 
-function SidebarFooter() {
+function AuthenticatedSidebarFooter() {
   const { open, mounted } = useSidebar();
   const isCollapsed = mounted && !open;
 
@@ -118,7 +112,6 @@ function SidebarFooter() {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Settings link */}
       {isCollapsed ? (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -132,7 +125,6 @@ function SidebarFooter() {
         settingsLink
       )}
 
-      {/* Account */}
       <div className={cn(
         "flex items-center gap-3",
         isCollapsed ? "justify-center" : "px-2"
@@ -162,7 +154,44 @@ function SidebarFooter() {
         )}
       </div>
 
-      {/* Toggle — always at the bottom, visually separated */}
+      <div className={cn(
+        "border-t border-sidebar-border pt-3",
+        isCollapsed ? "flex justify-center" : "flex justify-end px-2"
+      )}>
+        <SidebarToggleButton />
+      </div>
+    </div>
+  );
+}
+
+function GuestSidebarFooter() {
+  const { open, mounted } = useSidebar();
+  const isCollapsed = mounted && !open;
+  const { promptSignup } = useGuest();
+
+  return (
+    <div className="flex flex-col gap-3">
+      {isCollapsed ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={promptSignup}
+              className="w-10 h-10 flex items-center justify-center mx-auto rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <LogIn className="h-5 w-5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right" sideOffset={8}>
+            Sign Up Free
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <Button onClick={promptSignup} size="sm" className="mx-2">
+          <LogIn className="h-4 w-4 mr-2" />
+          Sign Up Free
+        </Button>
+      )}
+
       <div className={cn(
         "border-t border-sidebar-border pt-3",
         isCollapsed ? "flex justify-center" : "flex justify-end px-2"
@@ -193,57 +222,62 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <>
-      <AuthLoading>
-        <div className="flex min-h-screen items-center justify-center bg-background">
-          <div className="flex flex-col items-center gap-4">
-            <Skeleton className="h-12 w-12 rounded-full" />
-            <Skeleton className="h-4 w-32" />
-          </div>
+  const { isLoaded } = useAuth();
+  const { isGuest, promptSignup } = useGuest();
+
+  const guestMobileItems = [
+    { label: "Today", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Progress", href: "/dashboard/progress", icon: TrendingUp },
+    { label: "Sign Up", href: "#", icon: LogIn, action: promptSignup },
+  ];
+
+  if (!isLoaded) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <Skeleton className="h-4 w-32" />
         </div>
-      </AuthLoading>
+      </div>
+    );
+  }
 
-      <Unauthenticated>
-        <RedirectToHome />
-      </Unauthenticated>
+  const navItems = isGuest ? guestNavItems : allNavItems;
 
-      <Authenticated>
-        <SidebarProvider>
-          <div
-            className={cn(
-              "flex flex-col md:flex-row bg-background w-full flex-1 mx-auto",
-              "min-h-screen"
-            )}
-          >
-            <Sidebar>
-              <SidebarBody className="justify-between gap-4">
-                <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-                  <SidebarHeader />
-                  <div className="mt-6 flex flex-col gap-1">
-                    {navItems.map((link, idx) => (
-                      <SidebarLink key={idx} link={link} />
-                    ))}
-                  </div>
-                </div>
-                <SidebarFooter />
-              </SidebarBody>
-            </Sidebar>
-
-            <SidebarSpacer />
-
-            {/* Main content */}
-            <main className="flex-1 overflow-auto scrollbar-gutter-stable">
-              <div className="p-4 pb-24 md:p-8 md:pb-8 bg-background min-h-full">
-                {children}
+  return (
+    <SidebarProvider>
+      <div
+        className={cn(
+          "flex flex-col md:flex-row bg-background w-full flex-1 mx-auto",
+          "min-h-screen"
+        )}
+      >
+        <Sidebar>
+          <SidebarBody className="justify-between gap-4">
+            <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+              <SidebarHeader />
+              <div className="mt-6 flex flex-col gap-1">
+                {navItems.map((link, idx) => (
+                  <SidebarLink key={idx} link={link} />
+                ))}
               </div>
-            </main>
+            </div>
+            {isGuest ? <GuestSidebarFooter /> : <AuthenticatedSidebarFooter />}
+          </SidebarBody>
+        </Sidebar>
 
-            {/* Mobile bottom tab bar */}
-            <MobileBottomNav />
+        <SidebarSpacer />
+
+        <main className="flex-1 overflow-auto scrollbar-gutter-stable">
+          <div className="p-4 pb-24 md:p-8 md:pb-8 bg-background min-h-full">
+            {children}
           </div>
-        </SidebarProvider>
-      </Authenticated>
-    </>
+        </main>
+
+        <MobileBottomNav items={isGuest ? guestMobileItems : undefined} />
+
+        {isGuest && <GuestSignupBanner />}
+      </div>
+    </SidebarProvider>
   );
 }

@@ -10,7 +10,14 @@ import {
   Settings,
 } from "lucide-react";
 
-const navItems = [
+export type NavItem = {
+  label: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  action?: () => void;
+};
+
+const defaultNavItems: NavItem[] = [
   {
     label: "Today",
     href: "/dashboard",
@@ -33,7 +40,8 @@ const navItems = [
   },
 ];
 
-export function MobileBottomNav() {
+export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
+  const navItems = items ?? defaultNavItems;
   const pathname = usePathname();
 
   return (
@@ -54,17 +62,13 @@ export function MobileBottomNav() {
           boxShadow: "var(--nav-shadow)",
         }}
       >
-        {navItems.map(({ href, icon: Icon, label }) => {
-          const isActive = href === "/dashboard"
+        {navItems.map(({ href, icon: Icon, label, action }) => {
+          const isActive = !action && (href === "/dashboard"
             ? pathname === href
-            : pathname.startsWith(href);
+            : pathname.startsWith(href));
 
-          return (
-            <Link
-              key={href}
-              href={href}
-              className="flex flex-col items-center justify-center gap-1 relative flex-1 min-w-0 py-2 px-3"
-            >
+          const inner = (
+            <>
               {isActive && (
                 <motion.div
                   layoutId="nav-indicator"
@@ -106,6 +110,28 @@ export function MobileBottomNav() {
                   {label}
                 </span>
               </motion.div>
+            </>
+          );
+
+          if (action) {
+            return (
+              <button
+                key={label}
+                onClick={action}
+                className="flex flex-col items-center justify-center gap-1 relative flex-1 min-w-0 py-2 px-3"
+              >
+                {inner}
+              </button>
+            );
+          }
+
+          return (
+            <Link
+              key={href}
+              href={href}
+              className="flex flex-col items-center justify-center gap-1 relative flex-1 min-w-0 py-2 px-3"
+            >
+              {inner}
             </Link>
           );
         })}

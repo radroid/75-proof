@@ -46,37 +46,47 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Id } from "@/convex/_generated/dataModel";
+import { useGuest } from "@/components/guest-provider";
 
 type FilterType = "all" | "complete" | "incomplete";
 
 export default function ProgressPage() {
-  const user = useQuery(api.users.getCurrentUser);
+  const { isGuest, demoUser, demoChallenge, demoChallengeLogs, demoLifetimeStats } = useGuest();
+
+  const user = useQuery(api.users.getCurrentUser, isGuest ? "skip" : undefined);
   const challenges = useQuery(
     api.challenges.getUserChallenges,
-    user ? { userId: user._id } : "skip"
+    isGuest ? "skip" : (user ? { userId: user._id } : "skip")
   );
   const challenge = useQuery(
     api.challenges.getChallenge,
-    user?.currentChallengeId
+    isGuest ? "skip" : (user?.currentChallengeId
       ? { challengeId: user.currentChallengeId }
-      : "skip"
+      : "skip")
   );
   const logs = useQuery(
     api.dailyLogs.getChallengeLogs,
-    user?.currentChallengeId
+    isGuest ? "skip" : (user?.currentChallengeId
       ? { challengeId: user.currentChallengeId }
-      : "skip"
+      : "skip")
   );
   const photos = useQuery(
     api.dailyLogs.getProgressPhotos,
-    user?.currentChallengeId
+    isGuest ? "skip" : (user?.currentChallengeId
       ? { challengeId: user.currentChallengeId }
-      : "skip"
+      : "skip")
   );
   const lifetimeStats = useQuery(
     api.challenges.getLifetimeStats,
-    user ? { userId: user._id } : "skip"
+    isGuest ? "skip" : (user ? { userId: user._id } : "skip")
   );
+
+  // Effective data — use demo for guests
+  const effectiveUser = isGuest ? demoUser : user;
+  const effectiveChallenge = isGuest ? demoChallenge : challenge;
+  const effectiveLogs = isGuest ? demoChallengeLogs : logs;
+  const effectiveLifetimeStats = isGuest ? demoLifetimeStats : lifetimeStats;
+  const effectivePhotos = isGuest ? [] : photos;
 
   // History state
   const [selectedChallengeId, setSelectedChallengeId] = useState<Id<"challenges"> | null>(null);
@@ -87,22 +97,23 @@ export default function ProgressPage() {
   // History logs for selected challenge (if different from active)
   const historyLogs = useQuery(
     api.dailyLogs.getChallengeLogs,
-    selectedChallengeId && selectedChallengeId !== user?.currentChallengeId
+    isGuest ? "skip" : (selectedChallengeId && selectedChallengeId !== user?.currentChallengeId
       ? { challengeId: selectedChallengeId }
-      : "skip"
+      : "skip")
   );
 
   // Auto-select active challenge for history
   const activeChallenge = challenges?.find((c) => c.status === "active");
-  const effectiveHistoryId = selectedChallengeId ?? activeChallenge?._id ?? challenges?.[0]?._id;
+  const effectiveHistoryId = isGuest ? demoChallenge._id : (selectedChallengeId ?? activeChallenge?._id ?? challenges?.[0]?._id);
 
-  if (!selectedChallengeId && effectiveHistoryId && effectiveHistoryId !== selectedChallengeId) {
+  if (!isGuest && !selectedChallengeId && effectiveHistoryId && effectiveHistoryId !== selectedChallengeId) {
     setSelectedChallengeId(effectiveHistoryId);
   }
 
-  const selectedHistoryChallenge = challenges?.find((c) => c._id === effectiveHistoryId);
-  const effectiveHistoryLogs =
-    effectiveHistoryId === user?.currentChallengeId ? logs : historyLogs;
+  const selectedHistoryChallenge = isGuest ? demoChallenge : challenges?.find((c) => c._id === effectiveHistoryId);
+  const effectiveHistoryLogs = isGuest
+    ? demoChallengeLogs
+    : effectiveHistoryId === user?.currentChallengeId ? logs : historyLogs;
 
   // Filter and sort history
   const loggedDaysMap = new Map(effectiveHistoryLogs?.map((log) => [log.dayNumber, log]));
@@ -126,7 +137,7 @@ export default function ProgressPage() {
     setExpandedDays(newSet);
   };
 
-  if (user === undefined) {
+  if (!isGuest && user === undefined) {
     return (
       <div className="max-w-4xl space-y-6">
         <div>
@@ -146,7 +157,7 @@ export default function ProgressPage() {
     );
   }
 
-  if (!user || !challenge) {
+  if (!effectiveUser || !effectiveChallenge) {
     return (
       <PageContainer>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
@@ -159,15 +170,15 @@ export default function ProgressPage() {
     );
   }
 
-  const completedDays = logs?.filter((log) => log.allRequirementsMet).length ?? 0;
-  const totalWorkouts = logs?.reduce((acc, log) => {
+  const completedDays = effectiveLogs?.filter((log: any) => log.allRequirementsMet).length ?? 0;
+  const totalWorkouts = effectiveLogs?.reduce((acc: number, log: any) => {
     let count = 0;
     if (log.workout1) count++;
     if (log.workout2) count++;
     return acc + count;
   }, 0) ?? 0;
-  const totalWater = logs?.reduce((acc, log) => acc + log.waterIntakeOz, 0) ?? 0;
-  const totalReading = logs?.reduce((acc, log) => acc + log.readingMinutes, 0) ?? 0;
+  const totalWater = effectiveLogs?.reduce((acc: number, log: any) => acc + log.waterIntakeOz, 0) ?? 0;
+  const totalReading = effectiveLogs?.reduce((acc: number, log: any) => acc + log.readingMinutes, 0) ?? 0;
 
   return (
     <PageContainer>
@@ -247,10 +258,10 @@ export default function ProgressPage() {
       <div>
         <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-8">Progress Photos</p>
         <MotionItem>
-          {photos && photos.length > 0 ? (
+          {effectivePhotos && effectivePhotos.length > 0 ? (
             <>
               <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-                {photos.map((photo) => (
+                {effectivePhotos.map((photo: any) => (
                   <button
                     key={photo.storageId}
                     className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
@@ -321,10 +332,10 @@ export default function ProgressPage() {
           >
             {Array.from({ length: 75 }, (_, i) => {
               const dayNumber = i + 1;
-              const log = logs?.find((l) => l.dayNumber === dayNumber);
+              const log = effectiveLogs?.find((l: any) => l.dayNumber === dayNumber);
               const isComplete = log?.allRequirementsMet;
-              const isCurrent = dayNumber === challenge.currentDay;
-              const isPast = dayNumber < challenge.currentDay;
+              const isCurrent = dayNumber === effectiveChallenge.currentDay;
+              const isPast = dayNumber < effectiveChallenge.currentDay;
 
               return (
                 <motion.div
@@ -380,7 +391,7 @@ export default function ProgressPage() {
         <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-8">Day-by-Day History</p>
         {/* Challenge Selector and Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          {challenges && challenges.length > 1 && (
+          {!isGuest && challenges && challenges.length > 1 && (
             <Select
               value={effectiveHistoryId as string}
               onValueChange={(val) => {
@@ -449,7 +460,7 @@ export default function ProgressPage() {
         </div>
 
         {/* Challenge Overview (for non-active challenges) */}
-        {selectedHistoryChallenge && selectedHistoryChallenge._id !== user?.currentChallengeId && (
+        {!isGuest && selectedHistoryChallenge && selectedHistoryChallenge._id !== user?.currentChallengeId && (
           <div className="rounded-xl border p-5 mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -476,9 +487,9 @@ export default function ProgressPage() {
                   Day {selectedHistoryChallenge.currentDay}
                   <span className="text-sm font-normal text-muted-foreground"> / 75</span>
                 </p>
-                {selectedHistoryChallenge.failedOnDay && (
+                {(selectedHistoryChallenge as any).failedOnDay && (
                   <p className="text-sm text-destructive mt-1">
-                    Ended on Day {selectedHistoryChallenge.failedOnDay}
+                    Ended on Day {(selectedHistoryChallenge as any).failedOnDay}
                   </p>
                 )}
               </div>

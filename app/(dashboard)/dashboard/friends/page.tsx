@@ -10,10 +10,32 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, UserPlus } from "lucide-react";
+import { Check, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
+import { useGuest } from "@/components/guest-provider";
+import { PageContainer } from "@/components/layout/page-container";
 
 export default function FriendsPage() {
+  const { isGuest, promptSignup } = useGuest();
+
+  if (isGuest) {
+    return (
+      <PageContainer>
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+            <Users className="h-8 w-8 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold">Connect with Friends</h2>
+          <p className="mt-3 text-muted-foreground max-w-md">
+            Sign up to connect with friends, see their progress, and stay accountable together.
+          </p>
+          <Button onClick={promptSignup} size="lg" className="mt-8">
+            Sign Up Free
+          </Button>
+        </div>
+      </PageContainer>
+    );
+  }
   const user = useQuery(api.users.getCurrentUser);
   const friends = useQuery(
     api.friends.getFriends,

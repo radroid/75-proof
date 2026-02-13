@@ -12,6 +12,7 @@ import { HeroSkeleton, ChecklistSkeleton } from "@/components/ui/skeleton-enhanc
 import { MotionItem } from "@/components/ui/motion";
 import { Rocket } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
+import { useGuest } from "@/components/guest-provider";
 
 // Themed dashboard components
 import { ArcticDashboard } from "@/components/themes/arctic-dashboard";
@@ -29,11 +30,23 @@ const dashboardComponents: Record<ThemePersonality, React.ComponentType<{ user: 
 };
 
 export default function DashboardPage() {
+  const { isGuest, demoUser, demoChallenge } = useGuest();
+  const { personality } = useThemePersonality();
+
+  // Guest experience — render themed dashboard with demo data
+  if (isGuest) {
+    const ThemedDashboard = dashboardComponents[personality];
+    return <ThemedDashboard user={demoUser} challenge={demoChallenge} />;
+  }
+
+  return <AuthenticatedDashboard />;
+}
+
+function AuthenticatedDashboard() {
   const user = useQuery(api.users.getCurrentUser);
   const createOrGetUser = useMutation(api.users.createOrGetUser);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
-  // Create user in Convex if they don't exist
   useEffect(() => {
     if (user === null && !isCreatingUser) {
       setIsCreatingUser(true);
@@ -41,7 +54,6 @@ export default function DashboardPage() {
     }
   }, [user, createOrGetUser, isCreatingUser]);
 
-  // Loading state - also handle user === null during creation
   if (user === undefined || user === null || isCreatingUser) {
     return (
       <div className="max-w-4xl space-y-6">

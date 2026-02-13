@@ -4,6 +4,7 @@ import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import Link from "next/link";
 
 const DISEASES = [
   "Type 2 Diabetes", "Heart Disease", "Stroke", "Hypertension", "Obesity",
@@ -230,14 +231,24 @@ function LandingPage() {
               </p>
 
               <Unauthenticated>
-                <SignUpButton mode="modal">
-                  <button
-                    className="w-full sm:w-auto px-10 py-5 bg-[#1a1a1a] text-white text-lg font-black hover:bg-[#FF6154] transition-all duration-300"
-                    style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
-                  >
-                    Let&apos;s DO This →
-                  </button>
-                </SignUpButton>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <SignUpButton mode="modal">
+                    <button
+                      className="w-full sm:w-auto px-10 py-5 bg-[#1a1a1a] text-white text-lg font-black hover:bg-[#FF6154] transition-all duration-300"
+                      style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
+                    >
+                      Let&apos;s DO This →
+                    </button>
+                  </SignUpButton>
+                  <Link href="/dashboard">
+                    <button
+                      className="w-full sm:w-auto px-10 py-5 border-2 border-[#1a1a1a]/15 text-[#1a1a1a] text-lg font-black hover:border-[#1a1a1a]/30 transition-all duration-300"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      Try the App →
+                    </button>
+                  </Link>
+                </div>
               </Unauthenticated>
               <Authenticated>
                 <button
@@ -493,14 +504,24 @@ function LandingPage() {
           Day 1 starts when you decide it does.
         </p>
         <Unauthenticated>
-          <SignUpButton mode="modal">
-            <button
-              className="px-14 py-6 bg-[#FF6154] text-white text-xl font-black hover:scale-105 active:scale-95 transition-all"
-              style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
-            >
-              START NOW — FREE
-            </button>
-          </SignUpButton>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <SignUpButton mode="modal">
+              <button
+                className="px-14 py-6 bg-[#FF6154] text-white text-xl font-black hover:scale-105 active:scale-95 transition-all"
+                style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
+              >
+                START NOW — FREE
+              </button>
+            </SignUpButton>
+            <Link href="/dashboard">
+              <button
+                className="px-14 py-6 border-2 border-[#1a1a1a]/15 text-[#1a1a1a] text-xl font-black hover:border-[#1a1a1a]/30 hover:scale-105 active:scale-95 transition-all"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                TRY THE APP →
+              </button>
+            </Link>
+          </div>
         </Unauthenticated>
         <Authenticated>
           <button

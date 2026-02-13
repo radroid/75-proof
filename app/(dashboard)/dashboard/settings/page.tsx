@@ -25,9 +25,30 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { AlertTriangle, Palette, Shield } from "lucide-react";
+import { AlertTriangle, Palette, Settings, Shield } from "lucide-react";
+import { useGuest } from "@/components/guest-provider";
 
 export default function SettingsPage() {
+  const { isGuest, promptSignup } = useGuest();
+
+  if (isGuest) {
+    return (
+      <PageContainer>
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+            <Settings className="h-8 w-8 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold">Personalize Your Experience</h2>
+          <p className="mt-3 text-muted-foreground max-w-md">
+            Sign up to access settings, customize your theme, and manage your profile.
+          </p>
+          <Button onClick={promptSignup} size="lg" className="mt-8">
+            Sign Up Free
+          </Button>
+        </div>
+      </PageContainer>
+    );
+  }
   const user = useQuery(api.users.getCurrentUser);
   const updateUser = useMutation(api.users.updateUser);
   const failChallenge = useMutation(api.challenges.failChallenge);
