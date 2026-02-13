@@ -17,8 +17,51 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "75 Proof - 75 HARD Challenge Tracker",
-  description: "Transform your life with 75 Proof. Track workouts, water intake, reading, and progress photos. Build mental toughness with the ultimate 75 HARD companion.",
+  metadataBase: new URL("https://75.createplus.club"),
+  title: {
+    default: "75 Proof - 75 HARD Challenge Tracker",
+    template: "%s | 75 Proof",
+  },
+  description:
+    "Transform your life with 75 Proof. Track workouts, water intake, reading, and progress photos. Build mental toughness with the ultimate 75 HARD companion.",
+  keywords: [
+    "75 HARD",
+    "challenge tracker",
+    "fitness tracker",
+    "habit tracker",
+    "mental toughness",
+    "workout tracker",
+  ],
+  authors: [{ name: "Create+ Club" }],
+  creator: "Create+ Club",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://75.createplus.club",
+    siteName: "75 Proof",
+    title: "75 Proof - 75 HARD Challenge Tracker",
+    description:
+      "Track workouts, water, reading, and progress photos. Build mental toughness with the ultimate 75 HARD companion.",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "75 Proof - Do Hard Stuff. Feel Amazing.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "75 Proof - 75 HARD Challenge Tracker",
+    description: "Do Hard Stuff. Feel Amazing. Track your 75 HARD challenge.",
+    images: ["/opengraph-image"],
+    creator: "@createplusclub",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -39,6 +82,36 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "SoftwareApplication",
+                  name: "75 Proof",
+                  description:
+                    "Track your 75 HARD challenge — workouts, water, reading, and progress photos. Build mental toughness with the ultimate companion app.",
+                  url: "https://75.createplus.club",
+                  applicationCategory: "HealthApplication",
+                  operatingSystem: "Web",
+                  offers: {
+                    "@type": "Offer",
+                    price: "0",
+                    priceCurrency: "USD",
+                  },
+                },
+                {
+                  "@type": "Organization",
+                  name: "Create+ Club",
+                  url: "https://75.createplus.club",
+                  logo: "https://75.createplus.club/opengraph-image",
+                },
+              ],
+            }),
+          }}
+        />
         <ClerkProvider
           appearance={{
             layout: {
