@@ -34,7 +34,7 @@ function TiltCard({ children, className = "", rotate = "2deg" }: { children: Rea
 function StickerTag({ text, color, className = "" }: { text: string; color: string; className?: string }) {
   return (
     <span
-      className={`inline-block px-4 py-1.5 rounded-full text-[13px] font-bold ${className}`}
+      className={`inline-block px-3 sm:px-4 py-1.5 rounded-full text-[12px] sm:text-[13px] font-bold ${className}`}
       style={{ backgroundColor: color, fontFamily: "'Space Mono', monospace" }}
     >
       {text}
@@ -45,8 +45,7 @@ function StickerTag({ text, color, className = "" }: { text: string; color: stri
 function NewspaperClipping() {
   return (
     <div
-      className="bg-[#f4efe6] text-[#1a1410] p-8 md:p-10 border border-[#1a1410]/15"
-      style={{ transform: "rotate(-0.5deg)", boxShadow: "4px 4px 0 rgba(0,0,0,0.1)" }}
+      className="bg-[#f4efe6] text-[#1a1410] text-justify p-5 sm:p-8 md:p-10 border border-[#1a1410]/15 -rotate-[0.5deg] shadow-[4px_4px_0_rgba(0,0,0,0.1)] transition-all duration-500 hover:rotate-0 hover:shadow-[6px_8px_0_rgba(0,0,0,0.15)] hover:scale-[1.01]"
     >
       <div className="border-b-2 border-[#1a1410] pb-3 mb-6">
         <div className="flex items-center justify-between">
@@ -58,14 +57,14 @@ function NewspaperClipping() {
           </span>
         </div>
         <h3
-          className="text-3xl md:text-4xl font-bold text-center mt-2 tracking-tight"
+          className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mt-2 tracking-tight"
           style={{ fontFamily: "'Playfair Display', serif" }}
         >
           THE EXERCISE EFFECT
         </h3>
         <div className="flex items-center justify-center gap-3 mt-1">
           <div className="h-px flex-1 bg-[#1a1410]/20" />
-          <span className="text-[9px] tracking-widest uppercase text-[#1a1410]/40" style={{ fontFamily: "'Space Mono', monospace" }}>
+          <span className="text-[8px] sm:text-[9px] tracking-widest uppercase text-[#1a1410]/40" style={{ fontFamily: "'Space Mono', monospace" }}>
             40 Diseases · 30 Minutes · 1 Decision
           </span>
           <div className="h-px flex-1 bg-[#1a1410]/20" />
@@ -77,7 +76,7 @@ function NewspaperClipping() {
           className="text-[14px] leading-[1.85] text-[#1a1410]/65 mb-4"
           style={{ fontFamily: "'Crimson Pro', Georgia, serif" }}
         >
-          <span className="text-4xl font-bold float-left mr-2 mt-1 leading-none text-[#1a1410]"
+          <span className="text-3xl sm:text-4xl font-bold float-left mr-1.5 sm:mr-2 mt-1 leading-none text-[#1a1410]"
             style={{ fontFamily: "'Playfair Display', serif" }}>R</span>
           esearch across hundreds of peer-reviewed studies confirms what doctors have known
           for decades: just 30 minutes of moderate exercise per day dramatically reduces
@@ -137,10 +136,12 @@ function LandingPage() {
           0%, 100% { transform: rotate(-2deg); }
           50% { transform: rotate(1deg); }
         }
+
+        button { cursor: pointer; }
       `}</style>
 
       {/* Nav */}
-      <nav className="relative z-20 flex items-center justify-between px-6 md:px-10 py-6">
+      <nav className="relative z-20 flex items-center justify-between px-4 sm:px-6 md:px-10 py-6">
         <span className="text-xl font-black" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           75 Proof
         </span>
@@ -148,7 +149,7 @@ function LandingPage() {
           <Authenticated>
             <button
               onClick={() => router.push("/dashboard")}
-              className="text-[13px] font-bold px-6 py-3 bg-[#4ECDC4] text-white rounded-none hover:bg-[#3dbdb5] transition-all"
+              className="text-[13px] font-bold px-4 sm:px-6 py-3 bg-[#4ECDC4] text-white rounded-none hover:bg-[#3dbdb5] transition-all"
               style={{
                 fontFamily: "'Space Mono', monospace",
                 transform: "rotate(1deg)",
@@ -176,7 +177,7 @@ function LandingPage() {
             </SignInButton>
             <SignUpButton mode="modal">
               <button
-                className="text-[13px] font-bold px-6 py-3 bg-[#FF6154] text-white rounded-none hover:bg-[#e5534b] transition-all"
+                className="text-[13px] font-bold px-4 sm:px-6 py-3 bg-[#FF6154] text-white rounded-none hover:bg-[#e5534b] transition-all"
                 style={{
                   fontFamily: "'Space Mono', monospace",
                   transform: "rotate(1deg)",
@@ -190,20 +191,20 @@ function LandingPage() {
       </nav>
 
       {/* Hero — collage style */}
-      <section className="relative z-10 px-6 md:px-10 pt-10 pb-24">
+      <section className="relative z-10 px-4 sm:px-6 md:px-10 pt-10 pb-20 sm:pb-24">
         <div className="max-w-5xl mx-auto">
           {/* Sticker tags scattered */}
-          <div className="flex flex-wrap gap-3 mb-8">
+          <div className="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-8">
             <StickerTag text="FREE!" color="#FFE66D" className="text-[#1a1a1a]" />
             <StickerTag text="PRIVATE" color="#4ECDC4" className="text-white" />
             <StickerTag text="NO ADS" color="#FF6154" className="text-white" />
             <StickerTag text="YOUR DATA" color="#A78BFA" className="text-white" />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
             <div className="lg:col-span-7">
               <h1
-                className="text-6xl sm:text-7xl md:text-8xl font-black leading-[0.95] tracking-tight mb-6"
+                className="text-[44px] min-[375px]:text-5xl sm:text-7xl md:text-8xl font-black leading-[0.95] tracking-tight mb-5 sm:mb-6"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 Do Hard
@@ -224,7 +225,7 @@ function LandingPage() {
               </h1>
 
               <p
-                className="text-lg text-[#1a1a1a]/55 leading-relaxed max-w-lg mb-10"
+                className="text-base sm:text-lg text-[#1a1a1a]/55 leading-relaxed max-w-lg mb-8 sm:mb-10"
                 style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}
               >
                 The 75 HARD challenge is intense. But it&apos;s also the most rewarding thing
@@ -236,7 +237,7 @@ function LandingPage() {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <SignUpButton mode="modal">
                     <button
-                      className="w-full sm:w-auto px-10 py-5 bg-[#1a1a1a] text-white text-lg font-black hover:bg-[#FF6154] transition-all duration-300"
+                      className="w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 bg-[#1a1a1a] text-white text-base sm:text-lg font-black hover:bg-[#FF6154] transition-all duration-300"
                       style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
                     >
                       Let&apos;s DO This →
@@ -244,7 +245,7 @@ function LandingPage() {
                   </SignUpButton>
                   <Link href="/dashboard">
                     <button
-                      className="w-full sm:w-auto px-10 py-5 border-2 border-[#1a1a1a]/15 text-[#1a1a1a] text-lg font-black hover:border-[#1a1a1a]/30 transition-all duration-300"
+                      className="w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 border-2 border-[#1a1a1a]/15 text-[#1a1a1a] text-base sm:text-lg font-black hover:border-[#1a1a1a]/30 transition-all duration-300"
                       style={{ fontFamily: "'DM Sans', sans-serif" }}
                     >
                       Try the App →
@@ -255,7 +256,7 @@ function LandingPage() {
               <Authenticated>
                 <button
                   onClick={() => router.push("/dashboard")}
-                  className="px-10 py-5 bg-[#1a1a1a] text-white text-lg font-black hover:bg-[#4ECDC4] transition-all duration-300"
+                  className="px-8 sm:px-10 py-4 sm:py-5 bg-[#1a1a1a] text-white text-base sm:text-lg font-black hover:bg-[#4ECDC4] transition-all duration-300"
                   style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
                 >
                   Go to Dashboard →
@@ -295,16 +296,16 @@ function LandingPage() {
       </section>
 
       {/* The Daily Six — zine layout */}
-      <section className="relative z-10 py-20 px-6 md:px-10 bg-[#1a1a1a] text-white" style={{ transform: "rotate(-0.3deg)" }}>
+      <section className="relative z-10 py-14 sm:py-20 px-4 sm:px-6 md:px-10 bg-[#1a1a1a] text-white" style={{ transform: "rotate(-0.3deg)" }}>
         <div className="max-w-5xl mx-auto">
           <h2
-            className="text-4xl md:text-6xl font-black mb-4"
+            className="text-3xl min-[375px]:text-4xl md:text-6xl font-black mb-4"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             THE DAILY SIX
           </h2>
           <div
-            className="text-lg text-white/40 mb-12"
+            className="text-base sm:text-lg text-white/40 mb-8 sm:mb-12"
             style={{ fontFamily: "'Caveat', cursive", fontWeight: 600 }}
           >
             ← every single day, no exceptions, for 75 days →
@@ -321,7 +322,7 @@ function LandingPage() {
             ].map((task) => (
               <div
                 key={task.num}
-                className="p-6 border border-white/5 hover:bg-white/5 transition-colors group"
+                className="p-5 sm:p-6 border border-white/5 hover:bg-white/5 transition-colors group"
               >
                 <span
                   className="text-[11px] font-bold block mb-3"
@@ -348,13 +349,13 @@ function LandingPage() {
       </section>
 
       {/* AMCC Section — handwritten energy */}
-      <section className="relative z-10 py-20 px-6 md:px-10">
+      <section className="relative z-10 py-14 sm:py-20 px-4 sm:px-6 md:px-10">
         <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-start">
             <div>
               <StickerTag text="BRAIN SCIENCE" color="#A78BFA" className="text-white mb-6 inline-block" />
               <h2
-                className="text-4xl md:text-5xl font-black leading-[1.1] mb-8"
+                className="text-3xl sm:text-4xl md:text-5xl font-black leading-[1.1] mb-6 sm:mb-8"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 Your willpower is a{" "}
@@ -373,7 +374,7 @@ function LandingPage() {
               </h2>
 
               <div
-                className="text-[17px] text-[#1a1a1a]/55 leading-[1.85] space-y-5"
+                className="text-[15px] sm:text-[17px] text-[#1a1a1a]/55 leading-[1.85] space-y-4 sm:space-y-5"
                 style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}
               >
                 <p>
@@ -426,7 +427,7 @@ function LandingPage() {
       </section>
 
       {/* Newspaper clipping section */}
-      <section className="relative z-10 py-16 px-6 md:px-10">
+      <section className="relative z-10 py-12 sm:py-16 px-4 sm:px-6 md:px-10">
         <div className="max-w-4xl mx-auto">
           <div
             className="text-center mb-8"
@@ -439,10 +440,10 @@ function LandingPage() {
       </section>
 
       {/* Why 75 Proof */}
-      <section className="relative z-10 py-20 px-6 md:px-10">
+      <section className="relative z-10 py-14 sm:py-20 px-4 sm:px-6 md:px-10">
         <div className="max-w-4xl mx-auto">
           <h2
-            className="text-4xl md:text-5xl font-black text-center mb-14"
+            className="text-3xl sm:text-4xl md:text-5xl font-black text-center mb-10 sm:mb-14"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             Why You&apos;ll
@@ -453,7 +454,7 @@ function LandingPage() {
             this app
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
             {[
               { color: "#FF6154", title: "Free means free", body: "No trials. No premium. No \"just $9.99/month.\" We built this for the community. It costs you nothing.", text: "white" },
               { color: "#FFFBF0", title: "Your data stays put", body: "We don't sell your habits or your progress photos. Your information is yours. Period. Full stop.", text: "#1a1a1a", border: true },
@@ -461,7 +462,7 @@ function LandingPage() {
             ].map((card) => (
               <TiltCard key={card.title} rotate={`${(Math.random() - 0.5) * 4}deg`}>
                 <div
-                  className="p-7 rounded-sm"
+                  className="p-5 sm:p-7 rounded-sm"
                   style={{
                     backgroundColor: card.color,
                     color: card.text,
@@ -488,9 +489,9 @@ function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="relative z-10 py-24 px-6 md:px-10 text-center">
+      <section className="relative z-10 py-16 sm:py-24 px-4 sm:px-6 md:px-10 text-center">
         <h2
-          className="text-5xl md:text-7xl font-black leading-[0.95] mb-6"
+          className="text-4xl sm:text-5xl md:text-7xl font-black leading-[0.95] mb-5 sm:mb-6"
           style={{ fontFamily: "'DM Sans', sans-serif" }}
         >
           Stop
@@ -500,7 +501,7 @@ function LandingPage() {
           it.
         </h2>
         <p
-          className="text-lg text-[#1a1a1a]/40 mb-10"
+          className="text-base sm:text-lg text-[#1a1a1a]/40 mb-8 sm:mb-10"
           style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}
         >
           Day 1 starts when you decide it does.
@@ -509,7 +510,7 @@ function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <SignUpButton mode="modal">
               <button
-                className="px-14 py-6 bg-[#FF6154] text-white text-xl font-black hover:scale-105 active:scale-95 transition-all"
+                className="w-full sm:w-auto px-8 sm:px-14 py-5 sm:py-6 bg-[#FF6154] text-white text-lg sm:text-xl font-black hover:scale-105 active:scale-95 transition-all"
                 style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
               >
                 START NOW — FREE
@@ -517,7 +518,7 @@ function LandingPage() {
             </SignUpButton>
             <Link href="/dashboard">
               <button
-                className="px-14 py-6 border-2 border-[#1a1a1a]/15 text-[#1a1a1a] text-xl font-black hover:border-[#1a1a1a]/30 hover:scale-105 active:scale-95 transition-all"
+                className="w-full sm:w-auto px-8 sm:px-14 py-5 sm:py-6 border-2 border-[#1a1a1a]/15 text-[#1a1a1a] text-lg sm:text-xl font-black hover:border-[#1a1a1a]/30 hover:scale-105 active:scale-95 transition-all"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 TRY THE APP →
@@ -528,7 +529,7 @@ function LandingPage() {
         <Authenticated>
           <button
             onClick={() => router.push("/dashboard")}
-            className="px-14 py-6 bg-[#4ECDC4] text-white text-xl font-black hover:scale-105 active:scale-95 transition-all"
+            className="w-full sm:w-auto px-8 sm:px-14 py-5 sm:py-6 bg-[#4ECDC4] text-white text-lg sm:text-xl font-black hover:scale-105 active:scale-95 transition-all"
             style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
           >
             GO TO DASHBOARD
@@ -536,7 +537,7 @@ function LandingPage() {
         </Authenticated>
       </section>
 
-      <footer className="border-t border-[#1a1a1a]/8 py-6 px-6 text-center">
+      <footer className="border-t border-[#1a1a1a]/8 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] px-4 sm:px-6 text-center">
         <span className="text-[13px] text-[#1a1a1a]/25 font-bold" style={{ fontFamily: "'Space Mono', monospace" }}>
           75 Proof © 2025 — Cut out, tape up, get to work
         </span>

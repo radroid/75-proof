@@ -32,7 +32,8 @@
 | D-6 | Task detail — support photo upload on all tasks | P2 | todo | "Add details" for each task should allow attaching a photo. |
 | D-7 | Progress photo task — open camera directly on mobile | P2 | todo | On Android/iOS, tapping the progress photo task should open the native camera, not the photo gallery. |
 | D-8 | ~~Progress page — design polish~~ | | done | Removed Card/Section/PageHeader wrappers; inline font-heading titles, small-caps section labels, thin dividers, borderless timeline rows, theme-aligned spacing (mb-16/my-16/mb-8). Completed 2026-02-12. |
-| D-9 | Landing page — ensure all mobile breakpoints are polished | P1 | todo | Test the v14 homepage across mobile sizes (320px–428px). |
+| D-9 | ~~Landing page — ensure all mobile breakpoints are polished~~ | | done | Tightened base Tailwind values for 320px–428px: scaled headings, reduced padding/spacing, full-width CTA buttons, iOS safe-area footer, justified newspaper text, button cursor:pointer, newspaper hover effect. Completed 2026-02-13. |
+| D-10 | ~~Clerk components — theme-aware styling~~ | | done | Consolidated hardcoded Clerk appearance configs into shared `lib/clerk-appearance.ts` using CSS variables. ClerkProvider, UserButton popovers, and UserProfile modals now follow the active theme (arctic, broadsheet, military, zen). Removed duplicated config from 4 files. Completed 2026-02-13. |
 
 ---
 
@@ -40,7 +41,7 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| A-1 | Browse-first experience — let new users view the full UI without signing up | P1 | todo | Users should be able to explore the dashboard, Today page, and progress page as a guest. Show a persistent "Sign up to save your progress" prompt. |
+| A-1 | ~~Browse-first experience — let new users view the full UI without signing up~~ | | done | Interactive demo dashboard with guest mode. Users can explore dashboard, Today page, and progress page without signing up. Persistent "Sign up to save your progress" prompt. Completed 2026-02-12. |
 | A-2 | ~~One-click sign up process~~ | | done | Modal sign-up with social buttons top, branded Clerk theming, mobile-optimized touch targets. Implemented 2026-02-12. |
 | A-3 | ~~Core authentication flow (Clerk integration)~~ | | done | Clerk fully integrated: sign-up, sign-in, sign-out, session management, middleware protection. |
 | A-4 | Health advisory during onboarding | P2 | todo | Show a caring, well-designed health warning screen. Non-blocking but informative. Include "I've reviewed this with my doctor" optional acknowledgment. |
@@ -197,6 +198,9 @@
 | ~~F-8~~ | Track number of challenge restarts (lifetime) | 2026-02-12 |
 | ~~F-9~~ | Track longest streak (all-time personal best) | 2026-02-12 |
 | ~~X-8~~ | Make the app a PWA (manifest, icons, service worker, offline page) | 2026-02-12 |
+| ~~A-1~~ | Browse-first guest experience with interactive demo dashboard | 2026-02-12 |
+| ~~D-10~~ | Clerk components — theme-aware styling (shared `lib/clerk-appearance.ts`) | 2026-02-13 |
+| ~~D-9~~ | Landing page mobile breakpoints polish (320px–428px) | 2026-02-13 |
 
 ---
 
