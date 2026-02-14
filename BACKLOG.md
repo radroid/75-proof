@@ -44,7 +44,10 @@
 | A-1 | ~~Browse-first experience — let new users view the full UI without signing up~~ | | done | Interactive demo dashboard with guest mode. Users can explore dashboard, Today page, and progress page without signing up. Persistent "Sign up to save your progress" prompt. Completed 2026-02-12. |
 | A-2 | ~~One-click sign up process~~ | | done | Modal sign-up with social buttons top, branded Clerk theming, mobile-optimized touch targets. Implemented 2026-02-12. |
 | A-3 | ~~Core authentication flow (Clerk integration)~~ | | done | Clerk fully integrated: sign-up, sign-in, sign-out, session management, middleware protection. |
-| A-4 | Health advisory during onboarding | P2 | todo | Show a caring, well-designed health warning screen. Non-blocking but informative. Include "I've reviewed this with my doctor" optional acknowledgment. |
+| A-4 | Onboarding questionnaire — age, health & goals | P1 | todo | After sign-up, walk users through a short questionnaire: age range, health conditions/limitations (optional), and what they hope to get out of the challenge (weight loss, discipline, mental toughness, etc.). Use answers to recommend a default setup tier (Original / Customized / Added) and suggest soft rules where appropriate (e.g., older users or those with injuries get outdoor-workout marked soft by default). Include a caring health advisory with optional "I've reviewed this with my doctor" acknowledgment. Store all answers on the user record in Convex. |
+| A-5 | Onboarding — habit setup flow (3 tiers) | P1 | todo | After the questionnaire, present three setup paths: **Original** — the standard 8 daily tasks, all marked hard by default. **Customized** — start with the default 8, toggle off any tasks the user doesn't want (remove only, no adding). **Added** — fully custom: user creates their own tasks, choosing between two block types: *Task* (simple done/not-done checkbox, e.g., workout, photo, diet) and *Counter* (incremental quantity toward a goal, e.g., 128 oz water, 10 pages). Each task gets a name, an optional target (for Counter type), and a hard/soft toggle. Pre-recommend a tier based on questionnaire answers but let the user override freely. |
+| A-6 | Onboarding — hard/soft rule defaults + later editing | P1 | todo | During onboarding setup, each task shows a hard/soft toggle. Defaults: Original tier = all hard; Customized/Added = user picks per task. Hard = miss resets challenge to Day 0. Soft = miss is logged as incomplete but the challenge continues. After onboarding, users can change any task's hard/soft setting anytime from Settings. |
+| A-7 | Onboarding — save & create challenge | P1 | todo | Final step: "Start Your Challenge" button. On tap, save all onboarding data to Convex in one transaction: user profile (age, health, goals), challenge record, and task definitions (name, block type, target, hard/soft). Redirect to the dashboard with their personalized setup ready. |
 
 ---
 
@@ -67,13 +70,14 @@
 
 ## Custom Habits
 
+> Core habit setup now lives in the onboarding flow (A-5, A-6). Items below cover post-onboarding management and future enhancements.
+
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| H-1 | Custom habit creation UI | P2 | todo | Let users add their own habits with name, description, and tracking type (boolean/quantity/duration). |
-| H-2 | Hard vs soft rule system | P2 | todo | Users can toggle any habit between "hard" (miss = reset) and "soft" (miss = marked incomplete, day continues). |
-| H-3 | Challenge templates | P3 | todo | Prebuilt templates: "75 Hard" (strict), "75 Medium" (softer defaults), "Custom" (blank slate). |
-| H-4 | Habit parameter configuration | P3 | todo | Set targets (128 oz, 10 pages, 45 min), units, and frequency for each habit. |
-| H-5 | Remove / reorder default habits | P3 | todo | Let users remove or reorder the standard 75 HARD tasks for modified challenges. |
+| H-1 | Two block types — Task & Counter | P1 | todo | Implement the two fundamental block types used across the app. **Task**: simple done/not-done checkbox (e.g., workout, progress photo, follow diet). **Counter**: incremental quantity toward a configurable goal (e.g., 128 oz water, 10 pages read). Both types support hard/soft rules. Schema: `{ name, blockType: 'task' | 'counter', target?: number, unit?: string, isHard: boolean }`. |
+| H-2 | Edit habits post-onboarding | P2 | todo | Settings page section to add, remove, rename, or reconfigure habits after initial setup. Change block type, target, hard/soft. Cannot edit while a day is in progress (changes apply next day). |
+| H-3 | LLM-assisted habit creation (future) | P4 | todo | In the Added tier, let users describe what they want to track in free-text (paragraph or bullet points). Validate the input is about habits/tasks, then send to an LLM that returns structured task definitions (`name`, `blockType`, `target`, `isHard`). User reviews and confirms before saving. Deferred — start with manual Task/Counter creation, revisit when usage data shows demand. |
+| H-4 | Challenge templates library | P3 | todo | Pre-built templates beyond "Original 75 HARD": e.g., "75 Medium" (all soft rules), "Fitness Focus" (3 workouts, no reading), "Mindfulness" (meditation + journaling + reading). Templates are starting points — users can customize after selecting. |
 
 ---
 
@@ -120,6 +124,7 @@
 | P-2 | Account deletion flow | P2 | todo | "Delete my account and all data" in settings. Cascade delete across all tables + file storage. Confirmation email on completion. |
 | P-3 | Plain-english privacy policy page | P2 | todo | No legalese. Clearly explain what we store, what we don't, and what we'll never do. |
 | P-4 | Data portability documentation | P3 | todo | Include schema docs with exports so users can understand and reuse their data. |
+| P-5 | Integrate PostHog for analytics | P2 | todo | Add PostHog SDK (`posthog-js` + `posthog-node`) for privacy-friendly product analytics. Track key events (sign-up, challenge start/restart/complete, day completion, theme switch). Respect Do Not Track. Configure EU hosting or self-host if needed to align with privacy-first stance. |
 
 ---
 
