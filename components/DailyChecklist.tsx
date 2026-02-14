@@ -22,6 +22,7 @@ import {
 import { Check, Dumbbell, Sparkles, Brain, Apple, Camera, Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { resizeImage } from "@/lib/image-utils";
 
 interface DailyChecklistProps {
   challengeId: Id<"challenges">;
@@ -824,6 +825,7 @@ function PhotoRow({
 
     setIsUploading(true);
     try {
+      // Upload original
       const uploadUrl = await generateUploadUrl();
       const result = await fetch(uploadUrl, {
         method: "POST",
@@ -832,12 +834,32 @@ function PhotoRow({
       });
       const { storageId } = await result.json();
 
+      // Generate and upload thumbnail (graceful — failure is non-blocking)
+      let thumbStorageId: Id<"_storage"> | undefined;
+      try {
+        const thumbBlob = await resizeImage(file);
+        // Only upload thumbnail if it's actually different from original
+        if (thumbBlob !== file) {
+          const thumbUploadUrl = await generateUploadUrl();
+          const thumbResult = await fetch(thumbUploadUrl, {
+            method: "POST",
+            headers: { "Content-Type": "image/jpeg" },
+            body: thumbBlob,
+          });
+          const thumbJson = await thumbResult.json();
+          thumbStorageId = thumbJson.storageId;
+        }
+      } catch {
+        // Thumbnail failed — proceed with original only
+      }
+
       await updateLog({
         challengeId,
         userId,
         dayNumber,
         date,
         progressPhotoId: storageId,
+        ...(thumbStorageId ? { progressPhotoThumbId: thumbStorageId } : {}),
       });
       toast.success("Photo uploaded!");
     } catch {

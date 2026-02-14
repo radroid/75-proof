@@ -107,6 +107,7 @@ export const createOrUpdateDailyLog = mutation({
     waterIntakeOz: v.optional(v.number()),
     readingMinutes: v.optional(v.number()),
     progressPhotoId: v.optional(v.id("_storage")),
+    progressPhotoThumbId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
     if (args.userTimezone) {
@@ -132,6 +133,7 @@ export const createOrUpdateDailyLog = mutation({
     const waterIntakeOz = args.waterIntakeOz ?? existingLog?.waterIntakeOz ?? 0;
     const readingMinutes = args.readingMinutes ?? existingLog?.readingMinutes ?? 0;
     const progressPhotoId = args.progressPhotoId ?? existingLog?.progressPhotoId;
+    const progressPhotoThumbId = args.progressPhotoThumbId ?? existingLog?.progressPhotoThumbId;
 
     const workout1Complete =
       workout1 !== undefined && workout1.durationMinutes >= 45;
@@ -159,6 +161,7 @@ export const createOrUpdateDailyLog = mutation({
         waterIntakeOz,
         readingMinutes,
         progressPhotoId,
+        progressPhotoThumbId,
         allRequirementsMet,
         completedAt: allRequirementsMet ? new Date().toISOString() : undefined,
       });
@@ -179,6 +182,7 @@ export const createOrUpdateDailyLog = mutation({
         waterIntakeOz: args.waterIntakeOz ?? 0,
         readingMinutes: args.readingMinutes ?? 0,
         progressPhotoId: args.progressPhotoId,
+        progressPhotoThumbId: args.progressPhotoThumbId,
         allRequirementsMet,
         completedAt: allRequirementsMet ? new Date().toISOString() : undefined,
       });
@@ -295,10 +299,14 @@ export const getProgressPhotos = query({
       if (log.progressPhotoId) {
         const url = await ctx.storage.getUrl(log.progressPhotoId);
         if (url) {
+          const thumbUrl = log.progressPhotoThumbId
+            ? await ctx.storage.getUrl(log.progressPhotoThumbId)
+            : null;
           photosWithUrls.push({
             dayNumber: log.dayNumber,
             date: log.date,
             url,
+            thumbUrl,
             storageId: log.progressPhotoId,
           });
         }

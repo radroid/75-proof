@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { DailyChecklist } from "@/components/DailyChecklist";
 import { GuestDailyChecklist } from "@/components/GuestDailyChecklist";
 import { DayNavigator } from "@/components/DayNavigator";
+import { SwipeableDayView } from "@/components/swipeable-day-view";
 import { ChallengeFailedDialog } from "@/components/ChallengeFailedDialog";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -222,18 +223,24 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
       </div>
 
       {/* Daily Checklist */}
-      {isGuest ? (
-        <GuestDailyChecklist dayNumber={displayDay} onCompletionChange={setGuestTotalDone} />
-      ) : (
-        <DailyChecklist
-          challengeId={challenge._id}
-          userId={user._id}
-          dayNumber={displayDay}
-          date={dateStr}
-          isEditable={isEditable}
-          userTimezone={userTimezone}
-        />
-      )}
+      <SwipeableDayView
+        displayDay={displayDay}
+        todayDayNumber={todayDayNumber}
+        onDayChange={setSelectedDayNumber}
+      >
+        {isGuest ? (
+          <GuestDailyChecklist dayNumber={displayDay} onCompletionChange={setGuestTotalDone} />
+        ) : (
+          <DailyChecklist
+            challengeId={challenge._id}
+            userId={user._id}
+            dayNumber={displayDay}
+            date={dateStr}
+            isEditable={isEditable}
+            userTimezone={userTimezone}
+          />
+        )}
+      </SwipeableDayView>
     </div>
   );
 }

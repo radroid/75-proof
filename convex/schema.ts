@@ -106,6 +106,7 @@ export default defineSchema({
     waterIntakeOz: v.number(), // in oz (goal: 128oz / 1 gallon)
     readingMinutes: v.number(), // goal: 10 pages ~= 20 min
     progressPhotoId: v.optional(v.id("_storage")),
+    progressPhotoThumbId: v.optional(v.id("_storage")),
 
     // Computed
     allRequirementsMet: v.boolean(),

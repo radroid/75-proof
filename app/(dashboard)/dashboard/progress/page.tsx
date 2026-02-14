@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -268,7 +269,7 @@ export default function ProgressPage() {
                     onClick={() => setSelectedPhoto(photo)}
                   >
                     <img
-                      src={photo.url}
+                      src={photo.thumbUrl ?? photo.url}
                       alt={`Day ${photo.dayNumber}`}
                       className="w-full h-full object-cover transition-transform group-hover:scale-105"
                       loading="lazy"
@@ -296,7 +297,7 @@ export default function ProgressPage() {
 
       {/* Photo Preview Dialog */}
       <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
               Day {selectedPhoto?.dayNumber} —{" "}
@@ -308,12 +309,15 @@ export default function ProgressPage() {
                   day: "numeric",
                 })}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Progress photo for Day {selectedPhoto?.dayNumber}
+            </DialogDescription>
           </DialogHeader>
           {selectedPhoto && (
             <img
               src={selectedPhoto.url}
               alt={`Day ${selectedPhoto.dayNumber}`}
-              className="w-full rounded-lg"
+              className="w-full max-h-[75vh] object-contain rounded-lg"
             />
           )}
         </DialogContent>
