@@ -58,8 +58,8 @@
 | F-1 | ~~Basic dashboard UI~~ | | done | 4 themed dashboards (Arctic, Broadsheet, Military, Zen) with day counter, progress bar, stats. |
 | F-2 | ~~Daily check-in card~~ | | done | DailyChecklist component with 3 categories, tap-to-complete, workout logging, photo upload, confetti. |
 | F-3 | ~~Standard 75 HARD habit tracking~~ | | done | Day advancement logic, reset-on-miss rule, and full 6-task tracking all implemented. Completed 2026-02-12. |
-| F-4 | Progress photo upload — thumbnail generation | P1 | todo | Upload works (PhotoRow). Still need: generate thumbnails for feed display, gallery view of past photos. |
-| F-5 | Swipe through previous days — view any past day's log | P1 | todo | User can slide/swipe back to view any previous day's tasks and completion status. Read-only for days older than 2 days. |
+| F-4 | ~~Progress photo upload — thumbnail generation & gallery lightbox~~ | | done | Thumbnails generated client-side (400px, 70% JPEG). Gallery lightbox with arrow/swipe/keyboard navigation, directional slide animations, adjacent image preloading, photo counter. Completed 2026-02-13. |
+| F-5 | ~~Swipe through previous days — view any past day's log~~ | | done | SwipeableDayView component with touch swipe + keyboard arrows. Read-only for days older than 2 days. Completed 2026-02-13. |
 | F-6 | ~~Edit past 2 days of logs~~ | | done | 2-day edit window implemented — users can edit today and previous 2 days, older days are locked. Completed 2026-02-12. |
 | F-7 | ~~Auto-reset on missed hard task after 2-day grace window~~ | | done | Auto-reset implemented — if hard-rule tasks are incomplete after 2-day grace window, challenge resets to Day 1. Completed 2026-02-12. |
 | F-8 | ~~Track number of challenge restarts~~ | | done | `lifetimeRestartCount` on users table, incremented in `failChallengeInternal`. Shown as "Attempt #N" on Progress page and in ChallengeFailedDialog. Completed 2026-02-12. |
@@ -207,6 +207,8 @@
 | ~~D-10~~ | Clerk components — theme-aware styling (shared `lib/clerk-appearance.ts`) | 2026-02-13 |
 | ~~D-9~~ | Landing page mobile breakpoints polish (320px–428px) | 2026-02-13 |
 | ~~SEO-8~~ | LLM & AI search optimization — llms.txt, FAQ section, FAQPage JSON-LD | 2026-02-13 |
+| ~~F-4~~ | Progress photo thumbnails & gallery lightbox (nav, swipe, preload) | 2026-02-13 |
+| ~~F-5~~ | Swipe through previous days (SwipeableDayView) | 2026-02-13 |
 
 ---
 

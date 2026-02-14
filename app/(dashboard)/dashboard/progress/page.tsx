@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ import {
   Check,
   Camera,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   TreePine,
   Utensils,
@@ -48,6 +49,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Id } from "@/convex/_generated/dataModel";
 import { useGuest } from "@/components/guest-provider";
+import { useSwipe } from "@/hooks/use-swipe";
 
 type FilterType = "all" | "complete" | "incomplete";
 
@@ -93,7 +95,7 @@ export default function ProgressPage() {
   const [selectedChallengeId, setSelectedChallengeId] = useState<Id<"challenges"> | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
-  const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; dayNumber: number; date: string } | null>(null);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
 
   // History logs for selected challenge (if different from active)
   const historyLogs = useQuery(
@@ -137,6 +139,74 @@ export default function ProgressPage() {
     }
     setExpandedDays(newSet);
   };
+
+  // Lightbox navigation
+  const selectedPhoto = selectedPhotoIndex !== null && effectivePhotos
+    ? effectivePhotos[selectedPhotoIndex] ?? null
+    : null;
+  const prevIndexRef = useRef(selectedPhotoIndex);
+  const [slideDirection, setSlideDirection] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  useEffect(() => {
+    if (selectedPhotoIndex !== null && prevIndexRef.current !== null && selectedPhotoIndex !== prevIndexRef.current) {
+      setSlideDirection(selectedPhotoIndex > prevIndexRef.current ? 1 : -1);
+    }
+    prevIndexRef.current = selectedPhotoIndex;
+  }, [selectedPhotoIndex]);
+
+  const photoCount = effectivePhotos?.length ?? 0;
+
+  const goToPrevPhoto = useCallback(() => {
+    setSelectedPhotoIndex((i) => (i !== null && i > 0 ? i - 1 : i));
+  }, []);
+
+  const goToNextPhoto = useCallback(() => {
+    setSelectedPhotoIndex((i) => (i !== null && i < photoCount - 1 ? i + 1 : i));
+  }, [photoCount]);
+
+  const { onTouchStart, onTouchMove, onTouchEnd } = useSwipe(goToNextPhoto, goToPrevPhoto);
+
+  useEffect(() => {
+    if (selectedPhotoIndex === null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") goToPrevPhoto();
+      else if (e.key === "ArrowRight") goToNextPhoto();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedPhotoIndex, goToPrevPhoto, goToNextPhoto]);
+
+  // Preload adjacent full-res images for instant navigation
+  useEffect(() => {
+    if (selectedPhotoIndex === null || !effectivePhotos) return;
+    const toPreload: string[] = [];
+    if (selectedPhotoIndex > 0) toPreload.push(effectivePhotos[selectedPhotoIndex - 1]?.url);
+    if (selectedPhotoIndex < photoCount - 1) toPreload.push(effectivePhotos[selectedPhotoIndex + 1]?.url);
+    toPreload.forEach((src) => {
+      if (src) {
+        const img = new Image();
+        img.src = src;
+      }
+    });
+  }, [selectedPhotoIndex, effectivePhotos, photoCount]);
+
+  const SLIDE_OFFSET = 80;
+  const slideVariants = prefersReducedMotion
+    ? { enter: {}, center: {}, exit: {} }
+    : {
+        enter: (dir: number) => ({ x: dir > 0 ? SLIDE_OFFSET : -SLIDE_OFFSET, opacity: 0 }),
+        center: { x: 0, opacity: 1 },
+        exit: (dir: number) => ({ x: dir > 0 ? -SLIDE_OFFSET : SLIDE_OFFSET, opacity: 0 }),
+      };
 
   if (!isGuest && user === undefined) {
     return (
@@ -262,11 +332,11 @@ export default function ProgressPage() {
           {effectivePhotos && effectivePhotos.length > 0 ? (
             <>
               <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-                {effectivePhotos.map((photo: any) => (
+                {effectivePhotos.map((photo: any, index: number) => (
                   <button
                     key={photo.storageId}
                     className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
-                    onClick={() => setSelectedPhoto(photo)}
+                    onClick={() => setSelectedPhotoIndex(index)}
                   >
                     <img
                       src={photo.thumbUrl ?? photo.url}
@@ -295,8 +365,8 @@ export default function ProgressPage() {
         </MotionItem>
       </div>
 
-      {/* Photo Preview Dialog */}
-      <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
+      {/* Photo Lightbox Dialog */}
+      <Dialog open={selectedPhotoIndex !== null} onOpenChange={() => setSelectedPhotoIndex(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
@@ -309,16 +379,59 @@ export default function ProgressPage() {
                   day: "numeric",
                 })}
             </DialogTitle>
-            <DialogDescription className="sr-only">
-              Progress photo for Day {selectedPhoto?.dayNumber}
+            <DialogDescription>
+              Photo {selectedPhotoIndex !== null ? selectedPhotoIndex + 1 : 0} of {photoCount}
             </DialogDescription>
           </DialogHeader>
           {selectedPhoto && (
-            <img
-              src={selectedPhoto.url}
-              alt={`Day ${selectedPhoto.dayNumber}`}
-              className="w-full max-h-[75vh] object-contain rounded-lg"
-            />
+            <div
+              className="relative touch-pan-y overflow-hidden select-none"
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+            >
+              <AnimatePresence mode="wait" custom={slideDirection} initial={false}>
+                <motion.img
+                  key={selectedPhotoIndex}
+                  custom={slideDirection}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={
+                    prefersReducedMotion
+                      ? { duration: 0 }
+                      : { type: "spring", stiffness: 300, damping: 30 }
+                  }
+                  src={selectedPhoto.url}
+                  alt={`Day ${selectedPhoto.dayNumber}`}
+                  className="w-full max-h-[70vh] object-contain rounded-lg"
+                  draggable={false}
+                />
+              </AnimatePresence>
+
+              {/* Previous arrow */}
+              {selectedPhotoIndex !== null && selectedPhotoIndex > 0 && (
+                <button
+                  onClick={goToPrevPhoto}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 hover:bg-black/70 text-white p-1.5 transition-opacity opacity-0 hover:opacity-100 focus:opacity-100 sm:opacity-70"
+                  aria-label="Previous photo"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+              )}
+
+              {/* Next arrow */}
+              {selectedPhotoIndex !== null && selectedPhotoIndex < photoCount - 1 && (
+                <button
+                  onClick={goToNextPhoto}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 hover:bg-black/70 text-white p-1.5 transition-opacity opacity-0 hover:opacity-100 focus:opacity-100 sm:opacity-70"
+                  aria-label="Next photo"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>
