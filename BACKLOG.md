@@ -159,6 +159,53 @@
 
 ---
 
+## Remotion — Video & Animation
+
+### Landing Page Showcase Videos
+
+Embed short, looping Remotion videos on the landing page to showcase the app's UI in an engaging, interactive way. Each video should be rendered as an MP4/WebM (or use `@remotion/player` for inline playback) and placed in a relevant landing page section.
+
+| # | Item | Priority | Status | Notes |
+|---|------|----------|--------|-------|
+| R-1 | "A Day in 75 Proof" hero animation | P2 | todo | **Concept:** Animate the DailyChecklist being completed task-by-task — check off a morning outdoor workout (form slides in, tap complete), tap water glasses one by one filling a row of 8, mark reading blocks, upload a progress photo (thumbnail appears), then confetti explosion on day completion. **Placement:** Hero section or "The Daily Six" section of the landing page. Loops seamlessly. |
+| R-1a | ↳ Design & storyboard the hero animation | P2 | todo | Sketch frame-by-frame storyboard. Decide timing per task (e.g., 2s per check, 1s confetti). Pick which theme to use (or cycle themes). Define resolution, aspect ratio, loop point. Figma or rough sketches OK. |
+| R-1b | ↳ Implement Remotion composition for hero animation | P2 | todo | Build the Remotion `<Composition>` with sequences for each checklist task. Use `interpolate`, `spring`, and `Sequence` for timing. Match actual component styles (Tailwind classes → inline styles or CSS modules for Remotion). Render to MP4/WebM or use `@remotion/player`. |
+| R-1c | ↳ Integrate hero animation into landing page | P2 | todo | Embed the rendered video or `<Player>` component in the landing page hero/Daily Six section. Lazy load, autoplay muted, loop. Responsive sizing. Fallback static image for slow connections. |
+| R-2 | Theme carousel showcase | P2 | todo | **Concept:** Smoothly morph between the 4 themed dashboards (Arctic → Broadsheet → Military → Zen) showing Day 23 with ~60% completion in each aesthetic. Each theme holds for 3-4s, transitions with a crossfade or slide. **Placement:** New "Pick Your Vibe" section on landing page, or alongside "Why 75 Proof" cards. |
+| R-2a | ↳ Design theme transitions & section layout | P2 | todo | Decide transition style (crossfade, slide, morph). Mock up the landing page section where this lives. Determine which dashboard elements to show (progress ring, checklist snippet, day header). Define mobile vs desktop crop. |
+| R-2b | ↳ Implement Remotion composition for theme carousel | P2 | todo | Recreate a simplified dashboard view for each theme inside Remotion. Sequence with transitions between them. Match actual theme colors and typography exactly. |
+| R-2c | ↳ Integrate theme carousel into landing page | P2 | todo | Add new section to `app/page.tsx`. Embed video/player. Responsive. Lazy load. |
+| R-3 | 75-day progress timelapse | P3 | todo | **Concept:** Fast-forward through 75 days — calendar grid squares filling in green one-by-one, stats counters incrementing (workouts, water gallons, pages read), progress photo thumbnails appearing in a grid, streak flame growing. Ends with a "Day 75 — Challenge Complete" celebration. **Placement:** Above the final CTA section ("Stop overthinking it"). |
+| R-3a | ↳ Design timelapse storyboard & data script | P3 | todo | Define the 75-day data (which days complete, a few incomplete for realism). Map out visual beats: calendar fill, stat counters, photo grid, final celebration. Decide pacing — likely 15-20s total. |
+| R-3b | ↳ Implement Remotion composition for timelapse | P3 | todo | Build calendar grid, animated counters (`interpolate` on numbers), photo grid reveal, and final celebration sequence. Use `spring` for satisfying number rolls. |
+| R-3c | ↳ Integrate timelapse into landing page | P3 | todo | Embed above CTA section. Autoplay when scrolled into view (Intersection Observer). |
+| R-4 | Swipe day navigation demo | P3 | todo | **Concept:** Show the swipe gesture flipping through days like a card stack — Day 12 (all green ✓), Day 13 (5/6 done), Day 14 (current, tasks checking off). Demonstrates the SwipeableDayView UX. **Placement:** Alongside or below "The Daily Six" section. |
+| R-4a | ↳ Design swipe animation storyboard | P3 | todo | Sketch the card-swipe motion. Decide how many days to show (3-5). Define which tasks are complete/incomplete per day. Mobile-style framing (phone mockup?). |
+| R-4b | ↳ Implement Remotion composition for swipe demo | P3 | todo | Animate card transitions with `spring` physics. Show simplified checklist states per day. Optional: wrap in a phone frame graphic. |
+| R-4c | ↳ Integrate swipe demo into landing page | P3 | todo | Embed in relevant section. Responsive. Lazy load. |
+
+### Post-Onboarding Usage Tutorial
+
+A Remotion-powered animated walkthrough that plays after a new user completes onboarding, teaching them the core daily loop before they land on their first dashboard.
+
+| # | Item | Priority | Status | Notes |
+|---|------|----------|--------|-------|
+| R-5 | Post-onboarding animated usage tutorial | P1 | todo | **Concept:** After onboarding (A-7), before redirecting to dashboard, show a short animated tutorial (30-45s) walking the user through their first day. Uses their actual theme choice and habits from onboarding. Skippable. Plays once (flag stored on user record). |
+| R-5a | ↳ Define tutorial scenes & script | P1 | todo | Plan 4-6 tutorial scenes: (1) "Here's your dashboard" — pan of the themed dashboard with day counter. (2) "Check off your first workout" — tap a workout, form slides in, complete it. (3) "Track your water" — tap glasses one by one. (4) "Log your reading" — tap reading blocks. (5) "Take your progress photo" — camera icon tap, thumbnail appears. (6) "Swipe to see past days" — swipe gesture demo. Each scene: 5-7s with text overlay caption. |
+| R-5b | ↳ Design tutorial UI & overlay style | P1 | todo | Design the tutorial player UI: skip button, progress dots, text caption overlay style, transition between scenes. Should feel native to the app, not a separate modal. Consider a spotlight/highlight effect pointing to the relevant area of the UI being explained. |
+| R-5c | ↳ Implement Remotion compositions for tutorial scenes | P1 | todo | Build each scene as a Remotion `<Sequence>`. Recreate simplified versions of the themed dashboard and checklist components. Animate interactions (taps, swipes, form entries) with `spring` and `interpolate`. Text captions fade in/out per scene. |
+| R-5d | ↳ Build tutorial player & routing logic | P1 | todo | Create a `/dashboard/tutorial` route or full-screen overlay. Use `@remotion/player` for inline playback with play/pause/skip controls. On completion or skip, redirect to dashboard. Store `hasSeenTutorial: true` on user record in Convex. Only show once per user. |
+| R-5e | ↳ Connect tutorial to onboarding flow | P1 | todo | After A-7 (save & create challenge), route to tutorial instead of dashboard. Pass theme and habit config so the tutorial reflects the user's actual setup. Handle edge case: user refreshes mid-tutorial. |
+
+### Remotion Infrastructure
+
+| # | Item | Priority | Status | Notes |
+|---|------|----------|--------|-------|
+| R-6 | Set up Remotion in the project | P1 | todo | Install `remotion`, `@remotion/cli`, `@remotion/player`, `@remotion/bundler`. Create `remotion/` directory at project root with `Root.tsx` and composition registry. Configure `remotion.config.ts`. Add `pnpm remotion:studio` and `pnpm remotion:render` scripts. Ensure it coexists with the Next.js build without conflicts. |
+| R-7 | Remotion render pipeline for landing page videos | P2 | todo | Decide render strategy: (a) pre-render to MP4/WebM at build time and serve as static assets, or (b) use `@remotion/player` for client-side playback. Pre-rendered is better for landing page (no JS overhead). Set up a render script that outputs to `public/videos/`. Add to CI if needed. |
+
+---
+
 ## Polish & Scale
 
 | # | Item | Priority | Status | Notes |
