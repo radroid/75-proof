@@ -44,10 +44,10 @@
 | A-1 | ~~Browse-first experience — let new users view the full UI without signing up~~ | | done | Interactive demo dashboard with guest mode. Users can explore dashboard, Today page, and progress page without signing up. Persistent "Sign up to save your progress" prompt. Completed 2026-02-12. |
 | A-2 | ~~One-click sign up process~~ | | done | Modal sign-up with social buttons top, branded Clerk theming, mobile-optimized touch targets. Implemented 2026-02-12. |
 | A-3 | ~~Core authentication flow (Clerk integration)~~ | | done | Clerk fully integrated: sign-up, sign-in, sign-out, session management, middleware protection. |
-| A-4 | Onboarding questionnaire — age, health & goals | P1 | todo | After sign-up, walk users through a short questionnaire: age range, health conditions/limitations (optional), and what they hope to get out of the challenge (weight loss, discipline, mental toughness, etc.). Use answers to recommend a default setup tier (Original / Customized / Added) and suggest soft rules where appropriate (e.g., older users or those with injuries get outdoor-workout marked soft by default). Include a caring health advisory with optional "I've reviewed this with my doctor" acknowledgment. Store all answers on the user record in Convex. |
-| A-5 | Onboarding — habit setup flow (3 tiers) | P1 | todo | After the questionnaire, present three setup paths: **Original** — the standard 8 daily tasks, all marked hard by default. **Customized** — start with the default 8, toggle off any tasks the user doesn't want (remove only, no adding). **Added** — fully custom: user creates their own tasks, choosing between two block types: *Task* (simple done/not-done checkbox, e.g., workout, photo, diet) and *Counter* (incremental quantity toward a goal, e.g., 128 oz water, 10 pages). Each task gets a name, an optional target (for Counter type), and a hard/soft toggle. Pre-recommend a tier based on questionnaire answers but let the user override freely. |
-| A-6 | Onboarding — hard/soft rule defaults + later editing | P1 | todo | During onboarding setup, each task shows a hard/soft toggle. Defaults: Original tier = all hard; Customized/Added = user picks per task. Hard = miss resets challenge to Day 0. Soft = miss is logged as incomplete but the challenge continues. After onboarding, users can change any task's hard/soft setting anytime from Settings. |
-| A-7 | Onboarding — save & create challenge | P1 | todo | Final step: "Start Your Challenge" button. On tap, save all onboarding data to Convex in one transaction: user profile (age, health, goals), challenge record, and task definitions (name, block type, target, hard/soft). Redirect to the dashboard with their personalized setup ready. |
+| A-4 | ~~Onboarding questionnaire — age, health & goals~~ | | done | 6-step onboarding wizard with health advisory, age range, goal selection, display name, timezone. Theme-aware warning colors. Mobile-optimized touch targets. Completed 2026-02-23. |
+| A-5 | ~~Onboarding — habit setup flow (3 tiers)~~ | | done | Three tiers (Original/Customized/Added) with recommended badge based on goals. HabitCard component with readonly/toggle/full modes. Custom habit creation form for Added tier. Completed 2026-02-23. |
+| A-6 | ~~Onboarding — hard/soft rule defaults + later editing~~ | | done | Hard/soft toggle on each habit during onboarding. Original = all hard. Customized/Added = user picks. Badge shows hard (destructive) vs soft (muted). Completed 2026-02-23. |
+| A-7 | ~~Onboarding — save & create challenge~~ | | done | Review step with summary, start date picker, visibility radio. `completeOnboarding` mutation atomically saves user profile + challenge + habitDefinitions. Redirect guard sends new users to onboarding. Completed 2026-02-23. |
 
 ---
 
@@ -74,7 +74,7 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| H-1 | Two block types — Task & Counter | P1 | todo | Implement the two fundamental block types used across the app. **Task**: simple done/not-done checkbox (e.g., workout, progress photo, follow diet). **Counter**: incremental quantity toward a configurable goal (e.g., 128 oz water, 10 pages read). Both types support hard/soft rules. Schema: `{ name, blockType: 'task' | 'counter', target?: number, unit?: string, isHard: boolean }`. |
+| H-1 | ~~Two block types — Task & Counter~~ | | done | TaskBlock (checkbox with accent bar, hard/soft badge, animated checkmark) and CounterBlock (progress bar, +/- buttons, auto-complete at target). Both used in DynamicDailyChecklist. Schema: habitDefinitions + habitEntries tables. Dual-path detection in challenge status logic. Completed 2026-02-23. |
 | H-2 | Edit habits post-onboarding | P2 | todo | Settings page section to add, remove, rename, or reconfigure habits after initial setup. Change block type, target, hard/soft. Cannot edit while a day is in progress (changes apply next day). |
 | H-3 | LLM-assisted habit creation (future) | P4 | todo | In the Added tier, let users describe what they want to track in free-text (paragraph or bullet points). Validate the input is about habits/tasks, then send to an LLM that returns structured task definitions (`name`, `blockType`, `target`, `isHard`). User reviews and confirms before saving. Deferred — start with manual Task/Counter creation, revisit when usage data shows demand. |
 | H-4 | Challenge templates library | P3 | todo | Pre-built templates beyond "Original 75 HARD": e.g., "75 Medium" (all soft rules), "Fitness Focus" (3 workouts, no reading), "Mindfulness" (meditation + journaling + reading). Templates are starting points — users can customize after selecting. |
@@ -85,11 +85,14 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| S-1 | Friend system — add friends by username, email, or phone number | P2 | todo | Quick-add flow: search by username, email, or phone. Send friend request. Must tie into whatever identity users signed up with. |
-| S-2 | Friend requests — accept / decline / block | P2 | todo | Mutual friendship model. Both parties must accept. |
-| S-3 | Activity feed (real-time) | P3 | todo | Show friend activity via Convex subscriptions. Types: day_completed, challenge_started, challenge_completed, milestone. |
+| S-1 | ~~Friend system — search & add friends~~ | | done | Auth on all mutations/queries, search index on displayName, relationship status indicators (Friends/Pending/Accept/Add), tabbed Friends page (Activity/Friends/Requests). Completed 2026-02-24. |
+| S-2 | ~~Friend requests — accept / decline / block~~ | | done | Mutual friendship model. Accept/decline/cancel requests. Block/unblock users (blocked users hidden from feed and can't send requests). Declined rows deleted to allow re-send. Completed 2026-02-24. |
+| S-3 | ~~Activity feed (real-time)~~ | | done | Friends feed via Convex subscriptions. Types: day_completed, challenge_started, challenge_completed, challenge_failed, milestone. Dual-path habit completion check (new habitEntries + legacy dailyLogs). markDayComplete wired into DynamicDailyChecklist. Nav badges (desktop + mobile) for pending requests. Completed 2026-02-24. |
 | S-4 | Milestone celebrations | P3 | todo | Celebrate Day 7, 14, 21, 30, 45, 60, 75 with special UI (confetti, badge, notification to friends). |
 | S-5 | Shared challenge groups | P4 | todo | Create a group with friends doing the same challenge. Group progress view. |
+| S-6 | Username system — replace display name search with unique usernames | P1 | todo | **Problem:** Current friend search uses display names, which (a) exposes all platform users' names to anyone with an account, and (b) doesn't distinguish between users with the same name. **Solution:** Assign each user a unique username on signup — two random dictionary words joined (e.g., `brave-falcon`, `calm-river`). Store in `users.username` (Convex) with a unique index. Add search index on `username`. Replace display name search with username search in friend lookup. Users can edit their username in Settings as long as it doesn't collide. Update search UI to show `@username` alongside display name. Schema change: add `username: v.string()` to users table, `searchIndex("search_username", { searchField: "username" })`, `index("by_username", ["username"])`. Migration: backfill existing users with generated usernames. |
+| S-7 | Invite friends via shareable card (iMessage / WhatsApp) | P2 | todo | **Purpose:** Let users invite friends who aren't on the platform yet. Generate a beautiful, branded invite card (image or rich link preview) that the user can share via iMessage, WhatsApp, or any share sheet. **Implementation:** (1) Create a `/invite/[userId]` or `/invite/[username]` public page with OG image generation (Next.js `ImageResponse` API) showing the inviter's name, day count, and a CTA to join. (2) Add "Invite Friends" button in the Friends tab that triggers `navigator.share()` (Web Share API) on mobile or copies a link on desktop. (3) The invite card/page should be visually polished — think a mini progress card with the app branding. (4) Track invite link clicks for attribution (optional, via query param). **Privacy note:** The public invite page should only show the inviter's display name and day number (if sharing settings allow), never email or other PII. |
+| S-8 | Friend search privacy controls | P2 | todo | **Concern:** Any authenticated user can currently search and discover all other users on the platform. **Improvements:** (1) Once S-6 (usernames) ships, search should be exact-match on username only (no fuzzy/partial display name search). Users must know someone's username to find them. (2) Add a "Discoverable" toggle in Settings (default: on). When off, the user won't appear in search results at all. (3) Consider rate-limiting search queries to prevent enumeration. |
 
 ---
 
@@ -256,6 +259,14 @@ A Remotion-powered animated walkthrough that plays after a new user completes on
 | ~~SEO-8~~ | LLM & AI search optimization — llms.txt, FAQ section, FAQPage JSON-LD | 2026-02-13 |
 | ~~F-4~~ | Progress photo thumbnails & gallery lightbox (nav, swipe, preload) | 2026-02-13 |
 | ~~F-5~~ | Swipe through previous days (SwipeableDayView) | 2026-02-13 |
+| ~~A-4~~ | Onboarding questionnaire (age, health, goals) | 2026-02-23 |
+| ~~A-5~~ | Onboarding habit setup (3 tiers: Original/Customized/Added) | 2026-02-23 |
+| ~~A-6~~ | Onboarding hard/soft rule defaults | 2026-02-23 |
+| ~~A-7~~ | Onboarding save & create challenge | 2026-02-23 |
+| ~~H-1~~ | Two block types — Task & Counter (TaskBlock, CounterBlock, DynamicDailyChecklist) | 2026-02-23 |
+| ~~S-1~~ | Friend system — search & add friends (auth, search index, tabbed page) | 2026-02-24 |
+| ~~S-2~~ | Friend requests — accept / decline / block | 2026-02-24 |
+| ~~S-3~~ | Activity feed (real-time) with nav badges and markDayComplete | 2026-02-24 |
 
 ---
 

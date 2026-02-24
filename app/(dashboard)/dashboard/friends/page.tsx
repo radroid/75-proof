@@ -51,7 +51,7 @@ function AuthenticatedFriendsPage() {
   // Loading state
   if (friends === undefined) {
     return (
-      <PageContainer>
+      <PageContainer key="loading">
         <div className="space-y-6">
           <div>
             <Skeleton className="h-9 w-24" />
@@ -68,7 +68,7 @@ function AuthenticatedFriendsPage() {
   }
 
   return (
-    <PageContainer>
+    <PageContainer key="content">
       <PageHeader
         title="Friends"
         description="Connect with friends and stay accountable together."

@@ -97,7 +97,7 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-9 w-9" aria-label={`More options for ${friend.user.displayName}`}>
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>

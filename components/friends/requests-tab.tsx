@@ -122,7 +122,7 @@ function ReceivedRequestCard({
   return (
     <Card>
       <CardContent className="py-3 px-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between min-h-[44px]">
           <div className="flex items-center gap-3 min-w-0">
             <Avatar className="h-8 w-8">
               <AvatarImage src={user.avatarUrl} alt={user.displayName} />
@@ -133,10 +133,10 @@ function ReceivedRequestCard({
             <p className="font-medium text-sm truncate">{user.displayName}</p>
           </div>
           <div className="flex gap-2 flex-shrink-0 ml-2">
-            <Button onClick={handleAccept} size="sm" variant="success">
+            <Button onClick={handleAccept} size="sm" variant="success" className="min-h-[44px]">
               Accept
             </Button>
-            <Button onClick={handleDecline} variant="outline" size="sm">
+            <Button onClick={handleDecline} variant="outline" size="sm" className="min-h-[44px]">
               Decline
             </Button>
           </div>
@@ -169,7 +169,7 @@ function SentRequestCard({
   return (
     <Card>
       <CardContent className="py-3 px-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between min-h-[44px]">
           <div className="flex items-center gap-3 min-w-0">
             <Avatar className="h-8 w-8">
               <AvatarImage src={user.avatarUrl} alt={user.displayName} />
@@ -179,7 +179,7 @@ function SentRequestCard({
             </Avatar>
             <p className="font-medium text-sm truncate">{user.displayName}</p>
           </div>
-          <Button onClick={handleCancel} variant="outline" size="sm" className="flex-shrink-0 ml-2">
+          <Button onClick={handleCancel} variant="outline" size="sm" className="flex-shrink-0 ml-2 min-h-[44px]">
             Cancel
           </Button>
         </div>

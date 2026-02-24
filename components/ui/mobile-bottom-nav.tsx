@@ -22,10 +22,10 @@ export type NavItem = {
 function FriendsMobileIcon({ className }: { className?: string }) {
   const count = useQuery(api.friends.getPendingRequestCount);
   return (
-    <span className="relative inline-flex">
+    <span className="relative inline-flex" aria-label={count ? `Friends, ${count} pending requests` : "Friends"}>
       <Users className={className} />
       {(count ?? 0) > 0 && (
-        <span className="absolute -top-1 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground leading-none">
+        <span aria-hidden="true" className="absolute -top-1 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground leading-none">
           {count! > 9 ? "9+" : count}
         </span>
       )}

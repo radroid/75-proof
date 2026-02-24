@@ -48,8 +48,9 @@ export function FriendsList({ friendProgress }: FriendsListProps) {
     <div className="space-y-6">
       {/* Search */}
       <Input
-        type="text"
+        type="search"
         placeholder="Search for friends by name..."
+        aria-label="Search for friends"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
@@ -138,7 +139,7 @@ function SearchResultRow({
   };
 
   return (
-    <div className="flex items-center justify-between p-3">
+    <div className="flex items-center justify-between p-3 min-h-[44px]">
       <div className="flex items-center gap-3 min-w-0">
         <Avatar className="h-8 w-8">
           <AvatarImage src={user.avatarUrl} alt={user.displayName} />

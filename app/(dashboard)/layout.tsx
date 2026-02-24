@@ -37,10 +37,10 @@ import { api } from "@/convex/_generated/api";
 function FriendsNavIcon() {
   const count = useQuery(api.friends.getPendingRequestCount);
   return (
-    <span className="relative flex-shrink-0">
+    <span className="relative flex-shrink-0" aria-label={count ? `Friends, ${count} pending requests` : "Friends"}>
       <Users className="h-5 w-5" />
       {(count ?? 0) > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground leading-none">
+        <span aria-hidden="true" className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground leading-none">
           {count! > 9 ? "9+" : count}
         </span>
       )}
