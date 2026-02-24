@@ -31,8 +31,24 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
-const allNavItems = [
+function FriendsNavIcon() {
+  const count = useQuery(api.friends.getPendingRequestCount);
+  return (
+    <span className="relative flex-shrink-0">
+      <Users className="h-5 w-5" />
+      {(count ?? 0) > 0 && (
+        <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground leading-none">
+          {count! > 9 ? "9+" : count}
+        </span>
+      )}
+    </span>
+  );
+}
+
+const staticNavItems = [
   {
     label: "Today",
     href: "/dashboard",
@@ -43,14 +59,9 @@ const allNavItems = [
     href: "/dashboard/progress",
     icon: <TrendingUp className="h-5 w-5 flex-shrink-0" />,
   },
-  {
-    label: "Friends",
-    href: "/dashboard/friends",
-    icon: <Users className="h-5 w-5 flex-shrink-0" />,
-  },
 ];
 
-const guestNavItems = allNavItems.filter((item) => item.label !== "Friends");
+const guestNavItems = staticNavItems;
 
 // Mobile nav items for guests — built inside component to include signup action
 
@@ -233,6 +244,15 @@ export default function DashboardLayout({
       </div>
     );
   }
+
+  const allNavItems = [
+    ...staticNavItems,
+    {
+      label: "Friends",
+      href: "/dashboard/friends",
+      icon: <FriendsNavIcon />,
+    },
+  ];
 
   const navItems = isGuest ? guestNavItems : allNavItems;
 

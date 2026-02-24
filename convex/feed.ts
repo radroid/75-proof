@@ -1,12 +1,58 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { getAuthenticatedUser } from "./lib/auth";
+import { Id } from "./_generated/dataModel";
+
+// Helper: get accepted friend IDs for a user, excluding blocked
+async function getFriendIds(ctx: any, userId: Id<"users">): Promise<Id<"users">[]> {
+  const sentFriendships = await ctx.db
+    .query("friendships")
+    .withIndex("by_user_status", (q: any) =>
+      q.eq("userId", userId).eq("status", "accepted")
+    )
+    .collect();
+
+  const receivedFriendships = await ctx.db
+    .query("friendships")
+    .withIndex("by_friend", (q: any) => q.eq("friendId", userId))
+    .filter((q: any) => q.eq(q.field("status"), "accepted"))
+    .collect();
+
+  return [
+    ...sentFriendships.map((f: any) => f.friendId),
+    ...receivedFriendships.map((f: any) => f.userId),
+  ];
+}
+
+// Helper: get all user IDs blocked by or blocking this user
+async function getBlockedUserIds(ctx: any, userId: Id<"users">): Promise<Set<string>> {
+  const blockedByMe = await ctx.db
+    .query("friendships")
+    .withIndex("by_user_status", (q: any) =>
+      q.eq("userId", userId).eq("status", "blocked")
+    )
+    .collect();
+
+  const blockedMe = await ctx.db
+    .query("friendships")
+    .withIndex("by_friend", (q: any) => q.eq("friendId", userId))
+    .filter((q: any) => q.eq(q.field("status"), "blocked"))
+    .collect();
+
+  const ids = new Set<string>();
+  for (const b of blockedByMe) ids.add(b.friendId);
+  for (const b of blockedMe) ids.add(b.userId);
+  return ids;
+}
 
 export const getPersonalFeed = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const activities = await ctx.db
       .query("activityFeed")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
       .order("desc")
       .take(50);
 
@@ -15,57 +61,45 @@ export const getPersonalFeed = query({
 });
 
 export const getFriendsFeed = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    // Get all accepted friendships
-    const sentFriendships = await ctx.db
-      .query("friendships")
-      .withIndex("by_user_status", (q) =>
-        q.eq("userId", args.userId).eq("status", "accepted")
-      )
-      .collect();
-
-    const receivedFriendships = await ctx.db
-      .query("friendships")
-      .withIndex("by_friend", (q) => q.eq("friendId", args.userId))
-      .filter((q) => q.eq(q.field("status"), "accepted"))
-      .collect();
-
-    // Get friend user IDs
-    const friendIds = [
-      ...sentFriendships.map((f) => f.friendId),
-      ...receivedFriendships.map((f) => f.userId),
-    ];
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+    const friendIds = await getFriendIds(ctx, user._id);
+    const blockedIds = await getBlockedUserIds(ctx, user._id);
 
     if (friendIds.length === 0) {
       return [];
     }
 
-    // Get activities from friends
-    // For better performance in production, you'd want a more sophisticated approach
+    // Filter out blocked friends
+    const activeFriendIds = friendIds.filter((id) => !blockedIds.has(id));
+    if (activeFriendIds.length === 0) {
+      return [];
+    }
+
+    const friendIdSet = new Set(activeFriendIds.map(String));
+
     const allActivities = await ctx.db
       .query("activityFeed")
       .order("desc")
       .take(200);
 
-    // Filter to only friend activities and get their challenges visibility
     const friendActivities = [];
     for (const activity of allActivities) {
-      if (friendIds.some((id) => id === activity.userId)) {
-        // Check challenge visibility
+      if (friendIdSet.has(String(activity.userId))) {
         const challenge = await ctx.db.get(activity.challengeId);
         if (
           challenge &&
           (challenge.visibility === "public" ||
             challenge.visibility === "friends")
         ) {
-          const user = await ctx.db.get(activity.userId);
+          const activityUser = await ctx.db.get(activity.userId);
           friendActivities.push({
             ...activity,
-            user: user
+            user: activityUser
               ? {
-                  displayName: user.displayName,
-                  avatarUrl: user.avatarUrl,
+                  displayName: activityUser.displayName,
+                  avatarUrl: activityUser.avatarUrl,
                 }
               : null,
           });
@@ -80,7 +114,6 @@ export const getFriendsFeed = query({
 export const getPublicFeed = query({
   args: {},
   handler: async (ctx) => {
-    // Get recent public activities
     const allActivities = await ctx.db
       .query("activityFeed")
       .order("desc")
@@ -108,79 +141,91 @@ export const getPublicFeed = query({
 });
 
 export const getFriendProgress = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    // Get all accepted friendships
-    const sentFriendships = await ctx.db
-      .query("friendships")
-      .withIndex("by_user_status", (q) =>
-        q.eq("userId", args.userId).eq("status", "accepted")
-      )
-      .collect();
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+    const friendIds = await getFriendIds(ctx, user._id);
+    const blockedIds = await getBlockedUserIds(ctx, user._id);
 
-    const receivedFriendships = await ctx.db
-      .query("friendships")
-      .withIndex("by_friend", (q) => q.eq("friendId", args.userId))
-      .filter((q) => q.eq(q.field("status"), "accepted"))
-      .collect();
-
-    // Get friend user IDs
-    const friendIds = [
-      ...sentFriendships.map((f) => f.friendId),
-      ...receivedFriendships.map((f) => f.userId),
-    ];
-
-    // Get friend profiles with their active challenges
     const friendProgress = await Promise.all(
-      friendIds.map(async (friendId) => {
-        const friend = await ctx.db.get(friendId);
-        if (!friend) return null;
+      friendIds
+        .filter((id) => !blockedIds.has(id))
+        .map(async (friendId) => {
+          const friend = await ctx.db.get(friendId);
+          if (!friend) return null;
 
-        const activeChallenge = await ctx.db
-          .query("challenges")
-          .withIndex("by_user", (q) => q.eq("userId", friendId))
-          .filter((q) => q.eq(q.field("status"), "active"))
-          .unique();
-
-        if (
-          !activeChallenge ||
-          activeChallenge.visibility === "private"
-        ) {
-          return null;
-        }
-
-        // Respect sharing preferences (default to true if not set)
-        const sharing = friend.preferences?.sharing;
-        const showDayNumber = sharing?.showDayNumber ?? true;
-        const showCompletionStatus = sharing?.showCompletionStatus ?? true;
-
-        // Get today's log only if sharing completion status
-        let todayComplete = false;
-        if (showCompletionStatus) {
-          const today = new Date().toISOString().split("T")[0];
-          const todayLog = await ctx.db
-            .query("dailyLogs")
-            .withIndex("by_date", (q) =>
-              q.eq("userId", friendId).eq("date", today)
-            )
+          const activeChallenge = await ctx.db
+            .query("challenges")
+            .withIndex("by_user", (q) => q.eq("userId", friendId))
+            .filter((q) => q.eq(q.field("status"), "active"))
             .unique();
-          todayComplete = todayLog?.allRequirementsMet ?? false;
-        }
 
-        // Never include progressPhotoId in friend-facing data
-        return {
-          user: {
-            _id: friend._id,
-            displayName: friend.displayName,
-            avatarUrl: friend.avatarUrl,
-          },
-          challenge: {
-            currentDay: showDayNumber ? activeChallenge.currentDay : null,
-            startDate: activeChallenge.startDate,
-          },
-          todayComplete: showCompletionStatus ? todayComplete : null,
-        };
-      })
+          if (!activeChallenge || activeChallenge.visibility === "private") {
+            return null;
+          }
+
+          const sharing = friend.preferences?.sharing;
+          const showDayNumber = sharing?.showDayNumber ?? true;
+          const showCompletionStatus = sharing?.showCompletionStatus ?? true;
+
+          let todayComplete = false;
+          if (showCompletionStatus) {
+            const today = new Date().toISOString().split("T")[0];
+
+            // Dual-path: check new habit system first, fall back to legacy dailyLogs
+            const habitDefs = await ctx.db
+              .query("habitDefinitions")
+              .withIndex("by_challenge", (q) =>
+                q.eq("challengeId", activeChallenge._id)
+              )
+              .collect();
+
+            const hardHabits = habitDefs.filter((h) => h.isActive && h.isHard);
+
+            if (hardHabits.length > 0) {
+              // New habit system
+              const entries = await ctx.db
+                .query("habitEntries")
+                .withIndex("by_challenge_day", (q) =>
+                  q
+                    .eq("challengeId", activeChallenge._id)
+                    .eq("dayNumber", activeChallenge.currentDay)
+                )
+                .collect();
+
+              const entryMap = new Map(
+                entries.map((e) => [String(e.habitDefinitionId), e])
+              );
+
+              todayComplete = hardHabits.every((h) => {
+                const entry = entryMap.get(String(h._id));
+                return entry?.completed === true;
+              });
+            } else {
+              // Legacy dailyLogs system
+              const todayLog = await ctx.db
+                .query("dailyLogs")
+                .withIndex("by_date", (q) =>
+                  q.eq("userId", friendId).eq("date", today)
+                )
+                .unique();
+              todayComplete = todayLog?.allRequirementsMet ?? false;
+            }
+          }
+
+          return {
+            user: {
+              _id: friend._id,
+              displayName: friend.displayName,
+              avatarUrl: friend.avatarUrl,
+            },
+            challenge: {
+              currentDay: showDayNumber ? activeChallenge.currentDay : null,
+              startDate: activeChallenge.startDate,
+            },
+            todayComplete: showCompletionStatus ? todayComplete : null,
+          };
+        })
     );
 
     return friendProgress.filter(Boolean);

@@ -9,13 +9,29 @@ import {
   Users,
   Settings,
 } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 export type NavItem = {
   label: string;
   href: string;
-  icon: typeof LayoutDashboard;
+  icon: typeof LayoutDashboard | React.ComponentType<{ className?: string }>;
   action?: () => void;
 };
+
+function FriendsMobileIcon({ className }: { className?: string }) {
+  const count = useQuery(api.friends.getPendingRequestCount);
+  return (
+    <span className="relative inline-flex">
+      <Users className={className} />
+      {(count ?? 0) > 0 && (
+        <span className="absolute -top-1 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground leading-none">
+          {count! > 9 ? "9+" : count}
+        </span>
+      )}
+    </span>
+  );
+}
 
 const defaultNavItems: NavItem[] = [
   {
@@ -31,7 +47,7 @@ const defaultNavItems: NavItem[] = [
   {
     label: "Friends",
     href: "/dashboard/friends",
-    icon: Users,
+    icon: FriendsMobileIcon,
   },
   {
     label: "Settings",

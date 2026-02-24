@@ -31,7 +31,8 @@ export default defineSchema({
       setupTier: v.union(v.literal("original"), v.literal("customized"), v.literal("added")),
     })),
   })
-    .index("by_clerk_id", ["clerkId"]),
+    .index("by_clerk_id", ["clerkId"])
+    .searchIndex("search_displayName", { searchField: "displayName" }),
 
   // Challenge Instance (one per 75-day attempt)
   challenges: defineTable({
@@ -135,13 +136,15 @@ export default defineSchema({
     status: v.union(
       v.literal("pending"),
       v.literal("accepted"),
-      v.literal("declined")
+      v.literal("declined"),
+      v.literal("blocked")
     ),
     createdAt: v.string(),
   })
     .index("by_user", ["userId"])
     .index("by_friend", ["friendId"])
-    .index("by_user_status", ["userId", "status"]),
+    .index("by_user_status", ["userId", "status"])
+    .index("by_user_friend", ["userId", "friendId"]),
 
   // Activity Feed Item
   activityFeed: defineTable({
@@ -159,7 +162,8 @@ export default defineSchema({
     createdAt: v.string(),
   })
     .index("by_user", ["userId"])
-    .index("by_created", ["createdAt"]),
+    .index("by_created", ["createdAt"])
+    .index("by_user_created", ["userId", "createdAt"]),
 
   // Habit Definitions — what habits a challenge tracks (new onboarding system)
   habitDefinitions: defineTable({
