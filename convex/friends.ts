@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthenticatedUser } from "./lib/auth";
+import { getAuthenticatedUser, getAuthenticatedUserOrNull } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -55,7 +55,8 @@ async function isBlocked(
 export const getFriends = query({
   args: {},
   handler: async (ctx) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedUserOrNull(ctx);
+    if (!user) return [];
 
     const sentFriendships = await ctx.db
       .query("friendships")
@@ -94,7 +95,8 @@ export const getFriends = query({
 export const getPendingRequests = query({
   args: {},
   handler: async (ctx) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedUserOrNull(ctx);
+    if (!user) return [];
 
     const pendingRequests = await ctx.db
       .query("friendships")
@@ -125,7 +127,8 @@ export const getPendingRequests = query({
 export const getSentRequests = query({
   args: {},
   handler: async (ctx) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedUserOrNull(ctx);
+    if (!user) return [];
 
     const sentRequests = await ctx.db
       .query("friendships")
@@ -157,7 +160,8 @@ export const getSentRequests = query({
 export const getPendingRequestCount = query({
   args: {},
   handler: async (ctx) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedUserOrNull(ctx);
+    if (!user) return 0;
 
     const pendingRequests = await ctx.db
       .query("friendships")
@@ -176,7 +180,8 @@ export const searchUsers = query({
       return [];
     }
 
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedUserOrNull(ctx);
+    if (!user) return [];
 
     const results = await ctx.db
       .query("users")
@@ -199,7 +204,8 @@ export const searchUsers = query({
 export const getRelationshipStatuses = query({
   args: { targetUserIds: v.array(v.id("users")) },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedUserOrNull(ctx);
+    if (!user) return {};
 
     const statuses: Record<
       string,

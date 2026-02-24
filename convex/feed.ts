@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import { getAuthenticatedUser } from "./lib/auth";
+import { getAuthenticatedUserOrNull } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
 
 // Helper: get accepted friend IDs for a user, excluding blocked
@@ -48,7 +48,8 @@ async function getBlockedUserIds(ctx: any, userId: Id<"users">): Promise<Set<str
 export const getPersonalFeed = query({
   args: {},
   handler: async (ctx) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedUserOrNull(ctx);
+    if (!user) return [];
 
     const activities = await ctx.db
       .query("activityFeed")
@@ -63,7 +64,8 @@ export const getPersonalFeed = query({
 export const getFriendsFeed = query({
   args: {},
   handler: async (ctx) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedUserOrNull(ctx);
+    if (!user) return [];
     const friendIds = await getFriendIds(ctx, user._id);
     const blockedIds = await getBlockedUserIds(ctx, user._id);
 
@@ -143,7 +145,8 @@ export const getPublicFeed = query({
 export const getFriendProgress = query({
   args: {},
   handler: async (ctx) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedUserOrNull(ctx);
+    if (!user) return [];
     const friendIds = await getFriendIds(ctx, user._id);
     const blockedIds = await getBlockedUserIds(ctx, user._id);
 
