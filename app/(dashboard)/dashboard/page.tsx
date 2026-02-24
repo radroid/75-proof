@@ -3,6 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { StartChallengeModal } from "@/components/StartChallengeModal";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,6 +44,7 @@ export default function DashboardPage() {
 }
 
 function AuthenticatedDashboard() {
+  const router = useRouter();
   const user = useQuery(api.users.getCurrentUser);
   const createOrGetUser = useMutation(api.users.createOrGetUser);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
@@ -54,6 +56,20 @@ function AuthenticatedDashboard() {
     }
   }, [user, createOrGetUser, isCreatingUser]);
 
+  // Onboarding redirect: new users or users without a challenge who haven't onboarded
+  useEffect(() => {
+    if (user && !user.onboardingComplete && !user.currentChallengeId) {
+      router.push("/onboarding");
+    }
+  }, [user, router]);
+
+  // Tutorial redirect: onboarding complete but tutorial not yet seen
+  useEffect(() => {
+    if (user && user.onboardingComplete && !user.hasSeenTutorial) {
+      router.replace("/onboarding/tutorial");
+    }
+  }, [user, router]);
+
   if (user === undefined || user === null || isCreatingUser) {
     return (
       <div className="max-w-4xl space-y-6">
@@ -61,6 +77,16 @@ function AuthenticatedDashboard() {
           <div className="h-9 w-64 rounded-md bg-muted animate-pulse" />
           <div className="h-5 w-96 mt-2 rounded-md bg-muted animate-pulse" />
         </div>
+        <HeroSkeleton />
+        <ChecklistSkeleton />
+      </div>
+    );
+  }
+
+  // Show loading while redirecting to onboarding or tutorial
+  if ((!user.onboardingComplete && !user.currentChallengeId) || (user.onboardingComplete && !user.hasSeenTutorial)) {
+    return (
+      <div className="max-w-4xl space-y-6">
         <HeroSkeleton />
         <ChecklistSkeleton />
       </div>
