@@ -54,7 +54,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const user = useQuery(api.users.getCurrentUser);
   const updateUser = useMutation(api.users.updateUser);
-  const failChallenge = useMutation(api.challenges.failChallenge);
+  const resetAndReOnboard = useMutation(api.challenges.resetAndReOnboard);
   const resetTutorial = useMutation(api.users.resetTutorialSeen);
   const challenge = useQuery(
     api.challenges.getChallenge,
@@ -106,11 +106,12 @@ export default function SettingsPage() {
   const handleResetChallenge = async () => {
     if (!user?.currentChallengeId || !challenge) return;
     try {
-      await failChallenge({
+      await resetAndReOnboard({
         challengeId: user.currentChallengeId,
         failedOnDay: challenge.currentDay,
       });
-      toast.success("Challenge has been reset");
+      toast.success("Challenge reset — let's reconfigure your habits");
+      router.push("/onboarding");
     } catch {
       toast.error("Failed to reset challenge");
     }
@@ -355,25 +356,26 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="text-destructive flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5" />
-                  Reset Challenge
+                  Reset &amp; Reconfigure
                 </CardTitle>
                 <CardDescription>
-                  If you missed a requirement, you need to restart from Day 1. This
-                  action cannot be undone.
+                  End your current challenge and reconfigure your habits through
+                  onboarding. Your previous choices will be pre-filled. This action
+                  cannot be undone.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive">Reset My Challenge</Button>
+                    <Button variant="destructive">Reset &amp; Reconfigure</Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogTitle>Reset &amp; Reconfigure?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will mark your current challenge as failed and you&apos;ll
-                        need to start a new one from Day 1. This action cannot be
-                        undone.
+                        This will end your current challenge and take you back through
+                        onboarding where you can reconfigure your habits. Your previous
+                        choices will be pre-filled. This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -382,7 +384,7 @@ export default function SettingsPage() {
                         onClick={handleResetChallenge}
                         className="bg-destructive hover:bg-destructive/90"
                       >
-                        Yes, Reset Challenge
+                        Yes, Reset &amp; Reconfigure
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

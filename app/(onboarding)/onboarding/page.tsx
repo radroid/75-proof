@@ -46,19 +46,45 @@ function loadStep(): number {
 export default function OnboardingPage() {
   const router = useRouter();
   const user = useQuery(api.users.getCurrentUser);
+  const previousState = useQuery(api.onboarding.getPreviousOnboardingState);
   const completeOnboarding = useMutation(api.onboarding.completeOnboarding);
   const { setPersonality } = useThemePersonality();
 
   const [state, setState] = useState<OnboardingState>(loadState);
   const [stepIndex, setStepIndex] = useState(loadStep);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [seededFromPrevious, setSeededFromPrevious] = useState(false);
 
-  // Populate displayName from user when available
+  // Pre-populate from previous onboarding state (re-onboarding flow)
+  // Only seed if sessionStorage was empty (fresh re-entry, not a mid-onboarding refresh)
   useEffect(() => {
-    if (user && !state.displayName) {
+    if (seededFromPrevious || !previousState) return;
+    const hasExistingSession = typeof window !== "undefined" && sessionStorage.getItem(STORAGE_KEY) !== null;
+    if (hasExistingSession) {
+      setSeededFromPrevious(true);
+      return;
+    }
+    const seeded: OnboardingState = {
+      ...INITIAL_ONBOARDING_STATE,
+      displayName: previousState.displayName,
+      timezone: previousState.timezone,
+      ageRange: previousState.ageRange,
+      healthConditions: previousState.healthConditions,
+      healthAdvisoryAcknowledged: previousState.healthAdvisoryAcknowledged,
+      goals: previousState.goals,
+      setupTier: previousState.setupTier,
+      habits: previousState.habits.length > 0 ? previousState.habits : INITIAL_ONBOARDING_STATE.habits,
+    };
+    setState(seeded);
+    setSeededFromPrevious(true);
+  }, [previousState, seededFromPrevious]);
+
+  // Populate displayName from user when available (first-time onboarding)
+  useEffect(() => {
+    if (user && !state.displayName && !seededFromPrevious) {
       setState((s) => ({ ...s, displayName: user.displayName }));
     }
-  }, [user, state.displayName]);
+  }, [user, state.displayName, seededFromPrevious]);
 
   // Populate default habits when no habits set
   useEffect(() => {
@@ -138,7 +164,13 @@ export default function OnboardingPage() {
       // Keep session storage alive for the tutorial page to read theme/habits
       sessionStorage.removeItem(STEP_KEY);
 
-      router.push("/onboarding/tutorial");
+      // Skip tutorial if user has already seen it (re-onboarding flow)
+      if (user.hasSeenTutorial) {
+        sessionStorage.removeItem(STORAGE_KEY);
+        router.push("/dashboard");
+      } else {
+        router.push("/onboarding/tutorial");
+      }
     } catch (err) {
       console.error("Onboarding failed:", err);
       setIsSubmitting(false);

@@ -1,11 +1,57 @@
 import { v } from "convex/values";
-import { mutation, query, internalMutation, MutationCtx } from "./_generated/server";
+import { mutation, query, internalMutation, MutationCtx, QueryCtx } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import {
   getTodayInTimezone,
   computeDayNumber,
   getEditableDays,
 } from "./lib/dayCalculation";
+
+/**
+ * Shared helper: check if a day is complete for a challenge.
+ * Detects which system the challenge uses (legacy dailyLogs vs new habitEntries).
+ */
+async function isDayCompleteForChallenge(
+  ctx: MutationCtx,
+  challengeId: Id<"challenges">,
+  dayNumber: number
+): Promise<boolean> {
+  // Check if challenge uses the new habit system
+  const habitDefs = await ctx.db
+    .query("habitDefinitions")
+    .withIndex("by_challenge", (q) => q.eq("challengeId", challengeId))
+    .collect();
+
+  if (habitDefs.length > 0) {
+    // New system: check all active hard habits have completed entries
+    const hardHabits = habitDefs.filter((h) => h.isActive && h.isHard);
+    if (hardHabits.length === 0) return true;
+
+    const entries = await ctx.db
+      .query("habitEntries")
+      .withIndex("by_challenge_day", (q) =>
+        q.eq("challengeId", challengeId).eq("dayNumber", dayNumber)
+      )
+      .collect();
+    const entryMap = new Map(entries.map((e) => [e.habitDefinitionId, e]));
+
+    for (const habit of hardHabits) {
+      const entry = entryMap.get(habit._id);
+      if (!entry || !entry.completed) return false;
+    }
+    return true;
+  }
+
+  // Legacy system: check dailyLogs
+  const log = await ctx.db
+    .query("dailyLogs")
+    .withIndex("by_challenge_day", (q) =>
+      q.eq("challengeId", challengeId).eq("dayNumber", dayNumber)
+    )
+    .unique();
+
+  return !!log?.allRequirementsMet;
+}
 
 export const getActiveChallenge = query({
   args: { userId: v.id("users") },
@@ -222,14 +268,8 @@ export const checkChallengeStatus = mutation({
     // Scan from day 1 to lastExpiredDay for incomplete days
     const upperBound = Math.min(lastExpiredDay, 75);
     for (let day = 1; day <= upperBound; day++) {
-      const log = await ctx.db
-        .query("dailyLogs")
-        .withIndex("by_challenge_day", (q) =>
-          q.eq("challengeId", args.challengeId).eq("dayNumber", day)
-        )
-        .unique();
-
-      if (!log || !log.allRequirementsMet) {
+      const complete = await isDayCompleteForChallenge(ctx, args.challengeId, day);
+      if (!complete) {
         // This day is incomplete and grace period has expired — fail
         await failChallengeInternal(ctx, args.challengeId, day);
         return { status: "failed", failedOnDay: day };
@@ -241,13 +281,8 @@ export const checkChallengeStatus = mutation({
       // Verify all 75 days are complete
       let allComplete = true;
       for (let day = upperBound + 1; day <= 75; day++) {
-        const log = await ctx.db
-          .query("dailyLogs")
-          .withIndex("by_challenge_day", (q) =>
-            q.eq("challengeId", args.challengeId).eq("dayNumber", day)
-          )
-          .unique();
-        if (!log || !log.allRequirementsMet) {
+        const complete = await isDayCompleteForChallenge(ctx, args.challengeId, day);
+        if (!complete) {
           allComplete = false;
           break;
         }
@@ -318,14 +353,8 @@ export const checkAllActiveChallenges = internalMutation({
       const upperBound = Math.min(lastExpiredDay, 75);
       let failed = false;
       for (let day = 1; day <= upperBound; day++) {
-        const log = await ctx.db
-          .query("dailyLogs")
-          .withIndex("by_challenge_day", (q) =>
-            q.eq("challengeId", challenge._id).eq("dayNumber", day)
-          )
-          .unique();
-
-        if (!log || !log.allRequirementsMet) {
+        const complete = await isDayCompleteForChallenge(ctx, challenge._id, day);
+        if (!complete) {
           await failChallengeInternal(ctx, challenge._id, day);
           failed = true;
           break;
@@ -375,25 +404,74 @@ export const getLifetimeStats = query({
     if (user.currentChallengeId) {
       const challenge = await ctx.db.get(user.currentChallengeId);
       if (challenge && challenge.status === "active") {
-        const logs = await ctx.db
-          .query("dailyLogs")
+        // Check if challenge uses the new habit system
+        const habitDefs = await ctx.db
+          .query("habitDefinitions")
           .withIndex("by_challenge", (q) => q.eq("challengeId", challenge._id))
           .collect();
-        const completedDays = new Set(
-          logs.filter((l) => l.allRequirementsMet).map((l) => l.dayNumber)
-        );
-        // Count consecutive completed days from day 1
-        for (let day = 1; day <= challenge.currentDay; day++) {
-          if (completedDays.has(day)) {
-            currentStreak = day;
-          } else {
-            break;
+
+        if (habitDefs.length > 0) {
+          // New system: check habitEntries
+          const hardHabits = habitDefs.filter((h) => h.isActive && h.isHard);
+          for (let day = 1; day <= challenge.currentDay; day++) {
+            const entries = await ctx.db
+              .query("habitEntries")
+              .withIndex("by_challenge_day", (q) =>
+                q.eq("challengeId", challenge._id).eq("dayNumber", day)
+              )
+              .collect();
+            const entryMap = new Map(entries.map((e) => [e.habitDefinitionId, e]));
+            const dayComplete = hardHabits.every((h) => {
+              const entry = entryMap.get(h._id);
+              return entry?.completed;
+            });
+            if (dayComplete) {
+              currentStreak = day;
+            } else {
+              break;
+            }
+          }
+        } else {
+          // Legacy system: check dailyLogs
+          const logs = await ctx.db
+            .query("dailyLogs")
+            .withIndex("by_challenge", (q) => q.eq("challengeId", challenge._id))
+            .collect();
+          const completedDays = new Set(
+            logs.filter((l) => l.allRequirementsMet).map((l) => l.dayNumber)
+          );
+          for (let day = 1; day <= challenge.currentDay; day++) {
+            if (completedDays.has(day)) {
+              currentStreak = day;
+            } else {
+              break;
+            }
           }
         }
       }
     }
 
     return { lifetimeRestartCount, longestStreak, currentStreak, attemptNumber };
+  },
+});
+
+export const resetAndReOnboard = mutation({
+  args: {
+    challengeId: v.id("challenges"),
+    failedOnDay: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const challenge = await ctx.db.get(args.challengeId);
+    if (!challenge) throw new Error("Challenge not found");
+
+    // Fail the current challenge (preserves lifetimeRestartCount, longestStreak, history)
+    await failChallengeInternal(ctx, args.challengeId, args.failedOnDay);
+
+    // Set onboardingComplete = false so they're routed back to /onboarding
+    // Keep hasSeenTutorial = true so the tutorial auto-skips
+    await ctx.db.patch(challenge.userId, {
+      onboardingComplete: false,
+    });
   },
 });
 
