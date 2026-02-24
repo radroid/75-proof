@@ -2,7 +2,8 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { AlertTriangle, Palette, Settings, Shield } from "lucide-react";
+import { AlertTriangle, Palette, Play, Settings, Shield } from "lucide-react";
 import { useGuest } from "@/components/guest-provider";
 import { sharedUserProfileProps, userButtonPopoverElements } from "@/lib/clerk-appearance";
 
@@ -50,9 +51,11 @@ export default function SettingsPage() {
       </PageContainer>
     );
   }
+  const router = useRouter();
   const user = useQuery(api.users.getCurrentUser);
   const updateUser = useMutation(api.users.updateUser);
   const failChallenge = useMutation(api.challenges.failChallenge);
+  const resetTutorial = useMutation(api.users.resetTutorialSeen);
   const challenge = useQuery(
     api.challenges.getChallenge,
     user?.currentChallengeId
@@ -113,6 +116,15 @@ export default function SettingsPage() {
     }
   };
 
+  const handleReplayTutorial = useCallback(async () => {
+    try {
+      await resetTutorial();
+      router.push("/onboarding/tutorial?from=settings");
+    } catch {
+      toast.error("Failed to replay tutorial");
+    }
+  }, [resetTutorial, router]);
+
   if (user === undefined) {
     return (
       <div className="max-w-2xl space-y-6">
@@ -161,11 +173,37 @@ export default function SettingsPage() {
         </MotionItem>
       </Section>
 
+      {/* Tutorial section */}
+      <Section title="Tutorial">
+        <MotionItem>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Play className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Replay Tutorial</p>
+                    <p className="text-xs text-muted-foreground">
+                      Watch the intro video again
+                    </p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleReplayTutorial}>
+                  Watch
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </MotionItem>
+      </Section>
+
       {/* Profile section */}
       <Section title="Profile">
         <MotionItem>
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="p-6">
               <div className="flex items-center gap-4 mb-6">
                 <UserButton
                   userProfileProps={sharedUserProfileProps}
@@ -204,7 +242,7 @@ export default function SettingsPage() {
       <Section title="Preferences">
         <MotionItem>
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="p-6">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Water Unit</Label>

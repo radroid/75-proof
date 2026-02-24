@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Player, type PlayerRef } from "@remotion/player";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -9,16 +9,22 @@ import { TutorialVideo } from "@/remotion/compositions/Tutorial/TutorialVideo";
 import { TOTAL_FRAMES, FPS, COMP_WIDTH, COMP_HEIGHT } from "@/remotion/compositions/Tutorial/lib/constants";
 import type { ThemeName } from "@/remotion/compositions/Tutorial/lib/theme-styles";
 import { defaultTutorialProps } from "@/remotion/compositions/Tutorial/lib/mock-data";
+import { useThemePersonality } from "@/components/theme-provider";
 
 const STORAGE_KEY = "75hard-onboarding-state";
+const SPEEDS = [1, 1.5, 2, 3] as const;
 
 export default function TutorialPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromSettings = searchParams.get("from") === "settings";
+  const { personality } = useThemePersonality();
   const user = useQuery(api.users.getCurrentUser);
   const markSeen = useMutation(api.users.markTutorialSeen);
   const playerRef = useRef<PlayerRef>(null);
   const [leaving, setLeaving] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [speedIndex, setSpeedIndex] = useState(0);
 
   // Read onboarding state from sessionStorage to get theme + habits
   const [props, setProps] = useState(defaultTutorialProps);
@@ -36,19 +42,24 @@ export default function TutorialPage() {
           displayName: state.displayName || user?.displayName || "Challenger",
         });
       } else if (user) {
-        setProps((p) => ({ ...p, displayName: user.displayName }));
+        // No onboarding sessionStorage — use current theme (e.g. replay from settings)
+        setProps((p) => ({
+          ...p,
+          theme: personality as ThemeName,
+          displayName: user.displayName || "Challenger",
+        }));
       }
     } catch {
       // ignore parse errors
     }
-  }, [user]);
+  }, [user, personality]);
 
-  // Guard: if user already saw the tutorial, go to dashboard
+  // Guard: if user already saw the tutorial, go to dashboard (skip when replaying from settings)
   useEffect(() => {
-    if (user?.hasSeenTutorial) {
+    if (!fromSettings && user?.hasSeenTutorial) {
       router.replace("/dashboard");
     }
-  }, [user?.hasSeenTutorial, router]);
+  }, [fromSettings, user?.hasSeenTutorial, router]);
 
   const goToDashboard = useCallback(async () => {
     if (leaving) return;
@@ -59,8 +70,8 @@ export default function TutorialPage() {
       // proceed even if mutation fails
     }
     sessionStorage.removeItem(STORAGE_KEY);
-    router.push("/dashboard");
-  }, [leaving, markSeen, router]);
+    router.push(fromSettings ? "/dashboard/settings" : "/dashboard");
+  }, [leaving, markSeen, router, fromSettings]);
 
   // Listen for video end and track progress
   useEffect(() => {
@@ -97,24 +108,76 @@ export default function TutorialPage() {
   }
 
   return (
-    <div className="bg-background min-h-dvh flex flex-col items-center justify-center p-4 gap-5">
-      <div style={{ width: "100%", maxWidth: COMP_WIDTH }}>
-        <Player
-          ref={playerRef}
-          component={TutorialVideo}
-          inputProps={props}
-          durationInFrames={TOTAL_FRAMES}
-          compositionWidth={COMP_WIDTH}
-          compositionHeight={COMP_HEIGHT}
-          fps={FPS}
-          autoPlay
+    <div className="bg-background min-h-dvh flex flex-col items-center justify-center p-4 gap-5" style={{ position: "relative" }}>
+      {fromSettings && (
+        <button
+          onClick={goToDashboard}
+          disabled={leaving}
+          aria-label="Close tutorial"
           style={{
-            width: "100%",
-            borderRadius: 24,
-            overflow: "hidden",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            position: "absolute",
+            top: 16,
+            right: 16,
+            width: 36,
+            height: 36,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "var(--muted, #f3f4f6)",
+            border: "none",
+            borderRadius: "50%",
+            cursor: "pointer",
+            opacity: leaving ? 0.5 : 1,
           }}
-        />
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M4 4l8 8M12 4l-8 8" />
+          </svg>
+        </button>
+      )}
+
+      <div style={{ width: "100%", maxWidth: COMP_WIDTH }}>
+        <div style={{ position: "relative" }}>
+          <Player
+            ref={playerRef}
+            component={TutorialVideo}
+            inputProps={props}
+            durationInFrames={TOTAL_FRAMES}
+            compositionWidth={COMP_WIDTH}
+            compositionHeight={COMP_HEIGHT}
+            fps={FPS}
+            autoPlay
+            playbackRate={SPEEDS[speedIndex]}
+            style={{
+              width: "100%",
+              borderRadius: 24,
+              overflow: "hidden",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            }}
+          />
+
+          <button
+            onClick={() => setSpeedIndex((i) => (i + 1) % SPEEDS.length)}
+            style={{
+              position: "absolute",
+              bottom: 12,
+              right: 12,
+              background: "rgba(0,0,0,0.55)",
+              backdropFilter: "blur(8px)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "4px 10px",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              lineHeight: 1.4,
+              userSelect: "none",
+            }}
+          >
+            {SPEEDS[speedIndex]}x
+          </button>
+        </div>
 
         {/* Progress bar */}
         <div
@@ -138,22 +201,24 @@ export default function TutorialPage() {
         </div>
       </div>
 
-      <button
-        onClick={goToDashboard}
-        disabled={leaving}
-        style={{
-          background: "none",
-          border: "none",
-          color: "var(--muted-foreground, #6b7280)",
-          fontSize: 15,
-          fontWeight: 500,
-          cursor: "pointer",
-          padding: "8px 16px",
-          opacity: leaving ? 0.5 : 1,
-        }}
-      >
-        Skip &rarr;
-      </button>
+      {!fromSettings && (
+        <button
+          onClick={goToDashboard}
+          disabled={leaving}
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--muted-foreground, #6b7280)",
+            fontSize: 15,
+            fontWeight: 500,
+            cursor: "pointer",
+            padding: "8px 16px",
+            opacity: leaving ? 0.5 : 1,
+          }}
+        >
+          Skip &rarr;
+        </button>
+      )}
     </div>
   );
 }
