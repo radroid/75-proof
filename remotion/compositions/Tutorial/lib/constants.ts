@@ -1,0 +1,19 @@
+export const FPS = 30;
+export const COMP_WIDTH = 390;
+export const COMP_HEIGHT = 780;
+
+// Scene durations in frames (at 30fps)
+export const SCENE_DASHBOARD_DURATION = 120; // 4s
+export const SCENE_CHECK_TASK_DURATION = 150; // 5s
+export const SCENE_TRACK_WATER_DURATION = 150; // 5s
+export const SCENE_READING_PHOTO_DURATION = 120; // 4s
+export const SCENE_SWIPE_DAYS_DURATION = 105; // 3.5s
+export const SCENE_ALL_DONE_DURATION = 105; // 3.5s
+
+export const TOTAL_FRAMES =
+  SCENE_DASHBOARD_DURATION +
+  SCENE_CHECK_TASK_DURATION +
+  SCENE_TRACK_WATER_DURATION +
+  SCENE_READING_PHOTO_DURATION +
+  SCENE_SWIPE_DAYS_DURATION +
+  SCENE_ALL_DONE_DURATION; // 750 frames = 25s

@@ -20,6 +20,16 @@ export default defineSchema({
         showCompletionStatus: v.boolean(),
       })),
     }),
+    onboardingComplete: v.optional(v.boolean()),
+    hasSeenTutorial: v.optional(v.boolean()),
+    onboarding: v.optional(v.object({
+      completedAt: v.string(),
+      ageRange: v.optional(v.string()),
+      healthConditions: v.optional(v.array(v.string())),
+      goals: v.optional(v.array(v.string())),
+      healthAdvisoryAcknowledged: v.boolean(),
+      setupTier: v.union(v.literal("original"), v.literal("customized"), v.literal("added")),
+    })),
   })
     .index("by_clerk_id", ["clerkId"]),
 
@@ -40,6 +50,7 @@ export default defineSchema({
       v.literal("friends"),
       v.literal("public")
     ),
+    setupTier: v.optional(v.union(v.literal("original"), v.literal("customized"), v.literal("added"))),
   })
     .index("by_user", ["userId"])
     .index("by_status", ["status"]),
@@ -149,6 +160,36 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_created", ["createdAt"]),
+
+  // Habit Definitions — what habits a challenge tracks (new onboarding system)
+  habitDefinitions: defineTable({
+    challengeId: v.id("challenges"),
+    userId: v.id("users"),
+    name: v.string(),
+    blockType: v.union(v.literal("task"), v.literal("counter")),
+    target: v.optional(v.number()),
+    unit: v.optional(v.string()),
+    isHard: v.boolean(),
+    isActive: v.boolean(),
+    sortOrder: v.number(),
+    category: v.optional(v.string()),
+    icon: v.optional(v.string()),
+  })
+    .index("by_challenge", ["challengeId"])
+    .index("by_user", ["userId"]),
+
+  // Habit Entries — daily completion per habit (new onboarding system)
+  habitEntries: defineTable({
+    habitDefinitionId: v.id("habitDefinitions"),
+    challengeId: v.id("challenges"),
+    userId: v.id("users"),
+    dayNumber: v.number(),
+    date: v.string(),
+    completed: v.boolean(),
+    value: v.optional(v.number()),
+  })
+    .index("by_challenge_day", ["challengeId", "dayNumber"])
+    .index("by_habit_day", ["habitDefinitionId", "dayNumber"]),
 
   // Connected health devices
   connectedDevices: defineTable({
