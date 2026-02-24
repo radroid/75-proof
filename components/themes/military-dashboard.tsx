@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { DailyChecklist } from "@/components/DailyChecklist";
+import { DynamicDailyChecklist } from "@/components/DynamicDailyChecklist";
 import { GuestDailyChecklist } from "@/components/GuestDailyChecklist";
 import { DayNavigator } from "@/components/DayNavigator";
 import { SwipeableDayView } from "@/components/swipeable-day-view";
@@ -52,8 +53,19 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
 
   const [guestTotalDone, setGuestTotalDone] = useState<number | null>(null);
 
+  // Detect new habit system
+  const habitDefs = useQuery(
+    api.habitDefinitions.getActiveHabitDefinitions,
+    isGuest ? "skip" : { challengeId: challenge._id }
+  );
+  const habitEntries = useQuery(
+    api.habitEntries.getEntriesForDay,
+    isGuest || !habitDefs || habitDefs.length === 0 ? "skip" : { challengeId: challenge._id, dayNumber: displayDay }
+  );
+  const isNewSystem = !isGuest && (habitDefs?.length ?? 0) > 0;
+
   const selectedLog = effectiveLogs?.find((l: any) => l.dayNumber === displayDay);
-  const logTotalDone = selectedLog ? [
+  const legacyTotalDone = selectedLog ? [
     !!selectedLog.workout1 && selectedLog.workout1.durationMinutes >= 45,
     !!selectedLog.workout2 && selectedLog.workout2.durationMinutes >= 45,
     selectedLog.outdoorWorkoutCompleted,
@@ -63,8 +75,13 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
     (selectedLog.readingMinutes ?? 0) >= 20,
     !!selectedLog.progressPhotoId,
   ].filter(Boolean).length : 0;
-  const totalDone = isGuest && guestTotalDone !== null ? guestTotalDone : logTotalDone;
-  const totalItems = 8;
+
+  const newSystemEntryMap = new Map((habitEntries ?? []).map((e: any) => [e.habitDefinitionId, e]));
+  const newTotalDone = isNewSystem ? (habitDefs?.filter((h: any) => newSystemEntryMap.get(h._id)?.completed).length ?? 0) : 0;
+  const newTotalItems = isNewSystem ? (habitDefs?.length ?? 0) : 8;
+
+  const totalDone = isGuest && guestTotalDone !== null ? guestTotalDone : isNewSystem ? newTotalDone : legacyTotalDone;
+  const totalItems = isNewSystem ? newTotalItems : 8;
 
   const today = new Date();
   const hours = today.getHours();
@@ -227,6 +244,15 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
           >
             {isGuest ? (
               <GuestDailyChecklist dayNumber={displayDay} onCompletionChange={setGuestTotalDone} />
+            ) : isNewSystem ? (
+              <DynamicDailyChecklist
+                challengeId={challenge._id}
+                userId={user._id}
+                dayNumber={displayDay}
+                date={dateStr}
+                isEditable={isEditable}
+                userTimezone={userTimezone}
+              />
             ) : (
               <DailyChecklist
                 challengeId={challenge._id}
