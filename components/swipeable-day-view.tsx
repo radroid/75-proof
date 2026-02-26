@@ -20,7 +20,7 @@ export function SwipeableDayView({
   children,
 }: SwipeableDayViewProps) {
   const prevDayRef = useRef(displayDay);
-  const [direction, setDirection] = useState(0);
+  const directionRef = useRef(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
@@ -31,12 +31,14 @@ export function SwipeableDayView({
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  useEffect(() => {
-    if (displayDay !== prevDayRef.current) {
-      setDirection(displayDay > prevDayRef.current ? 1 : -1);
-      prevDayRef.current = displayDay;
-    }
-  }, [displayDay]);
+  // Compute direction synchronously so AnimatePresence gets the correct
+  // custom value on the very first render after a day change.
+  if (displayDay !== prevDayRef.current) {
+    directionRef.current = displayDay > prevDayRef.current ? 1 : -1;
+    prevDayRef.current = displayDay;
+  }
+
+  const direction = directionRef.current;
 
   const handleSwipeLeft = useCallback(() => {
     // Swipe left → next day

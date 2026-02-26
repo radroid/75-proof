@@ -16,21 +16,37 @@ import { cn } from "@/lib/utils";
 import { DEMO_DAILY_LOG } from "@/lib/demo-data";
 import { useGuest } from "@/components/guest-provider";
 
+interface DayLog {
+  workout1?: { name: string; durationMinutes: number } | null;
+  workout2?: { name: string; durationMinutes: number } | null;
+  waterIntakeOz: number;
+  dietFollowed: boolean;
+  noAlcohol: boolean;
+  readingMinutes: number;
+  progressPhotoId?: string | null;
+}
+
 interface GuestDailyChecklistProps {
   dayNumber: number;
+  isEditable?: boolean;
+  /** The demo log for the current day — drives initial checklist state. */
+  log?: DayLog | null;
   onCompletionChange?: (totalDone: number) => void;
 }
 
-export function GuestDailyChecklist({ dayNumber, onCompletionChange }: GuestDailyChecklistProps) {
+export function GuestDailyChecklist({ dayNumber, isEditable = true, log, onCompletionChange }: GuestDailyChecklistProps) {
   const { promptSignup } = useGuest();
 
-  const [workout1Done, setWorkout1Done] = useState(!!DEMO_DAILY_LOG.workout1);
-  const [workout2Done, setWorkout2Done] = useState(!!DEMO_DAILY_LOG.workout2);
-  const [waterOz, setWaterOz] = useState(DEMO_DAILY_LOG.waterIntakeOz);
-  const [dietFollowed, setDietFollowed] = useState(DEMO_DAILY_LOG.dietFollowed);
-  const [noAlcohol, setNoAlcohol] = useState(DEMO_DAILY_LOG.noAlcohol);
-  const [readingMinutes, setReadingMinutes] = useState(DEMO_DAILY_LOG.readingMinutes);
-  const [hasPhoto, setHasPhoto] = useState(!!DEMO_DAILY_LOG.progressPhotoId);
+  // Use provided log (per-day), fall back to DEMO_DAILY_LOG for backward compat
+  const sourceLog = log ?? DEMO_DAILY_LOG;
+
+  const [workout1Done, setWorkout1Done] = useState(!!sourceLog.workout1);
+  const [workout2Done, setWorkout2Done] = useState(!!sourceLog.workout2);
+  const [waterOz, setWaterOz] = useState(sourceLog.waterIntakeOz);
+  const [dietFollowed, setDietFollowed] = useState(sourceLog.dietFollowed);
+  const [noAlcohol, setNoAlcohol] = useState(sourceLog.noAlcohol);
+  const [readingMinutes, setReadingMinutes] = useState(sourceLog.readingMinutes);
+  const [hasPhoto, setHasPhoto] = useState(!!sourceLog.progressPhotoId);
   const [showSignupDialog, setShowSignupDialog] = useState(false);
 
   const fitnessComplete = workout1Done && workout2Done;
@@ -72,6 +88,7 @@ export function GuestDailyChecklist({ dayNumber, onCompletionChange }: GuestDail
   const glassesCompleted = Math.min(GLASSES, Math.floor(waterOz / OZ_PER_GLASS));
 
   const handleGlassTap = (i: number) => {
+    if (!isEditable) return;
     if (i < glassesCompleted) {
       setWaterOz(i * OZ_PER_GLASS);
     } else {
@@ -85,6 +102,7 @@ export function GuestDailyChecklist({ dayNumber, onCompletionChange }: GuestDail
   const blocksCompleted = Math.min(READING_BLOCKS, Math.floor(readingMinutes / MIN_PER_BLOCK));
 
   const handleBlockTap = (i: number) => {
+    if (!isEditable) return;
     if (i < blocksCompleted) {
       setReadingMinutes(i * MIN_PER_BLOCK);
     } else {
@@ -101,15 +119,17 @@ export function GuestDailyChecklist({ dayNumber, onCompletionChange }: GuestDail
             label="Indoor Workout"
             detail={workout1Done ? "Morning Run — 45 min" : "45 min"}
             done={workout1Done}
-            onTap={() => setWorkout1Done(!workout1Done)}
+            onTap={() => isEditable && setWorkout1Done(!workout1Done)}
             isLast={false}
+            disabled={!isEditable}
           />
           <TodoItem
             label="Outdoor Workout"
             detail={workout2Done ? "Weight Training — 45 min" : "45 min, must be outside"}
             done={workout2Done}
-            onTap={() => setWorkout2Done(!workout2Done)}
+            onTap={() => isEditable && setWorkout2Done(!workout2Done)}
             isLast={true}
+            disabled={!isEditable}
           />
         </CategorySection>
 
@@ -134,8 +154,11 @@ export function GuestDailyChecklist({ dayNumber, onCompletionChange }: GuestDail
                       <button
                         key={i}
                         onClick={() => handleGlassTap(i)}
+                        disabled={!isEditable}
                         className={cn(
-                          "w-8 h-8 rounded-md border text-xs font-medium transition-all hover:scale-105 active:scale-95",
+                          "w-8 h-8 rounded-md border text-xs font-medium transition-all",
+                          isEditable && "hover:scale-105 active:scale-95",
+                          !isEditable && "cursor-not-allowed opacity-50",
                           checked ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
                         )}
                       >
@@ -148,8 +171,8 @@ export function GuestDailyChecklist({ dayNumber, onCompletionChange }: GuestDail
             </div>
           </div>
 
-          <TodoItem label="Follow Diet" detail="No cheat meals" done={dietFollowed} onTap={() => setDietFollowed(!dietFollowed)} isLast={false} />
-          <TodoItem label="No Alcohol" detail="Stay alcohol-free" done={noAlcohol} onTap={() => setNoAlcohol(!noAlcohol)} isLast={true} />
+          <TodoItem label="Follow Diet" detail="No cheat meals" done={dietFollowed} onTap={() => isEditable && setDietFollowed(!dietFollowed)} isLast={false} disabled={!isEditable} />
+          <TodoItem label="No Alcohol" detail="Stay alcohol-free" done={noAlcohol} onTap={() => isEditable && setNoAlcohol(!noAlcohol)} isLast={true} disabled={!isEditable} />
         </CategorySection>
 
         {/* Mind & Progress Section */}
@@ -173,8 +196,11 @@ export function GuestDailyChecklist({ dayNumber, onCompletionChange }: GuestDail
                       <button
                         key={i}
                         onClick={() => handleBlockTap(i)}
+                        disabled={!isEditable}
                         className={cn(
-                          "h-8 rounded-md border text-xs font-medium transition-all px-3 hover:scale-105 active:scale-95",
+                          "h-8 rounded-md border text-xs font-medium transition-all px-3",
+                          isEditable && "hover:scale-105 active:scale-95",
+                          !isEditable && "cursor-not-allowed opacity-50",
                           checked ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
                         )}
                       >
@@ -198,12 +224,15 @@ export function GuestDailyChecklist({ dayNumber, onCompletionChange }: GuestDail
               <DoneIndicator done={true} />
             ) : (
               <button
-                onClick={() => setHasPhoto(true)}
+                onClick={() => isEditable && setHasPhoto(true)}
+                disabled={!isEditable}
                 className={cn(
                   "flex-shrink-0 inline-flex items-center gap-2",
                   "rounded-lg border border-dashed border-primary/40 bg-primary/5",
                   "px-3 py-2 text-xs font-medium text-primary",
-                  "hover:bg-primary/10 hover:border-primary/60 active:scale-95 transition-all"
+                  isEditable && "hover:bg-primary/10 hover:border-primary/60 active:scale-95",
+                  !isEditable && "cursor-not-allowed opacity-50",
+                  "transition-all"
                 )}
               >
                 <Camera className="h-4 w-4" />
@@ -286,18 +315,20 @@ function CategorySection({ title, icon, isComplete, children }: { title: string;
   );
 }
 
-function TodoItem({ label, detail, done, onTap, isLast }: { label: string; detail: string; done: boolean; isLast: boolean; onTap: () => void }) {
+function TodoItem({ label, detail, done, onTap, isLast, disabled = false }: { label: string; detail: string; done: boolean; isLast: boolean; onTap: () => void; disabled?: boolean }) {
   return (
     <div
       className={cn(
-        "flex items-start gap-3 py-4 transition-colors cursor-pointer hover:bg-muted/30 -mx-2 px-2 rounded-lg",
+        "flex items-start gap-3 py-4 transition-colors -mx-2 px-2 rounded-lg",
         !isLast && "border-b border-border/50",
-        done && "opacity-60"
+        done && "opacity-60",
+        disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-muted/30"
       )}
-      onClick={onTap}
+      onClick={disabled ? undefined : onTap}
       role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onTap(); } }}
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
+      onKeyDown={disabled ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onTap(); } }}
     >
       <div className={cn("w-[3px] rounded-full self-stretch mt-0.5 min-h-[24px] transition-colors", done ? "bg-success" : "bg-muted")} />
       <div className="flex-1 min-w-0">

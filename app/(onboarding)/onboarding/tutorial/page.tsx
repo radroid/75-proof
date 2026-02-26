@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useState, useRef } from "react";
+import { Suspense, useEffect, useCallback, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Player, type PlayerRef } from "@remotion/player";
 import { useQuery, useMutation } from "convex/react";
@@ -15,6 +15,20 @@ const STORAGE_KEY = "75hard-onboarding-state";
 const SPEEDS = [1, 1.5, 2, 3] as const;
 
 export default function TutorialPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="bg-background min-h-dvh flex items-center justify-center">
+          <div style={{ width: 24, height: 24, borderRadius: "50%", border: "2px solid #e5e7eb", borderTopColor: "#2563eb" }} />
+        </div>
+      }
+    >
+      <TutorialPageInner />
+    </Suspense>
+  );
+}
+
+function TutorialPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromSettings = searchParams.get("from") === "settings";

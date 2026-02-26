@@ -243,7 +243,7 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
             onDayChange={setSelectedDayNumber}
           >
             {isGuest ? (
-              <GuestDailyChecklist dayNumber={displayDay} onCompletionChange={setGuestTotalDone} />
+              <GuestDailyChecklist key={displayDay} dayNumber={displayDay} isEditable={isEditable} log={selectedLog} onCompletionChange={setGuestTotalDone} />
             ) : isNewSystem ? (
               <DynamicDailyChecklist
                 challengeId={challenge._id}
