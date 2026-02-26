@@ -127,7 +127,7 @@ export default function RootLayout({
                   "@type": "Organization",
                   name: "Create+ Club",
                   url: "https://75.createplus.club",
-                  logo: "https://75.createplus.club/opengraph-image",
+                  logo: "https://75.createplus.club/logo.svg",
                 },
                 {
                   "@type": "FAQPage",

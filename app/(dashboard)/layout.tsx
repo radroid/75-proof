@@ -19,9 +19,9 @@ import {
   TrendingUp,
   Users,
   Settings,
-  Dumbbell,
   LogIn,
 } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { sharedUserProfileProps, userButtonPopoverElements } from "@/lib/clerk-appearance";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -76,9 +76,7 @@ function SidebarHeader() {
           href="/dashboard"
           className="flex items-center justify-center"
         >
-          <div className="h-7 w-7 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-            <Dumbbell className="h-4 w-4 text-primary-foreground" />
-          </div>
+          <Image src="/logo.svg" alt="75 Proof" width={28} height={28} className="flex-shrink-0" />
         </Link>
       </div>
     );
@@ -90,9 +88,7 @@ function SidebarHeader() {
         href="/dashboard"
         className="font-normal flex items-center space-x-2 text-sm py-1 relative z-20"
       >
-        <div className="h-7 w-7 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-          <Dumbbell className="h-4 w-4 text-primary-foreground" />
-        </div>
+        <Image src="/logo.svg" alt="75 Proof" width={28} height={28} className="flex-shrink-0" />
         <span className="font-bold text-foreground whitespace-pre text-base">
           75 Proof
         </span>

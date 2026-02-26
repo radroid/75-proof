@@ -177,9 +177,12 @@ function LandingPage() {
 
       {/* Nav */}
       <nav className="relative z-20 flex items-center justify-between px-4 sm:px-6 md:px-10 py-6">
-        <span className="text-xl font-black" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-          75 Proof
-        </span>
+        <Link href="/" className="flex items-center gap-2">
+          <img src="/logo.svg" alt="75 Proof" width={32} height={32} />
+          <span className="text-xl font-black" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            75 Proof
+          </span>
+        </Link>
         <div className="flex items-center gap-2 sm:gap-3">
           <Authenticated>
             <button
