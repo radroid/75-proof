@@ -227,7 +227,7 @@ export function GuestDailyChecklist({ dayNumber, isEditable = true, log, onCompl
                 onClick={() => isEditable && setHasPhoto(true)}
                 disabled={!isEditable}
                 className={cn(
-                  "flex-shrink-0 inline-flex items-center gap-2",
+                  "shrink-0 inline-flex items-center gap-2",
                   "rounded-lg border border-dashed border-primary/40 bg-primary/5",
                   "px-3 py-2 text-xs font-medium text-primary",
                   isEditable && "hover:bg-primary/10 hover:border-primary/60 active:scale-95",
@@ -353,7 +353,7 @@ function DoneIndicator({ done }: { done: boolean }) {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0, opacity: 0 }}
           transition={{ type: "spring", stiffness: 400, damping: 20 }}
-          className="flex-shrink-0"
+          className="shrink-0"
         >
           <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center">
             <Check className="h-3 w-3 text-success-foreground" />
