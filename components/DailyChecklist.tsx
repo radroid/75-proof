@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 
@@ -51,6 +51,7 @@ export function DailyChecklist({
   const clearWorkout = useMutation(api.dailyLogs.clearWorkout);
   const { isActive: confettiActive, trigger: triggerConfetti } = useConfetti();
   const prevAllMetRef = useRef(false);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (dailyLog?.allRequirementsMet && !prevAllMetRef.current) {
@@ -301,13 +302,19 @@ export function DailyChecklist({
         <AnimatePresence>
           {dailyLog?.allRequirementsMet && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+              animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+              transition={
+                shouldReduceMotion
+                  ? { duration: 0.15 }
+                  : { type: "spring", stiffness: 300, damping: 25 }
+              }
               className="flex items-center justify-center gap-2 py-6 text-center"
+              role="status"
+              aria-live="polite"
             >
-              <Sparkles className="h-5 w-5 text-success" />
+              <Sparkles className="h-5 w-5 text-success" aria-hidden="true" />
               <p className="text-sm font-medium text-success">
                 All requirements completed for today!
               </p>
@@ -360,7 +367,6 @@ function TodoItem({
   label,
   detail,
   done,
-  progress,
   isLast,
   onTap,
   children,
@@ -368,21 +374,24 @@ function TodoItem({
   label: string;
   detail: string;
   done: boolean;
-  progress?: number;
   isLast: boolean;
   onTap?: () => void;
   children?: React.ReactNode;
 }) {
+  const shouldReduceMotion = useReducedMotion();
   return (
     <div
       className={cn(
-        "flex items-start gap-3 py-4 transition-colors",
+        "flex items-start gap-3 py-4 min-h-[56px] transition-colors touch-manipulation select-none",
         !isLast && "border-b border-border/50",
-        onTap && "cursor-pointer hover:bg-muted/30 active:bg-muted/60 -mx-2 px-2 rounded-lg",
+        onTap &&
+          "cursor-pointer hover:bg-muted/30 active:bg-muted/60 -mx-2 px-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         done && "opacity-60"
       )}
       onClick={onTap}
       role={onTap ? "button" : undefined}
+      aria-pressed={onTap ? done : undefined}
+      aria-label={onTap ? `${label}, ${done ? "completed" : "not completed"}` : undefined}
       tabIndex={onTap ? 0 : undefined}
       onKeyDown={onTap ? (e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -397,6 +406,7 @@ function TodoItem({
           "w-[3px] rounded-full self-stretch mt-0.5 min-h-[24px] transition-colors",
           done ? "bg-success" : "bg-muted"
         )}
+        aria-hidden="true"
       />
 
       {/* Content */}
@@ -405,14 +415,14 @@ function TodoItem({
           <div className="min-w-0">
             <p
               className={cn(
-                "text-sm font-medium transition-colors",
+                "text-sm font-medium transition-colors break-words",
                 done ? "text-muted-foreground line-through" : "text-foreground"
               )}
             >
               {label}
             </p>
             {!done && (
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5 break-words">
                 {detail}
               </p>
             )}
@@ -422,14 +432,18 @@ function TodoItem({
           <AnimatePresence>
             {done && (
               <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                className="flex-shrink-0"
+                initial={shouldReduceMotion ? { opacity: 0 } : { scale: 0, opacity: 0 }}
+                animate={shouldReduceMotion ? { opacity: 1 } : { scale: 1, opacity: 1 }}
+                exit={shouldReduceMotion ? { opacity: 0 } : { scale: 0, opacity: 0 }}
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0.15 }
+                    : { type: "spring", stiffness: 400, damping: 20 }
+                }
+                className="shrink-0 self-center"
               >
                 <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center">
-                  <Check className="h-3 w-3 text-success-foreground" />
+                  <Check className="h-3 w-3 text-success-foreground" aria-hidden="true" />
                 </div>
               </motion.div>
             )}
@@ -459,6 +473,7 @@ function WaterChecklist({
   onWaterChange: (amount: number) => void;
   isLast: boolean;
 }) {
+  const shouldReduceMotion = useReducedMotion();
   const glassesCompleted = Math.min(GLASSES, Math.floor(waterOz / OZ_PER_GLASS));
   const allDone = waterOz >= 128;
 
@@ -489,6 +504,7 @@ function WaterChecklist({
           "w-[3px] rounded-full self-stretch mt-0.5 min-h-[24px] transition-colors",
           allDone ? "bg-success" : "bg-muted"
         )}
+        aria-hidden="true"
       />
 
       {/* Content */}
@@ -504,8 +520,8 @@ function WaterChecklist({
               Water
             </p>
             {!allDone && (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {waterOz} / 128 oz
+              <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
+                <span className="tabular-nums">{waterOz}</span> / 128 oz
               </p>
             )}
           </div>
@@ -514,14 +530,18 @@ function WaterChecklist({
           <AnimatePresence>
             {allDone && (
               <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                className="flex-shrink-0"
+                initial={shouldReduceMotion ? { opacity: 0 } : { scale: 0, opacity: 0 }}
+                animate={shouldReduceMotion ? { opacity: 1 } : { scale: 1, opacity: 1 }}
+                exit={shouldReduceMotion ? { opacity: 0 } : { scale: 0, opacity: 0 }}
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0.15 }
+                    : { type: "spring", stiffness: 400, damping: 20 }
+                }
+                className="shrink-0"
               >
                 <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center">
-                  <Check className="h-3 w-3 text-success-foreground" />
+                  <Check className="h-3 w-3 text-success-foreground" aria-hidden="true" />
                 </div>
               </motion.div>
             )}
@@ -530,7 +550,7 @@ function WaterChecklist({
 
         {/* 8 glass checklist */}
         {!allDone && (
-          <div className="flex gap-2 mt-3">
+          <div className="grid grid-cols-8 gap-1.5 sm:gap-2 mt-3">
             {Array.from({ length: GLASSES }).map((_, i) => {
               const checked = i < glassesCompleted;
               return (
@@ -538,15 +558,22 @@ function WaterChecklist({
                   key={i}
                   onClick={() => handleGlassTap(i)}
                   className={cn(
-                    "w-8 h-8 rounded-md border text-xs font-medium transition-all",
-                    "hover:scale-105 active:scale-95",
+                    "h-11 sm:h-10 rounded-md border text-xs font-medium transition-colors touch-manipulation",
+                    "active:scale-95 transition-transform",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     checked
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
                   )}
                   title={`${(i + 1) * OZ_PER_GLASS} oz`}
+                  aria-label={`${(i + 1) * OZ_PER_GLASS} oz${checked ? ", completed" : ""}`}
+                  aria-pressed={checked}
                 >
-                  {checked ? <Check className="h-3.5 w-3.5 mx-auto" /> : i + 1}
+                  {checked ? (
+                    <Check className="h-4 w-4 mx-auto" aria-hidden="true" />
+                  ) : (
+                    <span className="tabular-nums">{i + 1}</span>
+                  )}
                 </button>
               );
             })}
@@ -569,6 +596,7 @@ function ReadingChecklist({
   onReadingChange: (amount: number) => void;
   isLast: boolean;
 }) {
+  const shouldReduceMotion = useReducedMotion();
   const blocksCompleted = Math.min(READING_BLOCKS, Math.floor(readingMinutes / MIN_PER_BLOCK));
   const allDone = readingMinutes >= 20;
 
@@ -597,6 +625,7 @@ function ReadingChecklist({
           "w-[3px] rounded-full self-stretch mt-0.5 min-h-[24px] transition-colors",
           allDone ? "bg-success" : "bg-muted"
         )}
+        aria-hidden="true"
       />
 
       {/* Content */}
@@ -612,8 +641,8 @@ function ReadingChecklist({
               Reading
             </p>
             {!allDone && (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {readingMinutes} / 20 min
+              <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
+                <span className="tabular-nums">{readingMinutes}</span> / 20 min
               </p>
             )}
           </div>
@@ -622,14 +651,18 @@ function ReadingChecklist({
           <AnimatePresence>
             {allDone && (
               <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                className="flex-shrink-0"
+                initial={shouldReduceMotion ? { opacity: 0 } : { scale: 0, opacity: 0 }}
+                animate={shouldReduceMotion ? { opacity: 1 } : { scale: 1, opacity: 1 }}
+                exit={shouldReduceMotion ? { opacity: 0 } : { scale: 0, opacity: 0 }}
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0.15 }
+                    : { type: "spring", stiffness: 400, damping: 20 }
+                }
+                className="shrink-0"
               >
                 <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center">
-                  <Check className="h-3 w-3 text-success-foreground" />
+                  <Check className="h-3 w-3 text-success-foreground" aria-hidden="true" />
                 </div>
               </motion.div>
             )}
@@ -638,7 +671,7 @@ function ReadingChecklist({
 
         {/* 4 block checklist */}
         {!allDone && (
-          <div className="flex gap-2 mt-3">
+          <div className="grid grid-cols-4 gap-2 mt-3">
             {Array.from({ length: READING_BLOCKS }).map((_, i) => {
               const checked = i < blocksCompleted;
               return (
@@ -646,15 +679,22 @@ function ReadingChecklist({
                   key={i}
                   onClick={() => handleBlockTap(i)}
                   className={cn(
-                    "h-8 rounded-md border text-xs font-medium transition-all px-3",
-                    "hover:scale-105 active:scale-95",
+                    "h-11 sm:h-10 rounded-md border text-xs font-medium transition-colors px-3 touch-manipulation",
+                    "active:scale-95 transition-transform",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     checked
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
                   )}
                   title={`${(i + 1) * MIN_PER_BLOCK} min`}
+                  aria-label={`${(i + 1) * MIN_PER_BLOCK} minutes${checked ? ", completed" : ""}`}
+                  aria-pressed={checked}
                 >
-                  {checked ? <Check className="h-3.5 w-3.5 mx-auto" /> : `${(i + 1) * MIN_PER_BLOCK}m`}
+                  {checked ? (
+                    <Check className="h-4 w-4 mx-auto" aria-hidden="true" />
+                  ) : (
+                    <span className="tabular-nums">{`${(i + 1) * MIN_PER_BLOCK}m`}</span>
+                  )}
                 </button>
               );
             })}
@@ -869,6 +909,8 @@ function PhotoRow({
     }
   };
 
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <div
       className={cn(
@@ -882,6 +924,7 @@ function PhotoRow({
           "w-[3px] rounded-full self-stretch min-h-[24px] transition-colors",
           hasPhoto ? "bg-success" : "bg-muted"
         )}
+        aria-hidden="true"
       />
 
       {/* Label */}
@@ -904,23 +947,27 @@ function PhotoRow({
       {/* Upload button — right-aligned */}
       {hasPhoto ? (
         <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 400, damping: 20 }}
-          className="flex-shrink-0"
+          initial={shouldReduceMotion ? { opacity: 0 } : { scale: 0, opacity: 0 }}
+          animate={shouldReduceMotion ? { opacity: 1 } : { scale: 1, opacity: 1 }}
+          transition={
+            shouldReduceMotion
+              ? { duration: 0.15 }
+              : { type: "spring", stiffness: 400, damping: 20 }
+          }
+          className="shrink-0"
         >
           <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center">
-            <Check className="h-3 w-3 text-success-foreground" />
+            <Check className="h-3 w-3 text-success-foreground" aria-hidden="true" />
           </div>
         </motion.div>
       ) : (
         <label
           className={cn(
-            "flex-shrink-0 inline-flex items-center gap-2 cursor-pointer",
+            "shrink-0 inline-flex items-center gap-2 cursor-pointer min-h-[44px] touch-manipulation",
             "rounded-lg border border-dashed border-primary/40 bg-primary/5",
-            "px-3 py-2 text-xs font-medium text-primary",
-            "hover:bg-primary/10 hover:border-primary/60 active:scale-95",
-            "transition-all",
+            "px-4 py-2 text-sm font-medium text-primary",
+            "hover:bg-primary/10 hover:border-primary/60 active:scale-95 transition-transform",
+            "focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
             isUploading && "opacity-50 pointer-events-none"
           )}
         >
@@ -930,16 +977,17 @@ function PhotoRow({
             capture="environment"
             onChange={handleUpload}
             disabled={isUploading}
-            className="hidden"
+            className="sr-only"
+            aria-label="Upload progress photo"
           />
           {isUploading ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               Uploading…
             </>
           ) : (
             <>
-              <Camera className="h-4 w-4" />
+              <Camera className="h-4 w-4" aria-hidden="true" />
               Add Photo
             </>
           )}

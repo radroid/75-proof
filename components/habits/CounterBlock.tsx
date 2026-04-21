@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Check, Minus, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -42,13 +42,14 @@ export function CounterBlock({
   isEditable,
   onIncrement,
 }: CounterBlockProps) {
+  const shouldReduceMotion = useReducedMotion();
   const increment = getIncrementForUnit(unit);
   const progress = Math.min((value / target) * 100, 100);
 
   return (
     <div
       className={cn(
-        "flex items-start gap-3 py-4 transition-colors border-b border-border/50 last:border-0",
+        "flex items-start gap-3 py-4 transition-colors border-b border-border/50 last:border-0 touch-manipulation",
         completed && "opacity-60"
       )}
     >
@@ -58,16 +59,17 @@ export function CounterBlock({
           "w-[3px] rounded-full self-stretch mt-0.5 min-h-[24px] transition-colors",
           completed ? "bg-success" : "bg-muted"
         )}
+        aria-hidden="true"
       />
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <p
                 className={cn(
-                  "text-sm font-medium transition-colors",
+                  "text-sm font-medium transition-colors break-words",
                   completed
                     ? "text-muted-foreground line-through"
                     : "text-foreground"
@@ -78,7 +80,7 @@ export function CounterBlock({
               <Badge
                 variant="outline"
                 className={cn(
-                  "text-[9px] h-4 px-1",
+                  "text-[9px] h-4 px-1 shrink-0",
                   isHard
                     ? "border-destructive/40 text-destructive"
                     : "border-muted-foreground/30 text-muted-foreground"
@@ -88,8 +90,10 @@ export function CounterBlock({
               </Badge>
             </div>
             {!completed && (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {value} / {target} {unit}
+              <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
+                <span className="tabular-nums">{value}</span>
+                {" / "}
+                <span className="tabular-nums">{target}</span> {unit}
               </p>
             )}
           </div>
@@ -98,14 +102,18 @@ export function CounterBlock({
           <AnimatePresence>
             {completed && (
               <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                className="flex-shrink-0"
+                initial={shouldReduceMotion ? { opacity: 0 } : { scale: 0, opacity: 0 }}
+                animate={shouldReduceMotion ? { opacity: 1 } : { scale: 1, opacity: 1 }}
+                exit={shouldReduceMotion ? { opacity: 0 } : { scale: 0, opacity: 0 }}
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0.15 }
+                    : { type: "spring", stiffness: 400, damping: 20 }
+                }
+                className="shrink-0"
               >
                 <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center">
-                  <Check className="h-3 w-3 text-success-foreground" />
+                  <Check className="h-3 w-3 text-success-foreground" aria-hidden="true" />
                 </div>
               </motion.div>
             )}
@@ -116,36 +124,49 @@ export function CounterBlock({
         {!completed && isEditable && (
           <div className="mt-3 space-y-2">
             {/* Progress bar */}
-            <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-2 rounded-full bg-muted overflow-hidden"
+              role="progressbar"
+              aria-valuenow={value}
+              aria-valuemin={0}
+              aria-valuemax={target}
+              aria-label={`${name} progress`}
+            >
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.3 }}
                 className="h-full rounded-full bg-primary"
               />
             </div>
 
             {/* Increment/decrement buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 w-9 sm:h-7 sm:w-7 p-0"
+                className="h-11 w-11 p-0 shrink-0 active:scale-95 transition-transform touch-manipulation"
                 onClick={() => onIncrement(-increment)}
                 disabled={value <= 0}
+                aria-label={`Decrease ${name} by ${increment} ${unit}`}
               >
-                <Minus className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+                <Minus className="h-4 w-4" aria-hidden="true" />
               </Button>
-              <span className="text-xs font-medium min-w-[60px] text-center">
+              <span
+                className="text-sm font-semibold min-w-[72px] text-center tabular-nums"
+                aria-live="polite"
+                aria-atomic="true"
+              >
                 {value} {unit}
               </span>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 w-9 sm:h-7 sm:w-7 p-0"
+                className="h-11 w-11 p-0 shrink-0 active:scale-95 transition-transform touch-manipulation"
                 onClick={() => onIncrement(increment)}
+                aria-label={`Increase ${name} by ${increment} ${unit}`}
               >
-                <Plus className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+                <Plus className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
           </div>

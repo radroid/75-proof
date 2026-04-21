@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 import { Check, Dumbbell, Apple, Brain, Sparkles, Lock, LayoutGrid } from "lucide-react";
@@ -58,6 +58,7 @@ export function DynamicDailyChecklist({
   const { isActive: confettiActive, trigger: triggerConfetti } = useConfetti();
   const markDayComplete = useMutation(api.habitEntries.markDayComplete);
   const prevAllDoneRef = useRef(false);
+  const shouldReduceMotion = useReducedMotion();
 
   const allDone = totalItems > 0 && totalDone === totalItems;
 
@@ -171,13 +172,19 @@ export function DynamicDailyChecklist({
         <AnimatePresence>
           {allDone && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+              animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+              transition={
+                shouldReduceMotion
+                  ? { duration: 0.15 }
+                  : { type: "spring", stiffness: 300, damping: 25 }
+              }
               className="flex items-center justify-center gap-2 py-6 text-center"
+              role="status"
+              aria-live="polite"
             >
-              <Sparkles className="h-5 w-5 text-success" />
+              <Sparkles className="h-5 w-5 text-success" aria-hidden="true" />
               <p className="text-sm font-medium text-success">
                 All requirements completed for today!
               </p>
