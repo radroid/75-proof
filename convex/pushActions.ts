@@ -391,6 +391,63 @@ export const runMyReminderNow = internalAction({
   },
 });
 
+/**
+ * Diagnostic: report what we know about a user's push state from the CLI.
+ *
+ *   npx convex run pushActions:checkMyPushState \
+ *     '{"userId":"user_3A7qlaPsR6..."}'
+ *
+ * Returns vapidConfigured, subscriptionCount, and a short per-sub summary so
+ * you can tell whether the problem is (a) no subscription was ever written,
+ * (b) VAPID env vars aren't set, or (c) something else.
+ */
+export const checkMyPushState = internalAction({
+  args: {
+    userId: v.optional(v.string()),
+    clerkId: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    userId: Id<"users">;
+    vapidConfigured: boolean;
+    subscriptionCount: number;
+    subscriptions: Array<{
+      platform: Platform;
+      enabled: boolean;
+      lastSeenAt: number;
+      endpointHost: string;
+    }>;
+  }> => {
+    const resolvedId = await resolveUserId(ctx, args);
+    const vapidConfigured = Boolean(
+      process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY
+    );
+    const subs = await ctx.runQuery(
+      internal.pushSubscriptions.listSubscriptionsForUser,
+      { userId: resolvedId }
+    );
+    return {
+      userId: resolvedId,
+      vapidConfigured,
+      subscriptionCount: subs.length,
+      subscriptions: subs.map((s: Doc<"pushSubscriptions">) => ({
+        platform: s.platform,
+        enabled: s.enabled,
+        lastSeenAt: s.lastSeenAt,
+        endpointHost: (() => {
+          try {
+            return new URL(s.endpoint).host;
+          } catch {
+            return "(invalid)";
+          }
+        })(),
+      })),
+    };
+  },
+});
+
 type ResolveArgs = {
   userId?: string;
   clerkId?: string;
