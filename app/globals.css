@@ -429,6 +429,17 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* Suppress the default iOS/Android tap-highlight (a semi-transparent black
+   rgba flash on every tap). It clashes with our custom themed palettes
+   (cream, olive, warm stone) and fights the explicit `active:bg-*` states
+   we use for touch feedback. Safe because:
+   - Every interactive surface already has an `active:` state
+   - `:focus-visible` rings are unaffected (different mechanism)
+   - Keyboard navigation remains fully indicated */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* ==========================================
    BASE STYLES
    ========================================== */
