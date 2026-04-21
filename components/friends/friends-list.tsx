@@ -53,6 +53,7 @@ export function FriendsList({ friendProgress }: FriendsListProps) {
         aria-label="Search for friends"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
+        className="h-11 md:h-9"
       />
 
       {/* Search results */}
@@ -83,10 +84,13 @@ export function FriendsList({ friendProgress }: FriendsListProps) {
         </h3>
         {!friendProgress || friendProgress.length === 0 ? (
           <Card>
-            <CardContent className="pt-6 text-center py-12">
+            <CardContent className="pt-6 text-center py-12 px-6">
               <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">
                 Add friends to see their progress here.
+              </p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                Use the search above to find people by name.
               </p>
             </CardContent>
           </Card>
@@ -139,9 +143,9 @@ function SearchResultRow({
   };
 
   return (
-    <div className="flex items-center justify-between p-3 min-h-[44px]">
-      <div className="flex items-center gap-3 min-w-0">
-        <Avatar className="h-8 w-8">
+    <div className="flex items-center justify-between gap-3 p-3 min-h-[56px]">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <Avatar className="h-9 w-9 shrink-0">
           <AvatarImage src={user.avatarUrl} alt={user.displayName} />
           <AvatarFallback className="text-xs">
             {user.displayName.charAt(0).toUpperCase()}
@@ -149,25 +153,25 @@ function SearchResultRow({
         </Avatar>
         <p className="font-medium text-sm truncate">{user.displayName}</p>
       </div>
-      <div className="flex-shrink-0 ml-2">
+      <div className="shrink-0">
         {status === "friends" && (
-          <Button variant="outline" size="sm" disabled>
+          <Button variant="outline" size="sm" disabled className="min-h-[44px]">
             <Check className="mr-1 h-3 w-3" /> Friends
           </Button>
         )}
         {status === "request_sent" && (
-          <Button variant="outline" size="sm" disabled>
+          <Button variant="outline" size="sm" disabled className="min-h-[44px]">
             <Clock className="mr-1 h-3 w-3" /> Pending
           </Button>
         )}
         {status === "request_received" && (
-          <Button size="sm" onClick={handleAccept} disabled={loading}>
+          <Button size="sm" onClick={handleAccept} disabled={loading} className="min-h-[44px]">
             <Check className="mr-1 h-3 w-3" /> Accept
           </Button>
         )}
         {status === "blocked" && null}
         {status === "none" && (
-          <Button size="sm" onClick={handleSend} disabled={loading}>
+          <Button size="sm" onClick={handleSend} disabled={loading} className="min-h-[44px]">
             <UserPlus className="mr-1 h-3 w-3" /> Add
           </Button>
         )}

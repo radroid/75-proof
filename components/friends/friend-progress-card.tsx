@@ -72,7 +72,7 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
       <Card>
         <CardContent className="pt-4">
           <div className="flex items-center gap-3">
-            <Avatar>
+            <Avatar className="shrink-0">
               <AvatarImage
                 src={friend.user.avatarUrl}
                 alt={friend.user.displayName}
@@ -83,32 +83,44 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">{friend.user.displayName}</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground truncate">
                 {friend.challenge.currentDay != null
                   ? `Day ${friend.challenge.currentDay} / 75`
                   : "Challenge in progress"}
               </p>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               {friend.todayComplete && (
-                <div className="h-6 w-6 rounded-full bg-success/10 flex items-center justify-center">
+                <div
+                  className="h-6 w-6 rounded-full bg-success/10 flex items-center justify-center"
+                  aria-label="Today complete"
+                  title="Today complete"
+                >
                   <Check className="h-4 w-4 text-success" />
                 </div>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9" aria-label={`More options for ${friend.user.displayName}`}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 -mr-2"
+                    aria-label={`More options for ${friend.user.displayName}`}
+                  >
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setConfirmAction("remove")}>
+                <DropdownMenuContent align="end" className="min-w-44">
+                  <DropdownMenuItem
+                    onClick={() => setConfirmAction("remove")}
+                    className="py-2.5"
+                  >
                     <UserMinus className="mr-2 h-4 w-4" />
                     Remove Friend
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => setConfirmAction("block")}
-                    className="text-destructive focus:text-destructive"
+                    className="text-destructive focus:text-destructive py-2.5"
                   >
                     <Ban className="mr-2 h-4 w-4" />
                     Block User

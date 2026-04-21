@@ -122,21 +122,31 @@ function ReceivedRequestCard({
   return (
     <Card>
       <CardContent className="py-3 px-4">
-        <div className="flex items-center justify-between min-h-[44px]">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-h-[44px]">
           <div className="flex items-center gap-3 min-w-0">
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-9 w-9 shrink-0">
               <AvatarImage src={user.avatarUrl} alt={user.displayName} />
               <AvatarFallback className="text-xs">
                 {user.displayName.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <p className="font-medium text-sm truncate">{user.displayName}</p>
+            <p className="font-medium text-sm truncate flex-1">{user.displayName}</p>
           </div>
-          <div className="flex gap-2 flex-shrink-0 ml-2">
-            <Button onClick={handleAccept} size="sm" variant="success" className="min-h-[44px]">
+          <div className="flex gap-2 shrink-0">
+            <Button
+              onClick={handleAccept}
+              variant="success"
+              className="min-h-[44px] flex-1 sm:flex-initial"
+              aria-label={`Accept friend request from ${user.displayName}`}
+            >
               Accept
             </Button>
-            <Button onClick={handleDecline} variant="outline" size="sm" className="min-h-[44px]">
+            <Button
+              onClick={handleDecline}
+              variant="outline"
+              className="min-h-[44px] flex-1 sm:flex-initial"
+              aria-label={`Decline friend request from ${user.displayName}`}
+            >
               Decline
             </Button>
           </div>
@@ -169,9 +179,9 @@ function SentRequestCard({
   return (
     <Card>
       <CardContent className="py-3 px-4">
-        <div className="flex items-center justify-between min-h-[44px]">
-          <div className="flex items-center gap-3 min-w-0">
-            <Avatar className="h-8 w-8">
+        <div className="flex items-center justify-between gap-3 min-h-[44px]">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <Avatar className="h-9 w-9 shrink-0">
               <AvatarImage src={user.avatarUrl} alt={user.displayName} />
               <AvatarFallback className="text-xs">
                 {user.displayName.charAt(0).toUpperCase()}
@@ -179,7 +189,12 @@ function SentRequestCard({
             </Avatar>
             <p className="font-medium text-sm truncate">{user.displayName}</p>
           </div>
-          <Button onClick={handleCancel} variant="outline" size="sm" className="flex-shrink-0 ml-2 min-h-[44px]">
+          <Button
+            onClick={handleCancel}
+            variant="outline"
+            className="shrink-0 min-h-[44px]"
+            aria-label={`Cancel friend request to ${user.displayName}`}
+          >
             Cancel
           </Button>
         </div>
