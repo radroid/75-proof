@@ -152,7 +152,7 @@ function NoActiveChallenge() {
             <Button
               onClick={() => setShowModal(true)}
               size="xl"
-              variant="gradient"
+              variant="outline"
               className="mt-8"
             >
               Start 75 HARD Challenge

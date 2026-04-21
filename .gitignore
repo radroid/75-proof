@@ -46,3 +46,10 @@ next-env.d.ts
 # cloudflare
 ./wrangler.toml
 .wrangler
+
+# local agent/tooling artifacts
+.agents/
+.claude/
+.vscode/
+convex/_generated/ai/
+skills-lock.json
