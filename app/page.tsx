@@ -167,12 +167,11 @@ function LandingPage() {
       <style jsx>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700;800;900&family=Caveat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap');
 
-        @keyframes tape-wiggle {
-          0%, 100% { transform: rotate(-2deg); }
-          50% { transform: rotate(1deg); }
+        button { cursor: pointer; touch-action: manipulation; }
+        button:focus-visible, a:focus-visible, summary:focus-visible {
+          outline: 2px solid #FF6154;
+          outline-offset: 3px;
         }
-
-        button { cursor: pointer; }
       `}</style>
 
       {/* Nav */}
@@ -187,7 +186,7 @@ function LandingPage() {
           <Authenticated>
             <button
               onClick={() => router.push("/dashboard")}
-              className="text-[13px] font-bold px-4 sm:px-6 py-3 bg-[#4ECDC4] text-white rounded-none hover:bg-[#3dbdb5] transition-all"
+              className="text-[13px] font-bold px-4 sm:px-6 py-3 min-h-[44px] bg-[#4ECDC4] text-white rounded-none hover:bg-[#3dbdb5] active:scale-95 transition-all"
               style={{
                 fontFamily: "'Space Mono', monospace",
                 transform: "rotate(1deg)",
@@ -207,7 +206,7 @@ function LandingPage() {
           <Unauthenticated>
             <SignInButton mode="modal">
               <button
-                className="hidden sm:inline-block text-[13px] font-bold px-5 py-3 border-2 border-[#1a1a1a]/15 text-[#1a1a1a] rounded-none hover:border-[#1a1a1a]/30 transition-all"
+                className="hidden sm:inline-block text-[13px] font-bold px-5 py-3 min-h-[44px] border-2 border-[#1a1a1a]/15 text-[#1a1a1a] rounded-none hover:border-[#1a1a1a]/30 active:scale-95 transition-all"
                 style={{ fontFamily: "'Space Mono', monospace" }}
               >
                 SIGN IN
@@ -215,7 +214,7 @@ function LandingPage() {
             </SignInButton>
             <SignUpButton mode="modal">
               <button
-                className="text-[13px] font-bold px-4 sm:px-6 py-3 bg-[#FF6154] text-white rounded-none hover:bg-[#e5534b] transition-all"
+                className="text-[13px] font-bold px-4 sm:px-6 py-3 min-h-[44px] bg-[#FF6154] text-white rounded-none hover:bg-[#e5534b] active:scale-95 transition-all"
                 style={{
                   fontFamily: "'Space Mono', monospace",
                   transform: "rotate(1deg)",
@@ -275,15 +274,15 @@ function LandingPage() {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <SignUpButton mode="modal">
                     <button
-                      className="w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 bg-[#1a1a1a] text-white text-base sm:text-lg font-black hover:bg-[#FF6154] transition-all duration-300"
-                      style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
+                      className="w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 min-h-[52px] bg-[#1a1a1a] text-white text-base sm:text-lg font-black hover:bg-[#FF6154] active:scale-[0.97] sm:[transform:rotate(-1deg)] transition-all duration-300"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
                     >
                       Let&apos;s DO This →
                     </button>
                   </SignUpButton>
-                  <Link href="/dashboard">
+                  <Link href="/dashboard" className="w-full sm:w-auto">
                     <button
-                      className="w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 border-2 border-[#1a1a1a]/15 text-[#1a1a1a] text-base sm:text-lg font-black hover:border-[#1a1a1a]/30 transition-all duration-300"
+                      className="w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 min-h-[52px] border-2 border-[#1a1a1a]/15 text-[#1a1a1a] text-base sm:text-lg font-black hover:border-[#1a1a1a]/30 active:scale-[0.97] transition-all duration-300"
                       style={{ fontFamily: "'DM Sans', sans-serif" }}
                     >
                       Try the App →
@@ -294,8 +293,8 @@ function LandingPage() {
               <Authenticated>
                 <button
                   onClick={() => router.push("/dashboard")}
-                  className="px-8 sm:px-10 py-4 sm:py-5 bg-[#1a1a1a] text-white text-base sm:text-lg font-black hover:bg-[#4ECDC4] transition-all duration-300"
-                  style={{ fontFamily: "'DM Sans', sans-serif", transform: "rotate(-1deg)" }}
+                  className="w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 min-h-[52px] bg-[#1a1a1a] text-white text-base sm:text-lg font-black hover:bg-[#4ECDC4] active:scale-[0.97] sm:[transform:rotate(-1deg)] transition-all duration-300"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Go to Dashboard →
                 </button>
@@ -494,11 +493,11 @@ function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
             {[
-              { color: "#FF6154", title: "Free means free", body: "No trials. No premium. No \"just $9.99/month.\" We built this for the community. It costs you nothing.", text: "white" },
-              { color: "#FFFBF0", title: "Your data stays put", body: "We don't sell your habits or your progress photos. Your information is yours. Period. Full stop.", text: "#1a1a1a", border: true },
-              { color: "#4ECDC4", title: "Stupidly simple", body: "Open. Tap what you did. Done. No tutorials, no onboarding flows, no \"engagement\" tricks. Just tracking.", text: "white" },
+              { color: "#FF6154", title: "Free means free", body: "No trials. No premium. No \"just $9.99/month.\" We built this for the community. It costs you nothing.", text: "white", rotate: "-1.5deg" },
+              { color: "#FFFBF0", title: "Your data stays put", body: "We don't sell your habits or your progress photos. Your information is yours. Period. Full stop.", text: "#1a1a1a", border: true, rotate: "1deg" },
+              { color: "#4ECDC4", title: "Stupidly simple", body: "Open. Tap what you did. Done. No tutorials, no onboarding flows, no \"engagement\" tricks. Just tracking.", text: "white", rotate: "-0.75deg" },
             ].map((card) => (
-              <TiltCard key={card.title} rotate={`${(Math.random() - 0.5) * 4}deg`}>
+              <TiltCard key={card.title} rotate={card.rotate}>
                 <div
                   className="p-5 sm:p-7 rounded-sm"
                   style={{
