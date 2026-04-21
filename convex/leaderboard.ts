@@ -9,8 +9,15 @@ type LeaderboardRow = {
     avatarUrl?: string;
   };
   daysThisWeek: number;
+  daysLastWeek: number;
   currentDay: number | null;
   isSelf: boolean;
+};
+
+type LeaderboardResult = {
+  rows: LeaderboardRow[];
+  weekStart: string;
+  weekEnd: string;
 };
 
 async function getFriendIds(
@@ -36,18 +43,35 @@ async function getFriendIds(
   ];
 }
 
+function dateKey(iso: string): string {
+  return iso.split("T")[0];
+}
+
 export const getFriendsLeaderboard = query({
   args: {},
-  handler: async (ctx): Promise<LeaderboardRow[]> => {
+  handler: async (ctx): Promise<LeaderboardResult> => {
     const user = await getAuthenticatedUserOrNull(ctx);
-    if (!user) return [];
+    const emptyResult: LeaderboardResult = {
+      rows: [],
+      weekStart: "",
+      weekEnd: "",
+    };
+    if (!user) return emptyResult;
 
     const friendIds = await getFriendIds(ctx, user._id);
     const participantIds: Id<"users">[] = [user._id, ...friendIds];
 
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const cutoff = sevenDaysAgo.toISOString();
+    const now = new Date();
+    const thisWeekStart = new Date(now);
+    thisWeekStart.setDate(thisWeekStart.getDate() - 6);
+    thisWeekStart.setHours(0, 0, 0, 0);
+
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+    const fourteenDaysAgo = new Date(lastWeekStart);
+    const cutoff = fourteenDaysAgo.toISOString();
+    const thisWeekStartIso = thisWeekStart.toISOString();
 
     const rows = await Promise.all(
       participantIds.map(async (participantId) => {
@@ -63,9 +87,17 @@ export const getFriendsLeaderboard = query({
           )
           .collect();
 
-        const daysThisWeek = activities.filter(
-          (a) => a.type === "day_completed"
-        ).length;
+        const thisWeekDays = new Set<string>();
+        const lastWeekDays = new Set<string>();
+        for (const a of activities) {
+          if (a.type !== "day_completed") continue;
+          const key = dateKey(a.createdAt);
+          if (a.createdAt >= thisWeekStartIso) {
+            thisWeekDays.add(key);
+          } else {
+            lastWeekDays.add(key);
+          }
+        }
 
         const activeChallenge = await ctx.db
           .query("challenges")
@@ -90,7 +122,8 @@ export const getFriendsLeaderboard = query({
             displayName: isSelf ? "You" : participant.displayName,
             avatarUrl: participant.avatarUrl,
           },
-          daysThisWeek,
+          daysThisWeek: thisWeekDays.size,
+          daysLastWeek: lastWeekDays.size,
           currentDay,
           isSelf,
         };
@@ -98,13 +131,21 @@ export const getFriendsLeaderboard = query({
       })
     );
 
-    return rows
-      .filter((r): r is LeaderboardRow => r !== null)
-      .sort((a, b) => {
-        if (b.daysThisWeek !== a.daysThisWeek) {
-          return b.daysThisWeek - a.daysThisWeek;
-        }
-        return (b.currentDay ?? 0) - (a.currentDay ?? 0);
-      });
+    const filtered = rows.filter((r): r is LeaderboardRow => r !== null);
+    filtered.sort((a, b) => {
+      if (b.daysThisWeek !== a.daysThisWeek) {
+        return b.daysThisWeek - a.daysThisWeek;
+      }
+      return (b.currentDay ?? 0) - (a.currentDay ?? 0);
+    });
+
+    const weekEnd = new Date(now);
+    weekEnd.setHours(0, 0, 0, 0);
+
+    return {
+      rows: filtered,
+      weekStart: dateKey(thisWeekStart.toISOString()),
+      weekEnd: dateKey(weekEnd.toISOString()),
+    };
   },
 });
