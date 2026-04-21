@@ -98,6 +98,14 @@ export function useHabitEntries({
       const entry = entryMap.get(h._id);
       return entry?.completed;
     }).length ?? 0;
+  const requiredItems =
+    habitDefs?.filter((h) => h.isHard).length ?? 0;
+  const requiredDone =
+    habitDefs?.filter((h) => {
+      if (!h.isHard) return false;
+      const entry = entryMap.get(h._id);
+      return entry?.completed;
+    }).length ?? 0;
 
   return {
     habitDefs,
@@ -105,6 +113,8 @@ export function useHabitEntries({
     entryMap,
     totalItems,
     totalDone,
+    requiredItems,
+    requiredDone,
     handleToggleTask,
     handleUpdateCounter,
   };

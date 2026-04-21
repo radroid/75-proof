@@ -42,8 +42,8 @@ export function DynamicDailyChecklist({
   const {
     habitDefs,
     entryMap,
-    totalItems,
-    totalDone,
+    requiredItems,
+    requiredDone,
     handleToggleTask,
     handleUpdateCounter,
   } = useHabitEntries({
@@ -60,7 +60,7 @@ export function DynamicDailyChecklist({
   const prevAllDoneRef = useRef(false);
   const shouldReduceMotion = useReducedMotion();
 
-  const allDone = totalItems > 0 && totalDone === totalItems;
+  const allDone = requiredItems > 0 && requiredDone === requiredItems;
 
   useEffect(() => {
     if (allDone && !prevAllDoneRef.current) {
@@ -186,7 +186,7 @@ export function DynamicDailyChecklist({
             >
               <Sparkles className="h-5 w-5 text-success" aria-hidden="true" />
               <p className="text-sm font-medium text-success">
-                All requirements completed for today!
+                All hard requirements completed for today!
               </p>
             </motion.div>
           )}
