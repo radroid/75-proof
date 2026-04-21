@@ -9,7 +9,10 @@ export default function OfflinePage() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "2rem",
+        paddingTop: "max(2rem, env(safe-area-inset-top))",
+        paddingRight: "max(1.25rem, env(safe-area-inset-right))",
+        paddingBottom: "max(2rem, env(safe-area-inset-bottom))",
+        paddingLeft: "max(1.25rem, env(safe-area-inset-left))",
         backgroundColor: "#ffffff",
         fontFamily: "system-ui, -apple-system, sans-serif",
         textAlign: "center",
@@ -27,6 +30,7 @@ export default function OfflinePage() {
           justifyContent: "center",
           marginBottom: 32,
         }}
+        aria-hidden="true"
       >
         <span
           style={{
@@ -70,6 +74,8 @@ export default function OfflinePage() {
       <button
         onClick={() => window.location.reload()}
         style={{
+          minHeight: 48,
+          minWidth: 44,
           padding: "12px 32px",
           backgroundColor: "#FF6154",
           color: "#ffffff",
@@ -79,6 +85,8 @@ export default function OfflinePage() {
           fontWeight: 700,
           cursor: "pointer",
           letterSpacing: "0.01em",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
         }}
       >
         Try Again

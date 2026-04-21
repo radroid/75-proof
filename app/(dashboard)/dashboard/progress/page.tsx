@@ -50,10 +50,12 @@ import { cn } from "@/lib/utils";
 import { Id } from "@/convex/_generated/dataModel";
 import { useGuest } from "@/components/guest-provider";
 import { useSwipe } from "@/hooks/use-swipe";
+import { useRouter } from "next/navigation";
 
 type FilterType = "all" | "complete" | "incomplete";
 
 export default function ProgressPage() {
+  const router = useRouter();
   const { isGuest, demoUser, demoChallenge, demoChallengeLogs, demoLifetimeStats } = useGuest();
 
   const user = useQuery(api.users.getCurrentUser, isGuest ? "skip" : undefined);
@@ -360,6 +362,11 @@ export default function ProgressPage() {
               icon={<Camera className="h-8 w-8" />}
               title="No progress photos yet"
               description="Your daily photos will appear here as you upload them."
+              action={
+                !isGuest
+                  ? { label: "Take today's photo", onClick: () => router.push("/dashboard") }
+                  : undefined
+              }
             />
           )}
         </MotionItem>
@@ -636,6 +643,11 @@ export default function ProgressPage() {
             icon={<Calendar className="h-8 w-8" />}
             title="No matching days"
             description={`No ${filter === "complete" ? "complete" : filter === "incomplete" ? "incomplete" : ""} days found.`}
+            action={
+              filter !== "all"
+                ? { label: "Show all days", onClick: () => setFilter("all") }
+                : undefined
+            }
           />
         ) : (
           <div className="relative">

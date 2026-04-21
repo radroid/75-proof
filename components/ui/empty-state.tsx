@@ -46,7 +46,11 @@ export function EmptyState({
         </p>
       )}
       {action && (
-        <Button onClick={action.onClick} className="mt-6">
+        <Button
+          onClick={action.onClick}
+          size="lg"
+          className="mt-6 min-h-11 min-w-[44px]"
+        >
           {action.label}
         </Button>
       )}
