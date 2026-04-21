@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { themeMetadata, themeOrder, type ThemePersonality } from "@/lib/themes";
 import { useThemePersonality } from "@/components/theme-provider";
+import { ThemePreviewArt } from "@/components/theme-switcher";
 import type { OnboardingState } from "@/lib/onboarding-types";
 
 interface Props {
@@ -59,46 +60,8 @@ export function OnboardingTheme({ state, updateState, onNext, onBack }: Props) {
                   : "border-border hover:border-primary/40"
               )}
             >
-              {/* Theme preview */}
-              <div
-                className="h-24 sm:h-28 p-3 sm:p-4 flex flex-col justify-between"
-                style={{ backgroundColor: theme.preview.bg }}
-              >
-                {/* Mini dashboard mockup */}
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-8 h-8 rounded-md font-bold text-xs flex items-center justify-center"
-                    style={{
-                      backgroundColor: theme.preview.accent,
-                      color: theme.preview.bg,
-                    }}
-                  >
-                    12
-                  </div>
-                  <div className="space-y-1 flex-1">
-                    <div
-                      className="h-1.5 rounded-full w-3/4"
-                      style={{ backgroundColor: theme.preview.accent, opacity: 0.3 }}
-                    />
-                    <div
-                      className="h-1 rounded-full w-1/2"
-                      style={{ backgroundColor: theme.preview.fg, opacity: 0.15 }}
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-1.5">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="h-2 flex-1 rounded-sm"
-                      style={{
-                        backgroundColor: i <= 2 ? theme.preview.accent : theme.preview.fg,
-                        opacity: i <= 2 ? 0.6 : 0.1,
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
+              {/* Theme preview — true-to-theme mini mockup */}
+              <ThemePreviewArt personality={key} />
 
               {/* Label */}
               <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-card">
