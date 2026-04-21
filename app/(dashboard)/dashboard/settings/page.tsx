@@ -103,6 +103,8 @@ export default function SettingsPage() {
   const [eveningReminder, setEveningReminder] = useState(true);
   const [morningTime, setMorningTime] = useState("08:00");
   const [eveningTime, setEveningTime] = useState("20:00");
+  const [nudgesNotif, setNudgesNotif] = useState(true);
+  const [reactionsNotif, setReactionsNotif] = useState(true);
   const notifHydrated = useRef(false);
 
   useEffect(() => {
@@ -119,6 +121,8 @@ export default function SettingsPage() {
       setEveningReminder(n?.eveningReminder ?? true);
       setMorningTime(n?.morningTime ?? "08:00");
       setEveningTime(n?.eveningTime ?? "20:00");
+      setNudgesNotif(n?.nudges ?? true);
+      setReactionsNotif(n?.reactions ?? true);
       notifHydrated.current = true;
     }
   }, [user]);
@@ -137,13 +141,23 @@ export default function SettingsPage() {
         eveningReminder,
         morningTime,
         eveningTime,
+        nudges: nudgesNotif,
+        reactions: reactionsNotif,
       }).catch(() => {
         toast.error("Couldn't save notification preferences");
       });
     }, 500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notifEnabled, morningReminder, eveningReminder, morningTime, eveningTime]);
+  }, [
+    notifEnabled,
+    morningReminder,
+    eveningReminder,
+    morningTime,
+    eveningTime,
+    nudgesNotif,
+    reactionsNotif,
+  ]);
 
   const handleEnableInBrowser = useCallback(async () => {
     const res = await requestPermission();
@@ -611,6 +625,53 @@ export default function SettingsPage() {
                       This browser does not support push notifications.
                     </div>
                   ) : null}
+                </div>
+              </div>
+
+              {/* Friend activity subsection */}
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-sm font-medium mb-1">From friends</p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Push alerts when friends interact with you
+                </p>
+                <div className="divide-y divide-border -my-2">
+                  <div className="flex items-center justify-between gap-4 min-h-11 py-3">
+                    <div className="min-w-0 flex-1">
+                      <Label htmlFor="notif-nudges" className="cursor-pointer">
+                        Nudges
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        When a friend sends you a nudge
+                      </p>
+                    </div>
+                    <Switch
+                      id="notif-nudges"
+                      checked={nudgesNotif}
+                      onCheckedChange={setNudgesNotif}
+                      disabled={!notifEnabled}
+                      className="scale-125 origin-right"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-4 min-h-11 py-3">
+                    <div className="min-w-0 flex-1">
+                      <Label
+                        htmlFor="notif-reactions"
+                        className="cursor-pointer"
+                      >
+                        Reactions
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        When a friend reacts to your activity
+                      </p>
+                    </div>
+                    <Switch
+                      id="notif-reactions"
+                      checked={reactionsNotif}
+                      onCheckedChange={setReactionsNotif}
+                      disabled={!notifEnabled}
+                      className="scale-125 origin-right"
+                    />
+                  </div>
                 </div>
               </div>
 
