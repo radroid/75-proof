@@ -12,8 +12,12 @@ export function GuestSignupBanner() {
   if (dismissed) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 md:left-[60px] pointer-events-none">
-      <div className="pointer-events-auto mx-auto max-w-xl px-4 pb-4 md:pb-4 mb-[calc(56px+2rem+env(safe-area-inset-bottom,0px))] md:mb-0">
+    <div className="fixed bottom-0 left-0 right-0 z-40 md:left-[60px] pointer-events-none">
+      {/* On mobile the banner must clear the floating pill nav + safe-area.
+          On desktop there's no bottom nav, so we drop the margin. The
+          --bottom-nav-gap CSS var is the single source of truth for the
+          mobile nav's footprint. */}
+      <div className="pointer-events-auto mx-auto max-w-xl px-4 pb-4 md:pb-4 mb-[var(--bottom-nav-gap)] md:mb-0">
         <div className="flex items-center gap-3 rounded-lg border bg-card/95 backdrop-blur-sm p-3 shadow-lg">
           <p className="flex-1 text-sm text-muted-foreground">
             You&apos;re browsing as a guest.{" "}

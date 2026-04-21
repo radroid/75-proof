@@ -62,15 +62,21 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
 
   return (
     <motion.div
-      className="fixed bottom-8 left-6 right-6 z-50 md:hidden"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      className="fixed left-6 right-6 z-50 md:hidden"
+      style={{
+        // Pin above the home indicator / gesture bar. Using CSS vars keeps
+        // `--bottom-nav-gap` (consumed by the guest signup banner) in sync.
+        bottom: "var(--bottom-nav-offset)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 200, damping: 20 }}
     >
       <nav
-        className="flex justify-around items-center h-[56px] mx-auto max-w-[360px]"
+        className="flex justify-around items-center mx-auto max-w-[360px]"
         style={{
+          height: "var(--bottom-nav-height)",
           background: "var(--nav-bg)",
           borderRadius: "var(--nav-radius)",
           backdropFilter: "blur(24px) saturate(180%)",

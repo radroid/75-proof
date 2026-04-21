@@ -161,7 +161,7 @@ function LandingPage() {
 
   return (
     <div
-      className="min-h-screen overflow-x-hidden selection:bg-[#FF6154]/20"
+      className="min-h-dvh overflow-x-hidden selection:bg-[#FF6154]/20"
       style={{ backgroundColor: "#FFFBF0", color: "#1a1a1a" }}
     >
       <style jsx>{`
@@ -638,7 +638,7 @@ export default function Home() {
   return (
     <>
       <AuthLoading>
-        <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: "#FFFBF0" }}>
+        <div className="flex min-h-dvh items-center justify-center" style={{ backgroundColor: "#FFFBF0" }}>
           <div className="animate-pulse text-[#1a1a1a]/40" style={{ fontFamily: "'DM Sans', sans-serif" }}>Loading...</div>
         </div>
       </AuthLoading>

@@ -232,7 +232,7 @@ export default function DashboardLayout({
 
   if (!isLoaded) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <Skeleton className="h-12 w-12 rounded-full" />
           <Skeleton className="h-4 w-32" />
@@ -257,7 +257,7 @@ export default function DashboardLayout({
       <div
         className={cn(
           "flex flex-col md:flex-row bg-background w-full flex-1 mx-auto",
-          "min-h-screen"
+          "min-h-dvh"
         )}
       >
         <Sidebar>
@@ -277,7 +277,10 @@ export default function DashboardLayout({
         <SidebarSpacer />
 
         <main className="flex-1 overflow-auto scrollbar-gutter-stable">
-          <div className="p-4 pb-24 md:p-8 md:pb-8 bg-background min-h-full">
+          {/* Mobile: reserve space for the floating bottom nav + safe-area
+              via --bottom-nav-gap so content is never hidden behind the pill
+              on notched devices. Desktop keeps the standard p-8. */}
+          <div className="p-4 pb-[calc(var(--bottom-nav-gap)+1rem)] md:p-8 md:pb-8 bg-background min-h-full">
             {children}
           </div>
         </main>
