@@ -268,14 +268,14 @@ function computeCoStreak(
 ): number {
   if (mine.size === 0 || theirs.size === 0) return 0;
 
+  const MAX_LOOKBACK = 75;
   let streak = 0;
   const cursor = new Date();
-  // Normalize to date-only
   cursor.setHours(0, 0, 0, 0);
 
-  // Allow today to not yet be complete: start from today; if either isn't
-  // complete today, skip back one day and start counting from yesterday.
-  let date = new Date(cursor);
+  // Allow today to not yet be complete: if either isn't complete today,
+  // start counting from yesterday instead.
+  const date = new Date(cursor);
   const todayStr = date.toISOString().split("T")[0];
   const bothToday =
     mine.get(todayStr) === true && theirs.get(todayStr) === true;
@@ -283,7 +283,7 @@ function computeCoStreak(
     date.setDate(date.getDate() - 1);
   }
 
-  while (true) {
+  for (let i = 0; i < MAX_LOOKBACK; i++) {
     const dateStr = date.toISOString().split("T")[0];
     if (mine.get(dateStr) === true && theirs.get(dateStr) === true) {
       streak += 1;
@@ -291,7 +291,6 @@ function computeCoStreak(
     } else {
       break;
     }
-    if (streak > 200) break;
   }
 
   return streak;
