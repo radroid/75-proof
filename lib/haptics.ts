@@ -14,20 +14,17 @@
  */
 
 export type HapticType =
-  | "selection" // subtle tick — toggles, selection changes
-  | "impact" // single firm tap — task check, button press
-  | "success" // double tap "done" feel — habit complete
-  | "warning" // heavier double — reset / destructive confirm
-  | "error"; // longer trio — failed action
+  | "selection" // subtle tick — toggles, selection changes, emoji pick
+  | "impact" // single firm tap — task check, nudge button
+  | "success"; // double tap "done" feel — confetti / day complete
 
 // Short patterns only — long vibrations feel sluggish on Android and are
-// ignored on iOS anyway.
+// ignored on iOS anyway. Add patterns back here when a call site needs
+// them, not speculatively.
 const PATTERNS: Record<HapticType, number | number[]> = {
   selection: 8,
   impact: 12,
   success: [14, 40, 22],
-  warning: [24, 40, 24],
-  error: [40, 40, 40, 40, 40],
 };
 
 let supportCache: boolean | null = null;
