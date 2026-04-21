@@ -79,6 +79,7 @@ export default function SettingsPage() {
     isSubscribed,
     requiresInstall,
     missingVapidKey,
+    currentEndpoint,
     requestPermission,
     unsubscribe,
   } = usePushSubscription();
@@ -695,18 +696,30 @@ export default function SettingsPage() {
                         month: "short",
                         day: "numeric",
                       });
+                      const isThisDevice =
+                        currentEndpoint !== null &&
+                        sub.endpoint === currentEndpoint;
                       return (
                         <li
                           key={sub._id}
-                          className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2"
+                          className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 ${
+                            isThisDevice
+                              ? "border border-primary/30 bg-primary/5"
+                              : "bg-muted/40"
+                          }`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-9 h-9 rounded-md bg-background flex items-center justify-center shrink-0">
                               <PlatformIcon className="h-4 w-4 text-muted-foreground" />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">
-                                {platformLabel}
+                              <p className="text-sm font-medium truncate flex items-center gap-2">
+                                <span>{platformLabel}</span>
+                                {isThisDevice && (
+                                  <span className="inline-flex items-center rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                                    This device
+                                  </span>
+                                )}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 Last seen {lastSeen}
@@ -716,7 +729,11 @@ export default function SettingsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            aria-label="Remove device"
+                            aria-label={
+                              isThisDevice
+                                ? "Remove this device"
+                                : "Remove device"
+                            }
                             onClick={() => handleRemoveSubscription(sub.endpoint)}
                             className="min-h-11 min-w-11 shrink-0"
                           >

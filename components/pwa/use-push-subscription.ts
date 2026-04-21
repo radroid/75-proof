@@ -18,6 +18,13 @@ export type UsePushSubscriptionResult = {
   requiresInstall: boolean;
   /** True if the VAPID public key env var is missing (misconfiguration). */
   missingVapidKey: boolean;
+  /**
+   * The push subscription endpoint owned by *this* browser, or null if not
+   * subscribed. Callers compare against server-listed subscription rows to
+   * flag which entry represents the device the user is looking at right
+   * now (useful after reinstalls leave orphan rows on the server).
+   */
+  currentEndpoint: string | null;
   requestPermission: () => Promise<{ granted: boolean }>;
   unsubscribe: () => Promise<void>;
 };
@@ -126,6 +133,7 @@ export function usePushSubscription(): UsePushSubscriptionResult {
   const [status, setStatus] = useState<PushPermissionStatus>("loading");
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [requiresInstall, setRequiresInstall] = useState(false);
+  const [currentEndpoint, setCurrentEndpoint] = useState<string | null>(null);
 
   const upsertSubscription = useMutation(
     api.pushSubscriptions.upsertSubscription
@@ -169,6 +177,7 @@ export function usePushSubscription(): UsePushSubscriptionResult {
       .then((reg) => reg.pushManager.getSubscription())
       .then((sub) => {
         setIsSubscribed(Boolean(sub));
+        setCurrentEndpoint(sub?.endpoint ?? null);
       })
       .catch(() => {
         // Silent — getSubscription can throw on partial SW registration.
@@ -302,6 +311,7 @@ export function usePushSubscription(): UsePushSubscriptionResult {
         // server state even if the local `setIsSubscribed(true)` below races
         // another effect.
         setIsSubscribed(true);
+        setCurrentEndpoint(sub.endpoint);
         return { granted: true };
       } catch (err) {
         // eslint-disable-next-line no-console
@@ -326,6 +336,7 @@ export function usePushSubscription(): UsePushSubscriptionResult {
         await removeSubscription({ endpoint }).catch(() => undefined);
       }
       setIsSubscribed(false);
+      setCurrentEndpoint(null);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("[push] unsubscribe failed", err);
@@ -337,6 +348,7 @@ export function usePushSubscription(): UsePushSubscriptionResult {
     isSubscribed,
     requiresInstall,
     missingVapidKey: !VAPID_PUBLIC_KEY,
+    currentEndpoint,
     requestPermission,
     unsubscribe,
   };
