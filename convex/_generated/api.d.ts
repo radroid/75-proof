@@ -22,6 +22,7 @@ import type * as lib_standardHabits from "../lib/standardHabits.js";
 import type * as nudges from "../nudges.js";
 import type * as onboarding from "../onboarding.js";
 import type * as reactions from "../reactions.js";
+import type * as todayPulse from "../todayPulse.js";
 import type * as users from "../users.js";
 
 import type {
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   nudges: typeof nudges;
   onboarding: typeof onboarding;
   reactions: typeof reactions;
+  todayPulse: typeof todayPulse;
   users: typeof users;
 }>;
 

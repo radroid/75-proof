@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FriendProgressCard } from "./friend-progress-card";
 import { WeeklyLeaderboard } from "./weekly-leaderboard";
+import { TodayPulse } from "./today-pulse";
 import { UserPlus, Check, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -78,7 +79,8 @@ export function FriendsList({ friendProgress }: FriendsListProps) {
         </p>
       )}
 
-      {/* Weekly leaderboard (hidden when no friends) */}
+      {/* Today's pulse + weekly leaderboard (hidden when no friends) */}
+      <TodayPulse />
       <WeeklyLeaderboard />
 
       {/* Friend progress grid */}
