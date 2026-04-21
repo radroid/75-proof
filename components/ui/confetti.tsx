@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { haptic } from "@/lib/haptics";
 
 interface ConfettiProps {
   isActive: boolean;
@@ -127,6 +128,7 @@ export function useConfetti() {
   const [isActive, setIsActive] = React.useState(false);
 
   const trigger = React.useCallback(() => {
+    haptic("success");
     setIsActive(true);
     // Reset after animation
     setTimeout(() => setIsActive(false), 100);

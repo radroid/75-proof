@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { haptic } from "@/lib/haptics";
 
 interface UseHabitEntriesArgs {
   challengeId: Id<"challenges">;
@@ -50,6 +51,7 @@ export function useHabitEntries({
   const handleToggleTask = useCallback(
     async (habitDefinitionId: Id<"habitDefinitions">) => {
       if (!guardEdit()) return;
+      haptic("impact");
       try {
         await toggleTask({
           habitDefinitionId,
@@ -73,6 +75,7 @@ export function useHabitEntries({
       increment: number
     ) => {
       if (!guardEdit()) return;
+      haptic("selection");
       const nextValue = Math.max(0, currentValue + increment);
       const newValue = Math.round((nextValue + Number.EPSILON) * 1000) / 1000;
       try {
