@@ -62,7 +62,7 @@ export const getReactionsForActivities = query({
       const rows = await ctx.db
         .query("feedReactions")
         .withIndex("by_activity", (q) => q.eq("activityId", activityId))
-        .collect();
+        .take(500);
 
       const counts = new Map<string, number>();
       const mine = new Set<string>();

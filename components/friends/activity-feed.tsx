@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -70,6 +70,9 @@ interface ActivityFeedProps {
   feed: FeedItem[] | undefined;
 }
 
+type OverrideKey = `${string}:${ReactionEmoji}`;
+type Override = { reacted: boolean; delta: number };
+
 export function ActivityFeed({ feed }: ActivityFeedProps) {
   const activityIds = useMemo(
     () => (feed ?? []).map((f) => f._id as Id<"activityFeed">),
@@ -80,17 +83,43 @@ export function ActivityFeed({ feed }: ActivityFeedProps) {
     activityIds.length > 0 ? { activityIds } : "skip"
   );
   const toggleReaction = useMutation(api.reactions.toggleReaction);
+  const [overrides, setOverrides] = useState<Map<OverrideKey, Override>>(
+    new Map()
+  );
+  const [tapped, setTapped] = useState<OverrideKey | null>(null);
 
-  const handleToggle = async (
-    activityId: Id<"activityFeed">,
-    emoji: ReactionEmoji
-  ) => {
-    try {
-      await toggleReaction({ activityId, emoji });
-    } catch {
-      toast.error("Couldn't react. Try again.");
-    }
-  };
+  const handleToggle = useCallback(
+    async (activityId: Id<"activityFeed">, emoji: ReactionEmoji, serverReacted: boolean) => {
+      const key: OverrideKey = `${activityId}:${emoji}`;
+      const nextReacted = !serverReacted;
+      setOverrides((prev) => {
+        const next = new Map(prev);
+        next.set(key, { reacted: nextReacted, delta: nextReacted ? 1 : -1 });
+        return next;
+      });
+      setTapped(key);
+      window.setTimeout(() => {
+        setTapped((current) => (current === key ? null : current));
+      }, 220);
+
+      try {
+        await toggleReaction({ activityId, emoji });
+        setOverrides((prev) => {
+          const next = new Map(prev);
+          next.delete(key);
+          return next;
+        });
+      } catch {
+        setOverrides((prev) => {
+          const next = new Map(prev);
+          next.delete(key);
+          return next;
+        });
+        toast.error("Couldn't react. Try again.");
+      }
+    },
+    [toggleReaction]
+  );
 
   if (!feed || feed.length === 0) {
     return (
@@ -147,27 +176,46 @@ export function ActivityFeed({ feed }: ActivityFeedProps) {
                   >
                     {REACTION_OPTIONS.map(({ emoji, glyph, label }) => {
                       const r = reactionMap.get(emoji);
-                      const count = r?.count ?? 0;
-                      const reacted = r?.reacted ?? false;
+                      const serverCount = r?.count ?? 0;
+                      const serverReacted = r?.reacted ?? false;
+                      const key: OverrideKey = `${item._id}:${emoji}`;
+                      const override = overrides.get(key);
+                      const reacted = override?.reacted ?? serverReacted;
+                      const count = Math.max(
+                        0,
+                        serverCount + (override?.delta ?? 0)
+                      );
+                      const isTapped = tapped === key;
                       return (
                         <button
                           key={emoji}
                           type="button"
                           onClick={() =>
-                            handleToggle(item._id as Id<"activityFeed">, emoji)
+                            handleToggle(
+                              item._id as Id<"activityFeed">,
+                              emoji,
+                              serverReacted
+                            )
                           }
                           aria-pressed={reacted}
                           aria-label={`${label} reaction${
                             count > 0 ? `, ${count}` : ""
                           }`}
                           className={[
-                            "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs leading-none transition-colors min-h-[28px]",
+                            "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs leading-none transition-all duration-150 min-h-[28px] select-none active:scale-95",
                             reacted
                               ? "border-primary bg-primary/10 text-foreground"
                               : "border-border bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+                            isTapped ? "scale-110" : "",
                           ].join(" ")}
                         >
-                          <span aria-hidden="true" className="text-sm">
+                          <span
+                            aria-hidden="true"
+                            className={[
+                              "text-sm transition-transform duration-150",
+                              isTapped ? "-translate-y-0.5" : "",
+                            ].join(" ")}
+                          >
                             {glyph}
                           </span>
                           {count > 0 && (
