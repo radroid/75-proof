@@ -108,8 +108,10 @@ export const getIncomingNudges = query({
       .order("desc")
       .take(20);
 
+    const unseen = rows.filter((r) => !r.seenAt);
+
     const enriched = await Promise.all(
-      rows.map(async (row) => {
+      unseen.map(async (row) => {
         const from = await ctx.db.get(row.fromUserId);
         if (!from) return null;
         return {
@@ -125,5 +127,31 @@ export const getIncomingNudges = query({
     );
 
     return enriched.filter((r): r is NonNullable<typeof r> => r !== null);
+  },
+});
+
+export const markIncomingNudgesSeen = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    const cutoff = new Date();
+    cutoff.setHours(cutoff.getHours() - 24);
+    const cutoffIso = cutoff.toISOString();
+
+    const rows = await ctx.db
+      .query("nudges")
+      .withIndex("by_to_created", (q) =>
+        q.eq("toUserId", user._id).gte("createdAt", cutoffIso)
+      )
+      .take(50);
+
+    const now = new Date().toISOString();
+    for (const row of rows) {
+      if (!row.seenAt) {
+        await ctx.db.patch(row._id, { seenAt: now });
+      }
+    }
+    return { ok: true };
   },
 });

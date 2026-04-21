@@ -170,6 +170,7 @@ export default defineSchema({
     fromUserId: v.id("users"),
     toUserId: v.id("users"),
     createdAt: v.string(),
+    seenAt: v.optional(v.string()),
   })
     .index("by_to", ["toUserId"])
     .index("by_to_created", ["toUserId", "createdAt"])

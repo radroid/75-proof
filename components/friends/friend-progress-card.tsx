@@ -50,6 +50,7 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
   const nudgedIds = useQuery(api.nudges.getRecentNudgedFriendIds);
   const [confirmAction, setConfirmAction] = useState<"remove" | "block" | null>(null);
   const [nudging, setNudging] = useState(false);
+  const [justNudged, setJustNudged] = useState(false);
 
   const alreadyNudged = nudgedIds?.includes(String(friend.user._id)) ?? false;
 
@@ -58,6 +59,8 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
     setNudging(true);
     try {
       await sendNudge({ toUserId: friend.user._id });
+      setJustNudged(true);
+      window.setTimeout(() => setJustNudged(false), 400);
       toast.success(`Nudged ${friend.user.displayName} 👋`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Could not send nudge";
@@ -133,14 +136,15 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
                     ? "Already nudged today"
                     : `Nudge ${friend.user.displayName}`
                 }
-                className="h-11 w-11"
+                className="h-11 w-11 transition-transform duration-200"
+                data-just-nudged={justNudged ? "true" : undefined}
               >
                 <HandHeart
-                  className={
-                    alreadyNudged
-                      ? "h-4 w-4 text-primary"
-                      : "h-4 w-4 text-muted-foreground"
-                  }
+                  className={[
+                    "h-4 w-4 transition-transform duration-200",
+                    alreadyNudged ? "text-primary" : "text-muted-foreground",
+                    justNudged ? "scale-125" : "",
+                  ].join(" ")}
                 />
               </Button>
               <DropdownMenu>
