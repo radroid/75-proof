@@ -350,7 +350,7 @@ export const runDueRemindersNow = internalAction({
  */
 export const sendTestNotificationToSelf = internalAction({
   args: {
-    userId: v.optional(v.id("users")),
+    userId: v.optional(v.string()),
     clerkId: v.optional(v.string()),
     email: v.optional(v.string()),
     slot: v.union(v.literal("morning"), v.literal("evening")),
@@ -392,34 +392,42 @@ export const runMyReminderNow = internalAction({
 });
 
 type ResolveArgs = {
-  userId?: Id<"users">;
+  userId?: string;
   clerkId?: string;
   email?: string;
 };
 
 /**
  * Resolve an `Id<"users">` from whichever lookup key the caller provided.
- * Throws with a clear message if none were supplied or the user can't be
- * found. Email is rejected explicitly (not indexed in the schema).
+ *
+ * Accepts both a Convex `_id` and a Clerk user id in the `userId` field —
+ * Clerk ids are recognized by the `user_` prefix and routed through the
+ * by-clerk lookup. This mirrors what users naturally paste from the Clerk
+ * dashboard without making them remember which field to use.
  */
 async function resolveUserId(
   ctx: ActionCtx,
   args: ResolveArgs
 ): Promise<Id<"users">> {
-  if (args.userId) return args.userId;
-
-  if (args.clerkId) {
+  const lookupByClerk = async (clerkId: string): Promise<Id<"users">> => {
     const user: Doc<"users"> | null = await ctx.runQuery(
       internal.users.getUserByClerkIdInternal,
-      { clerkId: args.clerkId }
+      { clerkId }
     );
     if (!user) {
       throw new Error(
-        `No user found with clerkId "${args.clerkId}". Pass a valid Clerk user id.`
+        `No user found with clerkId "${clerkId}". Pass a valid Clerk user id.`
       );
     }
     return user._id;
+  };
+
+  if (args.userId) {
+    if (args.userId.startsWith("user_")) return lookupByClerk(args.userId);
+    return args.userId as Id<"users">;
   }
+
+  if (args.clerkId) return lookupByClerk(args.clerkId);
 
   if (args.email) {
     throw new Error(
