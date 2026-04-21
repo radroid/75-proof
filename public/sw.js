@@ -2,7 +2,7 @@
 
 // Bump this version string to force existing clients to drop old caches
 // and re-fetch the latest precache manifest on activate.
-const CACHE_NAME = "75proof-v3";
+const CACHE_NAME = "75proof-v4";
 const OFFLINE_URL = "/offline";
 
 // App shell assets to pre-cache on install. Everything here must be
@@ -141,7 +141,15 @@ self.addEventListener("fetch", (event) => {
 
 // Push: show a system notification from the server payload. Payload schema:
 //   { title: string, body: string, icon?: string, badge?: string,
-//     tag?: string, data?: object }
+//     tag?: string, data?: object, actions?: Array<{action,title,icon?}>,
+//     vibrate?: number[], requireInteraction?: boolean }
+//
+// The *server* (convex/pushActions.ts) already tailors the payload per
+// platform (iOS omits actions/vibrate/badge). So this handler is just a
+// passthrough: we only drop fields the current browser doesn't support,
+// via `Notification.maxActions` for the one case where a desktop browser
+// might not support action buttons.
+//
 // If the payload can't be parsed as JSON we still surface a best-effort
 // notification so the user isn't left wondering why their phone buzzed.
 self.addEventListener("push", (event) => {
@@ -155,6 +163,9 @@ self.addEventListener("push", (event) => {
     badge: defaultBadge,
     tag: undefined,
     data: {},
+    actions: undefined,
+    vibrate: undefined,
+    requireInteraction: undefined,
   };
 
   if (event.data) {
@@ -167,6 +178,12 @@ self.addEventListener("push", (event) => {
         badge: parsed.badge || defaultBadge,
         tag: parsed.tag,
         data: parsed.data || {},
+        actions: Array.isArray(parsed.actions) ? parsed.actions : undefined,
+        vibrate: Array.isArray(parsed.vibrate) ? parsed.vibrate : undefined,
+        requireInteraction:
+          typeof parsed.requireInteraction === "boolean"
+            ? parsed.requireInteraction
+            : undefined,
       };
     } catch (_e) {
       // Fall back to text body if JSON parsing fails.
@@ -178,21 +195,52 @@ self.addEventListener("push", (event) => {
     }
   }
 
-  event.waitUntil(
-    self.registration.showNotification(payload.title, {
-      body: payload.body,
-      icon: payload.icon,
-      badge: payload.badge,
-      tag: payload.tag,
-      data: payload.data,
-    })
-  );
+  // Respect the browser's advertised action-button capacity. Firefox on
+  // some platforms reports 0; iOS Safari also ignores actions entirely.
+  // When capacity is 0 we simply don't pass the field (undefined = none).
+  const maxActions =
+    typeof Notification !== "undefined" &&
+    typeof Notification.maxActions === "number"
+      ? Notification.maxActions
+      : 0;
+  const actions =
+    payload.actions && maxActions > 0
+      ? payload.actions.slice(0, maxActions)
+      : undefined;
+
+  const options = {
+    body: payload.body,
+    icon: payload.icon,
+    badge: payload.badge,
+    tag: payload.tag,
+    data: payload.data,
+  };
+  if (actions) options.actions = actions;
+  if (payload.vibrate) options.vibrate = payload.vibrate;
+  if (typeof payload.requireInteraction === "boolean") {
+    options.requireInteraction = payload.requireInteraction;
+  }
+
+  event.waitUntil(self.registration.showNotification(payload.title, options));
 });
 
-// Notification click: focus an existing client if we have one, otherwise
-// open a new window at `data.url` (or /dashboard by default).
+// Notification click: route based on which action the user tapped.
+//
+//   - action === "dismiss" → just close the notification, no navigation.
+//     (Used by the "Not now" / "Later" action button on Android/Desktop.)
+//   - action === "open" OR no action (plain tap on the body) → focus an
+//     existing app window, otherwise open `data.url` (defaults /dashboard).
+//
+// On iOS PWAs actions are stripped before display, so the only path hit
+// there is the plain-tap → `event.action === ""` fall-through.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+
+  if (event.action === "dismiss") {
+    // Explicit "not now" — user wants the banner gone, nothing else.
+    return;
+  }
+
   const targetUrl =
     (event.notification.data && event.notification.data.url) || "/dashboard";
 
