@@ -202,58 +202,87 @@ export function usePushSubscription(): UsePushSubscriptionResult {
   const requestPermission = useCallback(async (): Promise<{
     granted: boolean;
   }> => {
-    if (typeof window === "undefined") return { granted: false };
-    if (status === "unsupported") return { granted: false };
-    if (!VAPID_PUBLIC_KEY) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        "[push] NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set — cannot subscribe."
-      );
-      return { granted: false };
-    }
-
-    let permission: NotificationPermission;
+    // Wrap the whole flow in try/finally so callers' `loading` state always
+    // clears — any throw anywhere still resolves, never hangs.
     try {
-      permission = await Notification.requestPermission();
-    } catch {
-      permission = Notification.permission;
-    }
-
-    if (permission !== "granted") {
-      setStatus(permission === "denied" ? "denied" : "default");
-      return { granted: false };
-    }
-    setStatus("granted");
-
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      let sub = await reg.pushManager.getSubscription();
-      if (!sub) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
-      }
-      const keys = getSubscriptionKeys(sub);
-      if (!keys) {
+      if (typeof window === "undefined") return { granted: false };
+      if (status === "unsupported") {
         // eslint-disable-next-line no-console
-        console.warn("[push] subscription missing keys");
+        console.warn("[push] skipped — environment is unsupported");
+        return { granted: false };
+      }
+      if (!VAPID_PUBLIC_KEY) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          "[push] NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set — cannot subscribe."
+        );
+        return { granted: false };
+      }
+      // iOS Safari (non-standalone) will happily return "granted" for
+      // Notification.requestPermission but pushManager.subscribe never
+      // resolves — bail *before* we block on it and leave the UI stuck.
+      if (detectIOS() && !detectStandalone()) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          "[push] iOS Safari tab — install to Home Screen before enabling push"
+        );
+        setStatus("unsupported");
+        setRequiresInstall(true);
+        return { granted: false };
+      }
+
+      let permission: NotificationPermission;
+      try {
+        permission = await Notification.requestPermission();
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn("[push] requestPermission threw, falling back", err);
+        permission = Notification.permission;
+      }
+
+      if (permission !== "granted") {
+        setStatus(permission === "denied" ? "denied" : "default");
+        return { granted: false };
+      }
+      setStatus("granted");
+
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+          });
+        }
+        const keys = getSubscriptionKeys(sub);
+        if (!keys) {
+          // eslint-disable-next-line no-console
+          console.warn("[push] subscription missing auth/p256dh keys");
+          return { granted: true };
+        }
+        await upsertSubscription({
+          endpoint: sub.endpoint,
+          keys,
+          userAgent:
+            typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+          platform: detectPlatform(),
+          enabled: true,
+        });
+        // Force a re-check so `isSubscribed` reflects the freshly-persisted
+        // server state even if the local `setIsSubscribed(true)` below races
+        // another effect.
+        setIsSubscribed(true);
+        return { granted: true };
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("[push] subscribe failed", err);
         return { granted: true };
       }
-      await upsertSubscription({
-        endpoint: sub.endpoint,
-        keys,
-        userAgent:
-          typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-        platform: detectPlatform(),
-        enabled: true,
-      });
-      setIsSubscribed(true);
-      return { granted: true };
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error("[push] subscribe failed", err);
-      return { granted: true };
+      console.error("[push] requestPermission unexpected failure", err);
+      return { granted: false };
     }
   }, [status, upsertSubscription]);
 

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
+import { Doc } from "./_generated/dataModel";
 
 export const getCurrentUser = query({
   args: {},
@@ -184,5 +185,22 @@ export const resetTutorialSeen = mutation({
     }
 
     await ctx.db.patch(user._id, { hasSeenTutorial: false });
+  },
+});
+
+/**
+ * Internal: resolve a Clerk user id (e.g. "user_...") to its Convex users doc.
+ *
+ * Used by dev-only actions like `pushActions:sendTestNotificationToSelf` that
+ * accept a Clerk id from the operator so they don't have to look up the
+ * opaque Convex `_id` first.
+ */
+export const getUserByClerkIdInternal = internalQuery({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args): Promise<Doc<"users"> | null> => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
   },
 });

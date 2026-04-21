@@ -176,10 +176,18 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      // IMPORTANT: `preferences` in the schema is a single object and
+      // `updateUser` replaces it wholesale (ctx.db.patch does a shallow
+      // merge at the top level only). If we omit `notifications` here, the
+      // debounced autosave that just persisted the user's toggle gets
+      // clobbered. Preserve it by passing through whatever's currently on
+      // the user doc — the dedicated `setNotificationPreferences` mutation
+      // owns writes to that sub-object.
       await updateUser({
         displayName,
         preferences: {
           timezone: user?.preferences?.timezone ?? "America/New_York",
+          reminderTime: user?.preferences?.reminderTime,
           waterUnit,
           sharing: {
             showStreak,
@@ -187,6 +195,7 @@ export default function SettingsPage() {
             showCompletionStatus,
             showHabits,
           },
+          notifications: user?.preferences?.notifications,
         },
       });
       toast.success("Settings saved!");

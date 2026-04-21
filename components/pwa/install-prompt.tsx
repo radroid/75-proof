@@ -71,19 +71,54 @@ export function InstallPrompt() {
               {isIOS ? "Add to Home Screen" : "Install 75 Proof"}
             </DialogTitle>
           </div>
-          <DialogDescription className="pt-2">
+          <DialogDescription className="pt-2" asChild>
             {isIOS ? (
-              <span className="inline-flex flex-wrap items-center gap-1">
-                Tap the share icon
-                <Share
-                  className="inline h-4 w-4 align-[-2px]"
-                  style={{ color: "#FF6154" }}
-                  aria-label="share icon"
-                />
-                below, then choose &ldquo;Add to Home Screen&rdquo; to install 75 Proof.
-              </span>
+              <ol className="mt-1 space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-foreground"
+                  >
+                    1
+                  </span>
+                  <span className="min-w-0">
+                    Tap the share icon
+                    <span
+                      className="mx-1 inline-flex h-5 w-5 items-center justify-center rounded-md bg-muted align-[-5px]"
+                      aria-label="share icon"
+                    >
+                      <Share
+                        className="h-3.5 w-3.5"
+                        style={{ color: "#FF6154" }}
+                        aria-hidden="true"
+                      />
+                    </span>
+                    in Safari&rsquo;s toolbar.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-foreground"
+                  >
+                    2
+                  </span>
+                  <span>Choose &ldquo;Add to Home Screen.&rdquo;</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-foreground"
+                  >
+                    3
+                  </span>
+                  <span>Tap &ldquo;Add&rdquo; in the top right.</span>
+                </li>
+              </ol>
             ) : (
-              "Add 75 Proof to your home screen for quick access and a fullscreen experience."
+              <span>
+                Add 75 Proof to your home screen for quick access and a fullscreen experience.
+              </span>
             )}
           </DialogDescription>
         </DialogHeader>

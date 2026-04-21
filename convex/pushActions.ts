@@ -2,7 +2,7 @@
 
 import { v } from "convex/values";
 import webpush from "web-push";
-import { internalAction } from "./_generated/server";
+import { ActionCtx, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { Doc, Id } from "./_generated/dataModel";
 
@@ -337,19 +337,97 @@ export const runDueRemindersNow = internalAction({
  *
  * This does NOT write to `notificationDeliveries`, so it won't interfere
  * with the real once-per-day reminder gating.
+ *
+ * Accepts any one of `userId` (Convex `_id`) or `clerkId` (the Clerk user id
+ * you see in your auth provider, e.g. "user_..."). `email` is not supported
+ * because the `users` table doesn't store an indexed email column.
+ *
+ * Examples:
+ *   npx convex run pushActions:sendTestNotificationToSelf \
+ *     '{"userId":"<Convex users _id>","slot":"morning"}'
+ *   npx convex run pushActions:sendTestNotificationToSelf \
+ *     '{"clerkId":"user_3A7qlaPsR6jolcubb8os5I3tHlR","slot":"evening"}'
  */
 export const sendTestNotificationToSelf = internalAction({
   args: {
-    userId: v.id("users"),
+    userId: v.optional(v.id("users")),
+    clerkId: v.optional(v.string()),
+    email: v.optional(v.string()),
     slot: v.union(v.literal("morning"), v.literal("evening")),
   },
   handler: async (
     ctx,
     args
   ): Promise<{ sent: number; failed: number; pruned: number }> => {
+    const resolvedId = await resolveUserId(ctx, args);
     return await ctx.runAction(internal.pushActions.sendReminderPush, {
-      userId: args.userId,
+      userId: resolvedId,
       slot: args.slot,
     });
   },
 });
+
+/**
+ * Convenience wrapper: "send my reminder now" from the Convex dashboard.
+ *
+ * `npx convex run pushActions:runMyReminderNow '{"clerkId":"user_..."}'`
+ *
+ * Defaults to the morning slot so you don't have to remember the union.
+ */
+export const runMyReminderNow = internalAction({
+  args: {
+    clerkId: v.string(),
+    slot: v.optional(v.union(v.literal("morning"), v.literal("evening"))),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ sent: number; failed: number; pruned: number }> => {
+    const resolvedId = await resolveUserId(ctx, { clerkId: args.clerkId });
+    return await ctx.runAction(internal.pushActions.sendReminderPush, {
+      userId: resolvedId,
+      slot: args.slot ?? "morning",
+    });
+  },
+});
+
+type ResolveArgs = {
+  userId?: Id<"users">;
+  clerkId?: string;
+  email?: string;
+};
+
+/**
+ * Resolve an `Id<"users">` from whichever lookup key the caller provided.
+ * Throws with a clear message if none were supplied or the user can't be
+ * found. Email is rejected explicitly (not indexed in the schema).
+ */
+async function resolveUserId(
+  ctx: ActionCtx,
+  args: ResolveArgs
+): Promise<Id<"users">> {
+  if (args.userId) return args.userId;
+
+  if (args.clerkId) {
+    const user: Doc<"users"> | null = await ctx.runQuery(
+      internal.users.getUserByClerkIdInternal,
+      { clerkId: args.clerkId }
+    );
+    if (!user) {
+      throw new Error(
+        `No user found with clerkId "${args.clerkId}". Pass a valid Clerk user id.`
+      );
+    }
+    return user._id;
+  }
+
+  if (args.email) {
+    throw new Error(
+      "email lookup is not supported — the users table has no email index. Pass userId or clerkId instead."
+    );
+  }
+
+  throw new Error(
+    "sendTestNotificationToSelf requires one of: userId, clerkId. None were provided."
+  );
+}
