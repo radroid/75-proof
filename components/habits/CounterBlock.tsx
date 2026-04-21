@@ -17,7 +17,7 @@ interface CounterBlockProps {
   onIncrement: (amount: number) => void;
 }
 
-function getIncrementForUnit(unit: string): number {
+function getIncrementForUnit(unit: string, target: number): number {
   switch (unit) {
     case "oz":
       return 16; // one glass
@@ -28,8 +28,14 @@ function getIncrementForUnit(unit: string): number {
     case "pages":
       return 5;
     default:
-      return 1;
+      if (target <= 5) return 1;
+      return target / 5;
   }
+}
+
+function formatCounterNumber(value: number): string {
+  if (Number.isInteger(value)) return String(value);
+  return value.toFixed(2).replace(/\.?0+$/, "");
 }
 
 export function CounterBlock({
@@ -43,8 +49,11 @@ export function CounterBlock({
   onIncrement,
 }: CounterBlockProps) {
   const shouldReduceMotion = useReducedMotion();
-  const increment = getIncrementForUnit(unit);
-  const progress = Math.min((value / target) * 100, 100);
+  const increment = getIncrementForUnit(unit, target);
+  const progress = target > 0 ? Math.min((value / target) * 100, 100) : 0;
+  const formattedValue = formatCounterNumber(value);
+  const formattedTarget = formatCounterNumber(target);
+  const formattedIncrement = formatCounterNumber(increment);
 
   return (
     <div
@@ -91,9 +100,9 @@ export function CounterBlock({
             </div>
             {!completed && (
               <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
-                <span className="tabular-nums">{value}</span>
+                <span className="tabular-nums">{formattedValue}</span>
                 {" / "}
-                <span className="tabular-nums">{target}</span> {unit}
+                <span className="tabular-nums">{formattedTarget}</span> {unit}
               </p>
             )}
           </div>
@@ -148,7 +157,7 @@ export function CounterBlock({
                 className="h-11 w-11 p-0 shrink-0 active:scale-95 transition-transform touch-manipulation"
                 onClick={() => onIncrement(-increment)}
                 disabled={value <= 0}
-                aria-label={`Decrease ${name} by ${increment} ${unit}`}
+                aria-label={`Decrease ${name} by ${formattedIncrement} ${unit}`}
               >
                 <Minus className="h-4 w-4" aria-hidden="true" />
               </Button>
@@ -157,14 +166,14 @@ export function CounterBlock({
                 aria-live="polite"
                 aria-atomic="true"
               >
-                {value} {unit}
+                {formattedValue} {unit}
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 className="h-11 w-11 p-0 shrink-0 active:scale-95 transition-transform touch-manipulation"
                 onClick={() => onIncrement(increment)}
-                aria-label={`Increase ${name} by ${increment} ${unit}`}
+                aria-label={`Increase ${name} by ${formattedIncrement} ${unit}`}
               >
                 <Plus className="h-4 w-4" aria-hidden="true" />
               </Button>
