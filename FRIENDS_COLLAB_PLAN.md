@@ -57,8 +57,15 @@ Instead of just emoji, short preset quick replies ("Let's go!", "You got this") 
 ### 7. Friend milestone celebration — reserved for later (diminishing returns gate)
 Day 10/25/50/75 gets a special activity card with confetti vibe. Nice-to-have. Evaluate after #1–5 shipped.
 
-## Stop condition
-After features 1–5, assess whether another feature would add real collaboration value or just UI surface. Stop at diminishing returns.
+## Shipped
+- [x] 1. Reactions on activity feed — `feat(friends): emoji reactions on activity feed`
+- [x] 2. Weekly leaderboard — `feat(friends): weekly leaderboard card`
+- [x] 3. Nudge a friend — `feat(friends): nudge a friend`
+- [x] 4. Today's pulse strip — `feat(friends): today's pulse strip`
+- [x] 5. Co-streak badge — `feat(friends): co-streak badge on friend cards`
+
+## Stopped: diminishing returns
+Remaining ideas (quick-reply comments, milestone confetti, shared challenges) either duplicate an existing engagement axis covered by reactions, add UI weight without a new collaboration axis, or represent a much larger scope than the "small commits" target. Stopped after 5 features.
 
 ## Theme + responsive checklist (applied to each feature)
 - [ ] Renders correctly on arctic, broadsheet, military, zen
