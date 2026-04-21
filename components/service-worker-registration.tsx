@@ -2,25 +2,22 @@
 
 import { useEffect } from "react";
 
-// Hostnames where we allow the service worker to register.
-// We intentionally exclude Vercel preview/ephemeral hosts to avoid stale
-// caches following users across deploys.
-const ALLOWED_SW_HOSTS = new Set<string>([
-  "localhost",
-  "127.0.0.1",
-  "75.createplus.club",
-  "www.75.createplus.club",
-  // Keep legacy hostnames around so existing installs don't lose the SW.
-  "75proof.app",
-  "www.75proof.app",
-]);
-
-function isAllowedHost(hostname: string): boolean {
-  if (ALLOWED_SW_HOSTS.has(hostname)) return true;
-  // Allow LAN testing (e.g. http://192.168.x.x) in dev.
-  if (/^192\.168\.\d+\.\d+$/.test(hostname)) return true;
-  if (/^10\.\d+\.\d+\.\d+$/.test(hostname)) return true;
-  return false;
+/**
+ * We used to maintain a hostname allowlist to avoid stale caches "following
+ * users across deploys." That concern is misplaced — service workers are
+ * strictly scoped to their origin, so a preview at `abc.vercel.app` cannot
+ * intercept a request to `prod.example.com`. Cross-deploy staleness *on the
+ * same origin* is already handled by the CACHE_NAME version bump in sw.js,
+ * which runs in the `activate` handler and deletes old caches.
+ *
+ * Register on any HTTPS origin (or localhost) so ngrok tunnels, Vercel
+ * previews, staging domains, and production all just work.
+ */
+function isSWEligible(hostname: string, protocol: string): boolean {
+  if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+  // HTTPS is required by browsers for SW registration; enforce it here so
+  // we surface a clear skip in dev if the tunnel isn't HTTPS.
+  return protocol === "https:";
 }
 
 export function ServiceWorkerRegistration() {
@@ -29,10 +26,12 @@ export function ServiceWorkerRegistration() {
       return;
     }
 
-    const { hostname } = window.location;
-    if (!isAllowedHost(hostname)) {
-      // Skip on preview/ephemeral hosts (e.g. *.vercel.app) to avoid stale
-      // caches bleeding across deploys.
+    const { hostname, protocol } = window.location;
+    if (!isSWEligible(hostname, protocol)) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[sw] skipped registration for ${protocol}//${hostname} — HTTPS (or localhost) required.`
+      );
       return;
     }
 
