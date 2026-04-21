@@ -420,15 +420,6 @@
   --bottom-nav-gap: calc(var(--bottom-nav-height) + var(--bottom-nav-offset) + env(safe-area-inset-bottom, 0px));
 }
 
-/* Prevent the browser / PWA pull-to-refresh from firing on the root. The
-   dashboard uses its own scrollable `<main>` with `overscroll-contain`, so
-   the only thing the document-level pull would do is reload the page mid-
-   interaction. This is the recommended pattern for app-like web UIs. */
-html,
-body {
-  overscroll-behavior-y: none;
-}
-
 /* Suppress the default iOS/Android tap-highlight (a semi-transparent black
    rgba flash on every tap). It clashes with our custom themed palettes
    (cream, olive, warm stone) and fights the explicit `active:bg-*` states

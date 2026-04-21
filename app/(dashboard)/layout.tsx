@@ -276,13 +276,7 @@ export default function DashboardLayout({
 
         <SidebarSpacer />
 
-        <main
-          // `overscroll-contain` prevents the dashboard scroll from chaining
-          // into the body / browser chrome (stops the iOS rubber-band and the
-          // PWA pull-to-refresh from firing mid-scroll while the content has
-          // more to reveal).
-          className="flex-1 overflow-auto overscroll-contain scrollbar-gutter-stable"
-        >
+        <main className="flex-1 overflow-auto scrollbar-gutter-stable">
           {/* Mobile: reserve space for the floating bottom nav + safe-area
               via --bottom-nav-gap so content is never hidden behind the pill
               on notched devices. Desktop keeps the standard p-8. */}
