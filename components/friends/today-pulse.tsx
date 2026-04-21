@@ -131,7 +131,7 @@ export function TodayPulse() {
                 <li key={key}>
                   {done ? (
                     <span
-                      className="inline-flex items-center gap-1 rounded-full bg-success/10 text-success pl-0.5 pr-2 py-0.5 text-[11px] font-medium min-h-[28px]"
+                      className="inline-flex items-center gap-1 rounded-full bg-success/10 text-success pl-0.5 pr-2 py-0.5 text-[11px] font-medium min-h-[36px]"
                       title={`${f.user.displayName} completed today`}
                     >
                       <span className="relative inline-block">
@@ -173,7 +173,7 @@ export function TodayPulse() {
                           : `Nudge ${f.user.displayName}`
                       }
                       className={[
-                        "inline-flex items-center gap-1 rounded-full pl-0.5 pr-2 py-0.5 text-[11px] font-medium min-h-[28px] transition-colors",
+                        "inline-flex items-center gap-1 rounded-full pl-0.5 pr-2 py-0.5 text-[11px] font-medium min-h-[36px] touch-manipulation transition-all duration-150 active:scale-95 disabled:active:scale-100",
                         alreadyNudged
                           ? "bg-primary/10 text-primary"
                           : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",

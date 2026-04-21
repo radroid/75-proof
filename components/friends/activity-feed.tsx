@@ -260,7 +260,7 @@ export function ActivityFeed({ feed }: ActivityFeedProps) {
                             count > 0 ? `, ${count}` : ""
                           }`}
                           className={[
-                            "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs leading-none transition-all duration-150 min-h-[28px] select-none active:scale-95",
+                            "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs leading-none transition-all duration-150 min-h-[32px] min-w-[32px] select-none touch-manipulation active:scale-95",
                             reacted
                               ? "border-primary bg-primary/10 text-foreground"
                               : "border-border bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground",

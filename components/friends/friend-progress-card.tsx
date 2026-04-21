@@ -139,7 +139,7 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
                     ? "Already nudged today"
                     : `Nudge ${friend.user.displayName}`
                 }
-                className="h-11 w-11 transition-transform duration-200"
+                className="h-11 w-11 transition-transform duration-200 touch-manipulation active:scale-95 disabled:active:scale-100"
                 data-just-nudged={justNudged ? "true" : undefined}
               >
                 <HandHeart
