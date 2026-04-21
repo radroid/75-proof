@@ -159,12 +159,162 @@ export function buildReminderPayload(
 }
 
 /**
- * Send a test push to all of a user's registered subscriptions. Invalid
- * subscriptions (HTTP 404/410) are surfaced in the result so a follow-up
- * mutation can prune them — we don't mutate the DB directly here since
- * actions can't hit `ctx.db` (see Convex guidelines).
+ * Truncate display names that land in notification titles. Push services
+ * (APNs especially) will silently truncate extremely long titles; clamping
+ * here keeps the body text visible and prevents layout surprises.
+ */
+function clampName(name: string, max = 24): string {
+  const trimmed = name.trim();
+  if (trimmed.length === 0) return "A friend";
+  return trimmed.length > max ? `${trimmed.slice(0, max - 1)}…` : trimmed;
+}
+
+/**
+ * Nudge push — a friend just pinged you. Short, punchy, one action.
  *
- * Now builds a per-platform payload per subscription row (same as the
+ * The `tag` includes the sender's id so repeat nudges from the *same*
+ * friend coalesce into one banner on the device, while a nudge from a
+ * *different* friend gets its own entry.
+ */
+export function buildNudgePayload(
+  fromName: string,
+  fromUserId: string,
+  platform: Platform
+): PushPayload {
+  const name = clampName(fromName);
+  const title = `${name} nudged you 👊`;
+  const body = "They want to see how today's going.";
+  const tag = `nudge-${fromUserId}`;
+  const data = { url: "/dashboard/friends", kind: "nudge", fromUserId };
+
+  if (platform === "ios") {
+    return { title, body, icon: "/icon-192.png", tag, data };
+  }
+  return {
+    title,
+    body,
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    vibrate: [60, 40, 60],
+    tag,
+    data,
+    requireInteraction: false,
+    actions: [
+      { action: "open", title: "Open" },
+      { action: "dismiss", title: "Later" },
+    ],
+  };
+}
+
+/**
+ * Reaction push — a friend reacted to one of your activity items. Lighter
+ * treatment than a nudge: no action buttons, gentler vibrate pattern,
+ * single tap to open.
+ *
+ * `activityLabel` is a short human-readable hint like "on your Day 42"
+ * or "on your challenge completion" so the user knows *what* was reacted
+ * to without needing to open the app.
+ */
+export function buildReactionPayload(
+  fromName: string,
+  fromUserId: string,
+  emoji: string,
+  activityLabel: string,
+  platform: Platform
+): PushPayload {
+  const name = clampName(fromName);
+  const title = `${name} reacted ${emoji}`;
+  const body = activityLabel;
+  // Coalesce repeat reactions from the same sender into one banner — they
+  // may toggle through several emojis, we don't want N buzzes.
+  const tag = `reaction-${fromUserId}`;
+  const data = { url: "/dashboard/friends", kind: "reaction", fromUserId };
+
+  if (platform === "ios") {
+    return { title, body, icon: "/icon-192.png", tag, data };
+  }
+  return {
+    title,
+    body,
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    vibrate: [30, 40, 30],
+    tag,
+    data,
+    requireInteraction: false,
+  };
+}
+
+/**
+ * Generic fan-out. Every push-sending action in this file routes through
+ * this one helper so dead-endpoint pruning, per-platform payload
+ * construction, and VAPID config checks live in exactly one place.
+ *
+ * `buildPayload` is called once per subscription so each platform can get
+ * a tailored payload (iOS minimal, Android/desktop rich).
+ */
+async function fanOutPush(
+  ctx: ActionCtx,
+  userId: Id<"users">,
+  buildPayload: (platform: Platform) => PushPayload
+): Promise<{ sent: number; failed: number; pruned: number }> {
+  if (!ensureVapidConfigured()) {
+    return { sent: 0, failed: 0, pruned: 0 };
+  }
+  const subs: Doc<"pushSubscriptions">[] = await ctx.runQuery(
+    internal.pushSubscriptions.listSubscriptionsForUser,
+    { userId }
+  );
+  if (subs.length === 0) return { sent: 0, failed: 0, pruned: 0 };
+
+  let sent = 0;
+  let failed = 0;
+  const goneEndpoints: string[] = [];
+
+  for (const sub of subs) {
+    if (!sub.enabled) continue;
+    const payload = buildPayload(sub.platform);
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: sub.keys },
+        JSON.stringify(payload),
+        { TTL: 60 }
+      );
+      sent++;
+    } catch (err: unknown) {
+      failed++;
+      const statusCode =
+        err && typeof err === "object" && "statusCode" in err
+          ? (err as { statusCode?: number }).statusCode
+          : undefined;
+      // 404 / 410 = the push service says this subscription is permanently
+      // gone; queue for pruning below.
+      if (statusCode === 404 || statusCode === 410) {
+        goneEndpoints.push(sub.endpoint);
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn("[push] send failed", statusCode, err);
+      }
+    }
+  }
+
+  let pruned = 0;
+  if (goneEndpoints.length > 0) {
+    pruned = await ctx.runMutation(
+      internal.pushSubscriptions.pruneDeadSubscriptions,
+      { endpoints: goneEndpoints }
+    );
+  }
+
+  return { sent, failed, pruned };
+}
+
+/**
+ * Send a test push to all of a user's registered subscriptions. Invalid
+ * subscriptions (HTTP 404/410) are pruned via the shared `fanOutPush`
+ * path — the caller just gets a summary.
+ *
+ * Builds a per-platform payload per subscription row (same as the
  * scheduled reminder path), so "send me a test" mirrors what a real
  * reminder looks like on this device.
  */
@@ -178,79 +328,27 @@ export const sendTestPush = internalAction({
   handler: async (
     ctx,
     args
-  ): Promise<{
-    sent: number;
-    failed: number;
-    goneEndpoints: string[];
-  }> => {
-    if (!ensureVapidConfigured()) {
-      return { sent: 0, failed: 0, goneEndpoints: [] };
-    }
-
-    const subs: Doc<"pushSubscriptions">[] = await ctx.runQuery(
-      internal.pushSubscriptions.listSubscriptionsForUser,
-      { userId: args.userId as Id<"users"> }
-    );
-
+  ): Promise<{ sent: number; failed: number; pruned: number }> => {
     const slot: Slot = args.slot ?? "morning";
-
-    let sent = 0;
-    let failed = 0;
-    const goneEndpoints: string[] = [];
-
-    for (const sub of subs) {
-      if (!sub.enabled) continue;
-      // Build a payload tailored to *this* subscription's platform.
-      const payload = buildReminderPayload(slot, sub.platform);
-      // Caller overrides (mainly useful for smoke tests from the dashboard).
+    return await fanOutPush(ctx, args.userId, (platform) => {
+      const payload = buildReminderPayload(slot, platform);
       if (args.title) payload.title = args.title;
       if (args.body) payload.body = args.body;
-
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: sub.keys,
-          },
-          JSON.stringify(payload),
-          { TTL: 60 }
-        );
-        sent++;
-      } catch (err: unknown) {
-        failed++;
-        const statusCode =
-          err && typeof err === "object" && "statusCode" in err
-            ? (err as { statusCode?: number }).statusCode
-            : undefined;
-        // 404 / 410 = the push service says this subscription is permanently
-        // gone; callers should prune.
-        if (statusCode === 404 || statusCode === 410) {
-          goneEndpoints.push(sub.endpoint);
-        } else {
-          // eslint-disable-next-line no-console
-          console.warn("[push] send failed", statusCode, err);
-        }
-      }
-    }
-
-    return { sent, failed, goneEndpoints };
+      return payload;
+    });
   },
 });
 
 /**
  * Send the morning/evening reminder push to every active subscription of the
- * given user. Dead endpoints (404/410 from the push service) are collected
- * and pruned via an internal mutation.
+ * given user. Dead endpoints (404/410 from the push service) are pruned
+ * via `fanOutPush`'s shared path.
  *
  * Invariant: by the time this action runs, `notificationDeliveries` already
  * has a row for (user, slot, localDate) — the dispatcher inserts it before
  * scheduling us. If VAPID is misconfigured or all subs are gone, we just
  * no-op; we don't roll back the delivery row (the user's preferences clearly
  * say they want reminders, and we did our best).
- *
- * Each subscription row carries its `platform`, so we build a distinct
- * payload per device — the iOS PWA on the user's phone gets the minimal
- * variant while Android/Chrome get the full action-button treatment.
  */
 export const sendReminderPush = internalAction({
   args: {
@@ -261,56 +359,102 @@ export const sendReminderPush = internalAction({
     ctx,
     args
   ): Promise<{ sent: number; failed: number; pruned: number }> => {
-    if (!ensureVapidConfigured()) {
-      return { sent: 0, failed: 0, pruned: 0 };
-    }
-
-    const subs: Doc<"pushSubscriptions">[] = await ctx.runQuery(
-      internal.pushSubscriptions.listSubscriptionsForUser,
-      { userId: args.userId as Id<"users"> }
+    return await fanOutPush(ctx, args.userId, (platform) =>
+      buildReminderPayload(args.slot, platform)
     );
-    if (subs.length === 0) {
+  },
+});
+
+/**
+ * Send a nudge notification to `toUserId` on behalf of `fromUserId`.
+ *
+ * Loads the recipient's notification preferences and bails silently if
+ * they've opted out of nudge notifications. We fetch the sender's display
+ * name here (not in the mutation) so a single Node action boundary handles
+ * both the lookup and the fan-out.
+ */
+export const sendNudgePush = internalAction({
+  args: {
+    toUserId: v.id("users"),
+    fromUserId: v.id("users"),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ sent: number; failed: number; pruned: number }> => {
+    const [toUser, fromUser] = await Promise.all([
+      ctx.runQuery(internal.users.getUserByIdInternal, {
+        userId: args.toUserId,
+      }),
+      ctx.runQuery(internal.users.getUserByIdInternal, {
+        userId: args.fromUserId,
+      }),
+    ]);
+    if (!toUser || !fromUser) return { sent: 0, failed: 0, pruned: 0 };
+
+    // Respect the recipient's social-notif preference. Default: enabled
+    // (undefined === true) since older users predate the toggle.
+    const prefs = toUser.preferences?.notifications;
+    if (prefs && prefs.enabled === false) {
+      return { sent: 0, failed: 0, pruned: 0 };
+    }
+    if (prefs && prefs.nudges === false) {
       return { sent: 0, failed: 0, pruned: 0 };
     }
 
-    let sent = 0;
-    let failed = 0;
-    const goneEndpoints: string[] = [];
+    return await fanOutPush(ctx, args.toUserId, (platform) =>
+      buildNudgePayload(fromUser.displayName, args.fromUserId, platform)
+    );
+  },
+});
 
-    for (const sub of subs) {
-      if (!sub.enabled) continue;
-      const payload = buildReminderPayload(args.slot, sub.platform);
-      try {
-        await webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: sub.keys },
-          JSON.stringify(payload),
-          { TTL: 60 }
-        );
-        sent++;
-      } catch (err: unknown) {
-        failed++;
-        const statusCode =
-          err && typeof err === "object" && "statusCode" in err
-            ? (err as { statusCode?: number }).statusCode
-            : undefined;
-        if (statusCode === 404 || statusCode === 410) {
-          goneEndpoints.push(sub.endpoint);
-        } else {
-          // eslint-disable-next-line no-console
-          console.warn("[push] reminder send failed", statusCode, err);
-        }
-      }
+/**
+ * Send a reaction notification to `toUserId` (the activity author) on
+ * behalf of `fromUserId` (the reactor).
+ *
+ * Same opt-out gate as nudges. `activityLabel` is pre-computed by the
+ * mutation caller since the activity context (day number, type) lives in
+ * the DB and this action doesn't need to refetch it — cheaper than another
+ * round-trip.
+ */
+export const sendReactionPush = internalAction({
+  args: {
+    toUserId: v.id("users"),
+    fromUserId: v.id("users"),
+    emoji: v.string(),
+    activityLabel: v.string(),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ sent: number; failed: number; pruned: number }> => {
+    const [toUser, fromUser] = await Promise.all([
+      ctx.runQuery(internal.users.getUserByIdInternal, {
+        userId: args.toUserId,
+      }),
+      ctx.runQuery(internal.users.getUserByIdInternal, {
+        userId: args.fromUserId,
+      }),
+    ]);
+    if (!toUser || !fromUser) return { sent: 0, failed: 0, pruned: 0 };
+
+    const prefs = toUser.preferences?.notifications;
+    if (prefs && prefs.enabled === false) {
+      return { sent: 0, failed: 0, pruned: 0 };
+    }
+    if (prefs && prefs.reactions === false) {
+      return { sent: 0, failed: 0, pruned: 0 };
     }
 
-    let pruned = 0;
-    if (goneEndpoints.length > 0) {
-      pruned = await ctx.runMutation(
-        internal.pushSubscriptions.pruneDeadSubscriptions,
-        { endpoints: goneEndpoints }
-      );
-    }
-
-    return { sent, failed, pruned };
+    return await fanOutPush(ctx, args.toUserId, (platform) =>
+      buildReactionPayload(
+        fromUser.displayName,
+        args.fromUserId,
+        args.emoji,
+        args.activityLabel,
+        platform
+      )
+    );
   },
 });
 

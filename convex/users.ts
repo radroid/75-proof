@@ -93,6 +93,8 @@ export const updateUser = mutation({
           eveningReminder: v.boolean(),
           morningTime: v.string(),
           eveningTime: v.string(),
+          nudges: v.optional(v.boolean()),
+          reactions: v.optional(v.boolean()),
         })),
       })
     ),
@@ -202,5 +204,17 @@ export const getUserByClerkIdInternal = internalQuery({
       .query("users")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
       .unique();
+  },
+});
+
+/**
+ * Internal: load a user doc by its Convex `_id`. Used from "use node" actions
+ * (which can't touch `ctx.db`) to read the target user's display name and
+ * notification preferences before fanning out a push.
+ */
+export const getUserByIdInternal = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args): Promise<Doc<"users"> | null> => {
+    return await ctx.db.get(args.userId);
   },
 });

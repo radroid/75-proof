@@ -26,6 +26,10 @@ export default defineSchema({
         eveningReminder: v.boolean(),
         morningTime: v.string(), // "HH:mm" local
         eveningTime: v.string(), // "HH:mm" local
+        // Social push opt-outs. Optional — absent means "on" (existing
+        // users predate these toggles and shouldn't go silent).
+        nudges: v.optional(v.boolean()),
+        reactions: v.optional(v.boolean()),
       })),
     }),
     onboardingComplete: v.optional(v.boolean()),

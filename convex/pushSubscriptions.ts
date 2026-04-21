@@ -117,9 +117,15 @@ export const setNotificationPreferences = mutation({
     eveningReminder: v.boolean(),
     morningTime: v.string(),
     eveningTime: v.string(),
+    // Social toggles are optional — omitting them preserves the existing
+    // value, so the reminders page can save without touching friend prefs
+    // (and vice versa).
+    nudges: v.optional(v.boolean()),
+    reactions: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);
+    const prevNotif = user.preferences?.notifications;
     await ctx.db.patch(user._id, {
       preferences: {
         ...user.preferences,
@@ -129,6 +135,8 @@ export const setNotificationPreferences = mutation({
           eveningReminder: args.eveningReminder,
           morningTime: args.morningTime,
           eveningTime: args.eveningTime,
+          nudges: args.nudges ?? prevNotif?.nudges,
+          reactions: args.reactions ?? prevNotif?.reactions,
         },
       },
     });
