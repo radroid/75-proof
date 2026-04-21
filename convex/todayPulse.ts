@@ -15,12 +15,22 @@ type PulseRow = {
   completed: number;
 };
 
+type FriendStatus = {
+  user: {
+    _id: Id<"users">;
+    displayName: string;
+    avatarUrl?: string;
+  };
+  completedToday: boolean;
+};
+
 type PulseResult = {
   totalFriendsWithChallenge: number;
   friendsCompleteToday: number;
   youCompleteToday: boolean | null;
   youHaveChallenge: boolean;
   categories: PulseRow[];
+  friends: FriendStatus[];
 };
 
 async function getFriendIds(
@@ -56,6 +66,7 @@ export const getTodayPulse = query({
       youCompleteToday: null,
       youHaveChallenge: false,
       categories: [],
+      friends: [],
     };
     if (!user) return empty;
 
@@ -115,6 +126,8 @@ export const getTodayPulse = query({
       };
     }
 
+    const friendStatuses: FriendStatus[] = [];
+
     for (const friendId of friendIds) {
       const friend = await ctx.db.get(friendId);
       if (!friend) continue;
@@ -144,6 +157,8 @@ export const getTodayPulse = query({
 
       const hardHabits = habitDefs.filter((h) => h.isActive && h.isHard);
 
+      let friendCompleteToday = false;
+
       if (hardHabits.length > 0) {
         const entries = await ctx.db
           .query("habitEntries")
@@ -171,6 +186,7 @@ export const getTodayPulse = query({
         for (const cat of completedCategoriesForFriend) {
           categoryCounts[cat] = (categoryCounts[cat] ?? 0) + 1;
         }
+        friendCompleteToday = allDone;
         if (allDone) friendsCompleteToday += 1;
       } else {
         const log = await ctx.db
@@ -193,10 +209,27 @@ export const getTodayPulse = query({
           for (const cat of completedCats) {
             categoryCounts[cat] = (categoryCounts[cat] ?? 0) + 1;
           }
+          friendCompleteToday = log.allRequirementsMet === true;
           if (log.allRequirementsMet) friendsCompleteToday += 1;
         }
       }
+
+      friendStatuses.push({
+        user: {
+          _id: friend._id,
+          displayName: friend.displayName,
+          avatarUrl: friend.avatarUrl,
+        },
+        completedToday: friendCompleteToday,
+      });
     }
+
+    friendStatuses.sort((a, b) => {
+      if (a.completedToday !== b.completedToday) {
+        return a.completedToday ? -1 : 1;
+      }
+      return a.user.displayName.localeCompare(b.user.displayName);
+    });
 
     const categories: PulseRow[] = Object.entries(categoryCounts)
       .map(([category, completed]) => ({
@@ -213,6 +246,7 @@ export const getTodayPulse = query({
       youCompleteToday,
       youHaveChallenge: ownChallenge !== null,
       categories,
+      friends: friendStatuses,
     };
   },
 });

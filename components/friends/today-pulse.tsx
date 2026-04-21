@@ -1,9 +1,20 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useState } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dumbbell, Apple, BookOpen, Circle, Check } from "lucide-react";
+import {
+  Dumbbell,
+  Apple,
+  BookOpen,
+  Circle,
+  Check,
+  HandHeart,
+} from "lucide-react";
+import { toast } from "sonner";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   dumbbell: Dumbbell,
@@ -14,6 +25,9 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
 
 export function TodayPulse() {
   const pulse = useQuery(api.todayPulse.getTodayPulse);
+  const nudgedIds = useQuery(api.nudges.getRecentNudgedFriendIds);
+  const sendNudge = useMutation(api.nudges.sendNudge);
+  const [pendingNudge, setPendingNudge] = useState<string | null>(null);
 
   if (!pulse || pulse.totalFriendsWithChallenge === 0) {
     return null;
@@ -25,6 +39,7 @@ export function TodayPulse() {
     youCompleteToday,
     youHaveChallenge,
     categories,
+    friends,
   } = pulse;
 
   const totalWithSelf =
@@ -32,6 +47,21 @@ export function TodayPulse() {
   const completeWithSelf =
     friendsCompleteToday + (youCompleteToday === true ? 1 : 0);
   const pct = totalWithSelf > 0 ? (completeWithSelf / totalWithSelf) * 100 : 0;
+
+  const handleNudge = async (friendId: Id<"users">, displayName: string) => {
+    const key = String(friendId);
+    if (pendingNudge === key) return;
+    setPendingNudge(key);
+    try {
+      await sendNudge({ toUserId: friendId });
+      toast.success(`Nudged ${displayName} 👋`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not send nudge";
+      toast.error(msg);
+    } finally {
+      setPendingNudge(null);
+    }
+  };
 
   return (
     <Card aria-label="Friends' activity today">
@@ -87,6 +117,100 @@ export function TodayPulse() {
             style={{ width: `${pct}%` }}
           />
         </div>
+        {friends.length > 0 && (
+          <ul
+            className="flex flex-wrap items-center gap-1.5"
+            aria-label="Friends today"
+          >
+            {friends.map((f) => {
+              const key = String(f.user._id);
+              const done = f.completedToday;
+              const alreadyNudged = nudgedIds?.includes(key) ?? false;
+              const busy = pendingNudge === key;
+              return (
+                <li key={key}>
+                  {done ? (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full bg-success/10 text-success pl-0.5 pr-2 py-0.5 text-[11px] font-medium min-h-[28px]"
+                      title={`${f.user.displayName} completed today`}
+                    >
+                      <span className="relative inline-block">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage
+                            src={f.user.avatarUrl}
+                            alt={f.user.displayName}
+                          />
+                          <AvatarFallback className="text-[10px]">
+                            {f.user.displayName.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span
+                          aria-hidden="true"
+                          className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-success flex items-center justify-center ring-2 ring-background"
+                        >
+                          <Check className="h-2.5 w-2.5 text-white" />
+                        </span>
+                      </span>
+                      <span className="truncate max-w-[5rem]">
+                        {f.user.displayName}
+                      </span>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleNudge(f.user._id, f.user.displayName)
+                      }
+                      disabled={alreadyNudged || busy}
+                      aria-label={
+                        alreadyNudged
+                          ? `Already nudged ${f.user.displayName}`
+                          : `Nudge ${f.user.displayName} — not done today`
+                      }
+                      title={
+                        alreadyNudged
+                          ? `Already nudged ${f.user.displayName}`
+                          : `Nudge ${f.user.displayName}`
+                      }
+                      className={[
+                        "inline-flex items-center gap-1 rounded-full pl-0.5 pr-2 py-0.5 text-[11px] font-medium min-h-[28px] transition-colors",
+                        alreadyNudged
+                          ? "bg-primary/10 text-primary"
+                          : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",
+                      ].join(" ")}
+                    >
+                      <span className="relative inline-block">
+                        <Avatar className="h-6 w-6 opacity-80">
+                          <AvatarImage
+                            src={f.user.avatarUrl}
+                            alt={f.user.displayName}
+                          />
+                          <AvatarFallback className="text-[10px]">
+                            {f.user.displayName.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span
+                          aria-hidden="true"
+                          className={[
+                            "absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full flex items-center justify-center ring-2 ring-background",
+                            alreadyNudged
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground",
+                          ].join(" ")}
+                        >
+                          <HandHeart className="h-2.5 w-2.5" />
+                        </span>
+                      </span>
+                      <span className="truncate max-w-[5rem]">
+                        {alreadyNudged ? "Nudged" : "Nudge"}
+                      </span>
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
         {categories.length > 0 && (
           <ul className="flex items-center gap-2 flex-wrap">
             {categories.map((cat) => {
