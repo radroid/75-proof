@@ -8,6 +8,9 @@ import { useEffect } from "react";
 const ALLOWED_SW_HOSTS = new Set<string>([
   "localhost",
   "127.0.0.1",
+  "75.createplus.club",
+  "www.75.createplus.club",
+  // Keep legacy hostnames around so existing installs don't lose the SW.
   "75proof.app",
   "www.75proof.app",
 ]);

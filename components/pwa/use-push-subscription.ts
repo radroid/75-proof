@@ -69,6 +69,33 @@ function detectPlatform(): "ios" | "android" | "desktop" {
   return "desktop";
 }
 
+/**
+ * `navigator.serviceWorker.ready` never resolves if no SW is registered for
+ * this scope (e.g. the registration host allowlist excluded the current
+ * origin). Wrap it in a timeout so the Enable flow can't hang forever — we
+ * surface a clear error instead.
+ */
+function swReadyWithTimeout(ms: number): Promise<ServiceWorkerRegistration> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(
+        new Error(
+          `Service worker never became ready within ${ms}ms. Is /sw.js registered on this host?`
+        )
+      );
+    }, ms);
+    navigator.serviceWorker.ready
+      .then((reg) => {
+        clearTimeout(timeoutId);
+        resolve(reg);
+      })
+      .catch((err) => {
+        clearTimeout(timeoutId);
+        reject(err);
+      });
+  });
+}
+
 function getSubscriptionKeys(
   sub: PushSubscription
 ): { auth: string; p256dh: string } | null {
@@ -247,7 +274,9 @@ export function usePushSubscription(): UsePushSubscriptionResult {
       setStatus("granted");
 
       try {
-        const reg = await navigator.serviceWorker.ready;
+        // 8s is generous for local SW startup but short enough that a
+        // misconfigured host surfaces the error instead of hanging the UI.
+        const reg = await swReadyWithTimeout(8000);
         let sub = await reg.pushManager.getSubscription();
         if (!sub) {
           sub = await reg.pushManager.subscribe({
