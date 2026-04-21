@@ -24,7 +24,7 @@ export function TaskBlock({
     <div
       className={cn(
         "flex items-start gap-3 py-4 transition-colors border-b border-border/50 last:border-0",
-        isEditable && "cursor-pointer hover:bg-muted/30 -mx-1 px-1 sm:-mx-2 sm:px-2 rounded-lg",
+        isEditable && "cursor-pointer hover:bg-muted/30 active:bg-muted/60 -mx-1 px-1 sm:-mx-2 sm:px-2 rounded-lg",
         completed && "opacity-60"
       )}
       onClick={isEditable ? onToggle : undefined}

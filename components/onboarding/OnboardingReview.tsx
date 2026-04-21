@@ -156,7 +156,7 @@ export function OnboardingReview({
             <Label
               key={option.value}
               htmlFor={`vis-${option.value}`}
-              className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg border border-transparent px-2 py-1 hover:border-border"
+              className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg border border-transparent px-2 py-1 hover:border-border active:bg-muted/40"
             >
               <RadioGroupItem value={option.value} id={`vis-${option.value}`} />
               <span className="flex-1">

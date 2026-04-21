@@ -322,7 +322,7 @@ function TodoItem({ label, detail, done, onTap, isLast, disabled = false }: { la
         "flex items-start gap-3 py-4 transition-colors -mx-2 px-2 rounded-lg",
         !isLast && "border-b border-border/50",
         done && "opacity-60",
-        disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-muted/30"
+        disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-muted/30 active:bg-muted/60"
       )}
       onClick={disabled ? undefined : onTap}
       role="button"

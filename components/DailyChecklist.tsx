@@ -378,7 +378,7 @@ function TodoItem({
       className={cn(
         "flex items-start gap-3 py-4 transition-colors",
         !isLast && "border-b border-border/50",
-        onTap && "cursor-pointer hover:bg-muted/30 -mx-2 px-2 rounded-lg",
+        onTap && "cursor-pointer hover:bg-muted/30 active:bg-muted/60 -mx-2 px-2 rounded-lg",
         done && "opacity-60"
       )}
       onClick={onTap}
