@@ -19,6 +19,7 @@ interface FriendsListProps {
     user: { _id: Id<"users">; displayName: string; avatarUrl?: string };
     challenge: { currentDay: number | null; startDate: string };
     todayComplete: boolean | null;
+    coStreak?: number;
   }> | undefined;
 }
 

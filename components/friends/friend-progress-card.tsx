@@ -39,6 +39,7 @@ interface FriendProgressCardProps {
       startDate: string;
     };
     todayComplete: boolean | null;
+    coStreak?: number;
   };
 }
 
@@ -177,6 +178,17 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
               value={(friend.challenge.currentDay / 75) * 100}
               className="mt-3 h-2"
             />
+          )}
+          {(friend.coStreak ?? 0) >= 2 && (
+            <div
+              className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-medium"
+              aria-label={`${friend.coStreak}-day co-streak with ${friend.user.displayName}`}
+              title={`You and ${friend.user.displayName} have both completed ${friend.coStreak} days in a row`}
+            >
+              <span aria-hidden="true">🤝</span>
+              <span className="tabular-nums">{friend.coStreak}</span>
+              <span>-day co-streak</span>
+            </div>
           )}
         </CardContent>
       </Card>
