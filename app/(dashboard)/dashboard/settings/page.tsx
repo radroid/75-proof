@@ -40,6 +40,7 @@ import {
 import { useGuest } from "@/components/guest-provider";
 import { sharedUserProfileProps, userButtonPopoverElements } from "@/lib/clerk-appearance";
 import { usePushSubscription } from "@/components/pwa/use-push-subscription";
+import { haptic, isHapticsEnabled, setHapticsEnabled } from "@/lib/haptics";
 
 export default function SettingsPage() {
   const { isGuest, promptSignup } = useGuest();
@@ -92,6 +93,11 @@ export default function SettingsPage() {
 
   const [displayName, setDisplayName] = useState("");
   const [waterUnit, setWaterUnit] = useState<"oz" | "ml">("oz");
+  // Device-local: haptics preference lives in localStorage (not Convex) so
+  // users can toggle it per-device without needing auth. Default to the
+  // last stored value, falling back to "on" — hydrate on mount to avoid
+  // SSR/client mismatch.
+  const [hapticsOn, setHapticsOn] = useState(true);
   const [showStreak, setShowStreak] = useState(true);
   const [showDayNumber, setShowDayNumber] = useState(true);
   const [showCompletionStatus, setShowCompletionStatus] = useState(true);
@@ -107,6 +113,10 @@ export default function SettingsPage() {
   const [nudgesNotif, setNudgesNotif] = useState(true);
   const [reactionsNotif, setReactionsNotif] = useState(true);
   const notifHydrated = useRef(false);
+
+  useEffect(() => {
+    setHapticsOn(isHapticsEnabled());
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -366,7 +376,41 @@ export default function SettingsPage() {
         <MotionItem>
           <Card>
             <CardContent className="p-5 sm:p-6">
-              <div className="space-y-4">
+              <div className="space-y-5">
+                {/* Haptics (device-local) */}
+                <div>
+                  <div className="flex items-center justify-between gap-4 min-h-11">
+                    <div className="min-w-0 flex-1">
+                      <Label htmlFor="haptics-toggle" className="cursor-pointer">
+                        Haptic feedback
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Subtle buzz on toggles, taps, and completions. Stored
+                        only on this device.
+                      </p>
+                    </div>
+                    <Switch
+                      id="haptics-toggle"
+                      checked={hapticsOn}
+                      onCheckedChange={(checked) => {
+                        setHapticsEnabled(checked);
+                        setHapticsOn(checked);
+                      }}
+                      className="scale-125 origin-right"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => haptic("success")}
+                    disabled={!hapticsOn}
+                    className="mt-3 min-h-11"
+                  >
+                    Test haptic
+                  </Button>
+                </div>
+
                 <div className="space-y-2">
                   <Label>Water Unit</Label>
                   <div className="flex gap-2">
