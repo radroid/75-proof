@@ -14,6 +14,7 @@ import {
 import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
 import { GuestSignupBanner } from "@/components/guest-signup-banner";
 import { useGuest } from "@/components/guest-provider";
+import { InstallPromptGate } from "@/components/pwa/install-prompt-gate";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -288,6 +289,8 @@ export default function DashboardLayout({
         <MobileBottomNav items={isGuest ? guestMobileItems : undefined} />
 
         {isGuest && <GuestSignupBanner />}
+
+        <InstallPromptGate />
       </div>
     </SidebarProvider>
   );
