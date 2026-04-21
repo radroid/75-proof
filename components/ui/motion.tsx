@@ -141,7 +141,7 @@ export function MotionCard({
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className={cn(
         "transition-shadow duration-200",
-        enableHover && "hover:shadow-[var(--shadow-card-hover)]",
+        enableHover && "hover:shadow-(--shadow-card-hover)",
         className
       )}
       {...props}

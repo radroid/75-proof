@@ -13,6 +13,9 @@ Always run `npx next build` and confirm it passes **before** committing any chan
 ## Dev server
 The dev server is always already running — do not start it yourself (no `npx next dev`, `pnpm dev`, etc.).
 
+## Tailwind class style
+Do not proactively rewrite Tailwind utility classes into canonical shorthand forms (for example, bracket/arbitrary values to parenthesis variants) unless the user explicitly asks for that refactor.
+
 <!-- convex-ai-start -->
 This project uses [Convex](https://convex.dev) as its backend.
 
