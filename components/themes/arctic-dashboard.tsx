@@ -88,7 +88,7 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
   const progressOffset = circumference - (completion / 100) * circumference;
 
   return (
-    <div className="max-w-5xl mx-auto px-1 sm:px-0">
+    <div className="max-w-5xl mx-auto">
       {hasFailed && (
         <ChallengeFailedDialog
           open={showFailedDialog}
@@ -108,11 +108,12 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="relative mb-8 md:mb-16"
+        className="relative mb-8 md:mb-16 overflow-hidden"
       >
         {/* Giant faint background number */}
         <div
-          className="absolute -top-5 -left-2 md:-top-8 md:-left-4 select-none pointer-events-none text-primary opacity-[0.06]"
+          aria-hidden="true"
+          className="absolute -top-4 -left-1 md:-top-8 md:-left-4 select-none pointer-events-none text-primary opacity-[0.06]"
           style={{
             fontFamily: "var(--font-heading)",
             fontSize: "clamp(150px, 42vw, 280px)",
@@ -128,25 +129,30 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
           <div className="flex-1">
             <div className="flex items-end gap-3 md:gap-4">
               <h1
-                className="text-[84px] md:text-[180px] font-bold leading-[0.85] tracking-tight text-foreground"
+                className="select-none text-[96px] sm:text-[120px] md:text-[180px] font-bold leading-[0.85] tracking-tight text-foreground"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
                 {displayDay}
               </h1>
               <div className="pb-3 md:pb-6">
-                <p className="text-2xl md:text-4xl font-light text-muted-foreground/40">/75</p>
+                <p className="select-none text-2xl sm:text-3xl md:text-4xl font-light text-muted-foreground/40">
+                  <span className="sr-only">of </span>/75
+                </p>
               </div>
             </div>
+            <p className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              {displayDay === todayDayNumber ? "Today" : `Day ${displayDay}`}
+            </p>
 
             {/* Segmented progress bar */}
-            <div className="mt-4 md:mt-8 max-w-md">
-              <div className="flex gap-1">
+            <div className="mt-5 md:mt-8 max-w-md">
+              <div className="flex gap-[3px] sm:gap-1" role="progressbar" aria-valuenow={todayDayNumber} aria-valuemin={0} aria-valuemax={75} aria-label={`Day ${todayDayNumber} of 75`}>
                 {Array.from({ length: 15 }).map((_, i) => {
                   const segmentDays = 5;
                   const filled = todayDayNumber >= (i + 1) * segmentDays;
                   const partial = !filled && todayDayNumber > i * segmentDays;
                   return (
-                    <div key={i} className="flex-1 h-3 rounded-sm overflow-hidden bg-muted">
+                    <div key={i} className="flex-1 h-2.5 sm:h-3 rounded-sm overflow-hidden bg-muted">
                       <div
                         className="h-full rounded-sm bg-primary"
                         style={{
@@ -158,7 +164,7 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
                   );
                 })}
               </div>
-              <div className="flex justify-between mt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <div className="flex justify-between mt-2 text-[11px] uppercase tracking-wider text-muted-foreground">
                 <span>Start</span>
                 <span>Halfway</span>
                 <span>Finish</span>
@@ -227,13 +233,17 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
 
       {/* Today's progress — centered */}
       <div className="text-center mb-8 md:mb-12">
-        <p className="text-lg md:text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-          {totalDone}/{totalItems}
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground mb-2">
+          Today&apos;s habits
         </p>
-        <div className="mt-2 h-[3px] rounded-full bg-muted max-w-[200px] mx-auto">
+        <p className="text-xl md:text-2xl font-semibold tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
+          <span className="text-foreground">{totalDone}</span>
+          <span className="text-muted-foreground/50">/{totalItems}</span>
+        </p>
+        <div className="mt-3 h-1 rounded-full bg-muted max-w-[220px] mx-auto overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
-            animate={{ width: `${(totalDone / totalItems) * 100}%` }}
+            animate={{ width: `${totalItems > 0 ? (totalDone / totalItems) * 100 : 0}%` }}
             transition={{ duration: 0.8, delay: 0.5 }}
             className="h-full rounded-full bg-primary"
           />
