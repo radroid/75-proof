@@ -151,7 +151,7 @@ export function TodayPulse() {
                           <Check className="h-2.5 w-2.5 text-white" />
                         </span>
                       </span>
-                      <span className="truncate max-w-[5rem]">
+                      <span className="truncate max-w-[4.5rem] sm:max-w-[6rem]">
                         {f.user.displayName}
                       </span>
                     </span>
@@ -201,7 +201,7 @@ export function TodayPulse() {
                           <HandHeart className="h-2.5 w-2.5" />
                         </span>
                       </span>
-                      <span className="truncate max-w-[5rem]">
+                      <span className="truncate max-w-[4.5rem] sm:max-w-[6rem]">
                         {alreadyNudged ? "Nudged" : "Nudge"}
                       </span>
                     </button>

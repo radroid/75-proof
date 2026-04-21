@@ -73,7 +73,9 @@ export function FriendHabitsStrip({ habits }: { habits: FriendHabit[] }) {
             ) : (
               <Hash className="h-3 w-3 shrink-0" aria-hidden="true" />
             )}
-            <span className="truncate max-w-[10rem]">{habit.name}</span>
+            <span className="truncate max-w-[7rem] sm:max-w-[10rem]">
+              {habit.name}
+            </span>
           </li>
         );
       })}

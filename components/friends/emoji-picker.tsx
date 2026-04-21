@@ -118,7 +118,7 @@ export function EmojiPicker({
           role="dialog"
           aria-label="Pick an emoji"
           className={[
-            "absolute z-20 w-64 max-w-[min(16rem,calc(100vw-1.5rem))] rounded-lg border bg-popover text-popover-foreground shadow-lg p-2",
+            "absolute z-20 w-64 max-w-[min(16rem,calc(100vw-1.5rem))] max-h-[min(22rem,calc(100dvh-6rem))] overflow-y-auto rounded-lg border bg-popover text-popover-foreground shadow-lg p-2",
             placement.vertical === "top" ? "bottom-full mb-2" : "top-full mt-2",
             placement.horizontal === "left" ? "left-0" : "right-0",
           ].join(" ")}
