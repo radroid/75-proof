@@ -48,14 +48,17 @@ export function OnboardingWelcome({ state, updateState, onNext }: Props) {
           {AGE_RANGES.map((range) => (
             <button
               key={range}
+              type="button"
               onClick={() =>
                 updateState({
                   ageRange: state.ageRange === range ? null : range,
                 })
               }
+              aria-pressed={state.ageRange === range}
               className={cn(
-                "px-4 py-2.5 rounded-lg border text-sm font-medium transition-all min-h-[44px]",
-                "hover:border-primary/50",
+                "inline-flex items-center justify-center min-h-[44px] px-4 py-2.5 rounded-lg border text-sm font-medium transition-all",
+                "hover:border-primary/50 active:scale-[0.98] motion-reduce:active:scale-100",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 state.ageRange === range
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border text-muted-foreground"
@@ -83,8 +86,10 @@ export function OnboardingWelcome({ state, updateState, onNext }: Props) {
               </div>
 
               <button
+                type="button"
                 onClick={() => setShowHealthDetails(!showHealthDetails)}
-                className="text-xs text-warning hover:underline"
+                aria-expanded={showHealthDetails}
+                className="inline-flex min-h-[44px] items-center text-sm text-warning hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning/60 focus-visible:ring-offset-2 rounded"
               >
                 {showHealthDetails ? "Hide" : "I have a health condition to note"}
               </button>
@@ -104,6 +109,7 @@ export function OnboardingWelcome({ state, updateState, onNext }: Props) {
                       return (
                         <button
                           key={condition}
+                          type="button"
                           onClick={() =>
                             updateState({
                               healthConditions: selected
@@ -111,8 +117,10 @@ export function OnboardingWelcome({ state, updateState, onNext }: Props) {
                                 : [...state.healthConditions, condition],
                             })
                           }
+                          aria-pressed={selected}
                           className={cn(
-                            "px-3 py-2 rounded-md border text-xs transition-all min-h-[36px]",
+                            "inline-flex items-center justify-center min-h-[44px] px-3 py-2 rounded-md border text-xs transition-all",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning/60 focus-visible:ring-offset-2",
                             selected
                               ? "border-warning/50 bg-warning/10 text-foreground"
                               : "border-border text-muted-foreground hover:border-warning/40"
@@ -148,12 +156,12 @@ export function OnboardingWelcome({ state, updateState, onNext }: Props) {
       </Card>
 
       {/* Next button */}
-      <div className="flex justify-end">
+      <div className="flex sm:justify-end">
         <Button
           onClick={onNext}
           disabled={!canProceed}
           size="lg"
-          className="gap-2"
+          className="w-full sm:w-auto gap-2 min-h-[48px]"
         >
           Continue
           <ChevronRight className="h-4 w-4" />

@@ -69,10 +69,13 @@ export function OnboardingGoals({ state, updateState, onNext, onBack }: Props) {
           return (
             <button
               key={goal.id}
+              type="button"
               onClick={() => toggleGoal(goal.id)}
+              aria-pressed={selected}
               className={cn(
-                "flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-xl border text-left transition-all min-h-[56px]",
-                "hover:border-primary/50 hover:shadow-sm",
+                "flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-xl border text-left transition-all min-h-[64px]",
+                "hover:border-primary/50 hover:shadow-sm active:scale-[0.98] motion-reduce:active:scale-100",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 selected
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-border"
@@ -116,8 +119,8 @@ export function OnboardingGoals({ state, updateState, onNext, onBack }: Props) {
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-between">
-        <Button variant="ghost" onClick={onBack} className="gap-1">
+      <div className="flex items-center justify-between gap-3">
+        <Button variant="ghost" onClick={onBack} className="gap-1 min-h-[44px]">
           <ChevronLeft className="h-4 w-4" />
           Back
         </Button>
@@ -125,7 +128,7 @@ export function OnboardingGoals({ state, updateState, onNext, onBack }: Props) {
           onClick={onNext}
           disabled={!state.displayName.trim()}
           size="lg"
-          className="gap-2"
+          className="flex-1 sm:flex-initial gap-2 min-h-[48px]"
         >
           Continue
           <ChevronRight className="h-4 w-4" />

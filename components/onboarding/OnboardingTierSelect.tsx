@@ -88,10 +88,13 @@ export function OnboardingTierSelect({
           return (
             <button
               key={tier.id}
+              type="button"
               onClick={() => updateState({ setupTier: tier.id })}
+              aria-pressed={selected}
               className={cn(
-                "w-full flex items-start gap-4 p-5 rounded-xl border-2 text-left transition-all",
-                "hover:border-primary/50 hover:shadow-sm",
+                "w-full flex items-start gap-4 p-4 sm:p-5 rounded-xl border-2 text-left transition-all",
+                "hover:border-primary/50 hover:shadow-sm active:scale-[0.99] motion-reduce:active:scale-100",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 selected
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-border"
@@ -133,12 +136,12 @@ export function OnboardingTierSelect({
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-between">
-        <Button variant="ghost" onClick={onBack} className="gap-1">
+      <div className="flex items-center justify-between gap-3">
+        <Button variant="ghost" onClick={onBack} className="gap-1 min-h-[44px]">
           <ChevronLeft className="h-4 w-4" />
           Back
         </Button>
-        <Button onClick={onNext} size="lg" className="gap-2">
+        <Button onClick={onNext} size="lg" className="flex-1 sm:flex-initial gap-2 min-h-[48px]">
           Continue
           <ChevronRight className="h-4 w-4" />
         </Button>

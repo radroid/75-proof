@@ -46,10 +46,14 @@ export function OnboardingTheme({ state, updateState, onNext, onBack }: Props) {
           return (
             <button
               key={key}
+              type="button"
               onClick={() => handleSelectTheme(key)}
+              aria-pressed={selected}
+              aria-label={`Theme: ${theme.name}. ${theme.description}`}
               className={cn(
                 "relative rounded-xl border-2 overflow-hidden text-left transition-all",
-                "hover:shadow-md",
+                "hover:shadow-md active:scale-[0.98] motion-reduce:active:scale-100",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 selected
                   ? "border-primary shadow-md ring-2 ring-primary/20"
                   : "border-border hover:border-primary/40"
@@ -120,12 +124,12 @@ export function OnboardingTheme({ state, updateState, onNext, onBack }: Props) {
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-between">
-        <Button variant="ghost" onClick={onBack} className="gap-1">
+      <div className="flex items-center justify-between gap-3">
+        <Button variant="ghost" onClick={onBack} className="gap-1 min-h-[44px]">
           <ChevronLeft className="h-4 w-4" />
           Back
         </Button>
-        <Button onClick={onNext} size="lg" className="gap-2">
+        <Button onClick={onNext} size="lg" className="flex-1 sm:flex-initial gap-2 min-h-[48px]">
           Continue
           <ChevronRight className="h-4 w-4" />
         </Button>

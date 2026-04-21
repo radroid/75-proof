@@ -21,8 +21,8 @@ export default function OnboardingLayout({
       </header>
 
       {/* Content */}
-      <main className="flex-1 flex items-start justify-center px-4 sm:px-6 pb-safe pt-4">
-        <div className="w-full max-w-2xl pb-8">{children}</div>
+      <main className="flex-1 flex items-start justify-center px-4 sm:px-6 pt-4 pb-[max(env(safe-area-inset-bottom),2rem)]">
+        <div className="w-full max-w-2xl">{children}</div>
       </main>
     </div>
   );
