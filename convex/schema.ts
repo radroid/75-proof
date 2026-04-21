@@ -20,6 +20,13 @@ export default defineSchema({
         showCompletionStatus: v.boolean(),
         showHabits: v.optional(v.boolean()),
       })),
+      notifications: v.optional(v.object({
+        enabled: v.boolean(),
+        morningReminder: v.boolean(),
+        eveningReminder: v.boolean(),
+        morningTime: v.string(), // "HH:mm" local
+        eveningTime: v.string(), // "HH:mm" local
+      })),
     }),
     onboardingComplete: v.optional(v.boolean()),
     hasSeenTutorial: v.optional(v.boolean()),
@@ -219,6 +226,22 @@ export default defineSchema({
   })
     .index("by_challenge_day", ["challengeId", "dayNumber"])
     .index("by_habit_day", ["habitDefinitionId", "dayNumber"]),
+
+  // Web Push subscriptions — one row per registered browser/device.
+  // We look up by endpoint because that's what the browser uniquely
+  // issues per subscription; a single user may have many devices.
+  pushSubscriptions: defineTable({
+    userId: v.id("users"),
+    endpoint: v.string(),
+    keys: v.object({ auth: v.string(), p256dh: v.string() }),
+    userAgent: v.optional(v.string()),
+    platform: v.union(v.literal("ios"), v.literal("android"), v.literal("desktop")),
+    createdAt: v.number(),
+    lastSeenAt: v.number(),
+    enabled: v.boolean(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_endpoint", ["endpoint"]),
 
   // Connected health devices
   connectedDevices: defineTable({

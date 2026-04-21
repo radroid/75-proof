@@ -86,6 +86,13 @@ export const updateUser = mutation({
           showCompletionStatus: v.boolean(),
           showHabits: v.optional(v.boolean()),
         })),
+        notifications: v.optional(v.object({
+          enabled: v.boolean(),
+          morningReminder: v.boolean(),
+          eveningReminder: v.boolean(),
+          morningTime: v.string(),
+          eveningTime: v.string(),
+        })),
       })
     ),
   },

@@ -2,7 +2,7 @@
 
 // Bump this version string to force existing clients to drop old caches
 // and re-fetch the latest precache manifest on activate.
-const CACHE_NAME = "75proof-v2";
+const CACHE_NAME = "75proof-v3";
 const OFFLINE_URL = "/offline";
 
 // App shell assets to pre-cache on install. Everything here must be
@@ -133,4 +133,134 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
+});
+
+// ---------------------------------------------------------------------------
+// Web Push
+// ---------------------------------------------------------------------------
+
+// Push: show a system notification from the server payload. Payload schema:
+//   { title: string, body: string, icon?: string, badge?: string,
+//     tag?: string, data?: object }
+// If the payload can't be parsed as JSON we still surface a best-effort
+// notification so the user isn't left wondering why their phone buzzed.
+self.addEventListener("push", (event) => {
+  const defaultIcon = "/icon-192.png";
+  const defaultBadge = "/icon-192.png";
+
+  let payload = {
+    title: "75 Proof",
+    body: "You have a new reminder.",
+    icon: defaultIcon,
+    badge: defaultBadge,
+    tag: undefined,
+    data: {},
+  };
+
+  if (event.data) {
+    try {
+      const parsed = event.data.json();
+      payload = {
+        title: parsed.title || payload.title,
+        body: parsed.body || payload.body,
+        icon: parsed.icon || defaultIcon,
+        badge: parsed.badge || defaultBadge,
+        tag: parsed.tag,
+        data: parsed.data || {},
+      };
+    } catch (_e) {
+      // Fall back to text body if JSON parsing fails.
+      try {
+        payload.body = event.data.text() || payload.body;
+      } catch (_e2) {
+        // Ignore — keep defaults.
+      }
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: payload.icon,
+      badge: payload.badge,
+      tag: payload.tag,
+      data: payload.data,
+    })
+  );
+});
+
+// Notification click: focus an existing client if we have one, otherwise
+// open a new window at `data.url` (or /dashboard by default).
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl =
+    (event.notification.data && event.notification.data.url) || "/dashboard";
+
+  event.waitUntil(
+    (async () => {
+      const allClients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      for (const client of allClients) {
+        // Prefer an already-open app window; focus and optionally navigate.
+        try {
+          const clientUrl = new URL(client.url);
+          if (clientUrl.origin === self.location.origin) {
+            if ("focus" in client) {
+              await client.focus();
+            }
+            if ("navigate" in client && clientUrl.pathname !== targetUrl) {
+              try {
+                await client.navigate(targetUrl);
+              } catch (_e) {
+                // Navigation can fail cross-origin or if controller changed.
+              }
+            }
+            return;
+          }
+        } catch (_e) {
+          // Malformed URL — skip.
+        }
+      }
+      if (self.clients.openWindow) {
+        await self.clients.openWindow(targetUrl);
+      }
+    })()
+  );
+});
+
+// pushsubscriptionchange: browser is rotating the underlying subscription
+// (e.g. key rollover). Re-subscribe with the same VAPID key and notify any
+// open clients so they can persist the fresh subscription server-side.
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(
+    (async () => {
+      try {
+        const oldSub = event.oldSubscription;
+        const appServerKey =
+          (oldSub && oldSub.options && oldSub.options.applicationServerKey) ||
+          null;
+        if (!appServerKey) return;
+        const newSub = await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: appServerKey,
+        });
+        const allClients = await self.clients.matchAll({
+          type: "window",
+          includeUncontrolled: true,
+        });
+        for (const client of allClients) {
+          client.postMessage({
+            type: "pushsubscriptionchange",
+            subscription: newSub.toJSON(),
+            oldEndpoint: oldSub ? oldSub.endpoint : null,
+          });
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn("[sw] pushsubscriptionchange re-subscribe failed", err);
+      }
+    })()
+  );
 });

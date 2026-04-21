@@ -21,6 +21,8 @@ import type * as lib_dayCalculation from "../lib/dayCalculation.js";
 import type * as lib_standardHabits from "../lib/standardHabits.js";
 import type * as nudges from "../nudges.js";
 import type * as onboarding from "../onboarding.js";
+import type * as pushActions from "../pushActions.js";
+import type * as pushSubscriptions from "../pushSubscriptions.js";
 import type * as reactions from "../reactions.js";
 import type * as todayPulse from "../todayPulse.js";
 import type * as users from "../users.js";
@@ -45,6 +47,8 @@ declare const fullApi: ApiFromModules<{
   "lib/standardHabits": typeof lib_standardHabits;
   nudges: typeof nudges;
   onboarding: typeof onboarding;
+  pushActions: typeof pushActions;
+  pushSubscriptions: typeof pushSubscriptions;
   reactions: typeof reactions;
   todayPulse: typeof todayPulse;
   users: typeof users;
