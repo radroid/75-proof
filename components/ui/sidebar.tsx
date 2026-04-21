@@ -188,8 +188,11 @@ export const SidebarLink = ({
   const linkContent = (
     <Link
       href={link.href}
+      aria-label={isCollapsed && typeof link.label === "string" ? link.label : undefined}
+      aria-current={isActive ? "page" : undefined}
       className={cn(
         "relative flex items-center group/sidebar rounded-lg transition-all duration-200 cursor-pointer",
+        "outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-0",
         isCollapsed
           ? "w-10 h-10 justify-center mx-auto"
           : "justify-start gap-2 px-2 py-2.5",
