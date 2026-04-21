@@ -1,6 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { getAuthenticatedUser, getAuthenticatedUserOrNull } from "./lib/auth";
+import { Doc } from "./_generated/dataModel";
 
 const MAX_EMOJI_LEN = 16;
 
@@ -13,6 +15,30 @@ function normalizeEmoji(raw: string): string {
     throw new Error("Emoji too long");
   }
   return trimmed;
+}
+
+/**
+ * Short human-readable context for a reaction notification body, e.g.
+ * "on your Day 42" or "on your challenge completion 🎉". Kept in the
+ * mutation so the Node action doesn't need to refetch the activity.
+ */
+function describeActivity(activity: Doc<"activityFeed">): string {
+  switch (activity.type) {
+    case "day_completed":
+      return activity.dayNumber
+        ? `on your Day ${activity.dayNumber}`
+        : "on your day";
+    case "challenge_started":
+      return "on your challenge start";
+    case "challenge_completed":
+      return "on your challenge completion 🎉";
+    case "challenge_failed":
+      return "on your latest update";
+    case "milestone":
+      return activity.dayNumber
+        ? `on your Day ${activity.dayNumber} milestone`
+        : "on your milestone";
+  }
 }
 
 export const toggleReaction = mutation({
@@ -42,12 +68,37 @@ export const toggleReaction = mutation({
       return { reacted: false };
     }
 
+    // Dedupe push: if this user already has any reaction on this activity
+    // (a different emoji), they've already notified the author. Swap-emoji
+    // toggling shouldn't re-buzz the author's phone.
+    const priorFromMe = await ctx.db
+      .query("feedReactions")
+      .withIndex("by_activity_user", (q) =>
+        q.eq("activityId", args.activityId).eq("userId", user._id)
+      )
+      .take(1);
+    const alreadyNotified = priorFromMe.length > 0;
+
     await ctx.db.insert("feedReactions", {
       activityId: args.activityId,
       userId: user._id,
       emoji,
       createdAt: new Date().toISOString(),
     });
+
+    // Fire push to activity author. Skip self-reactions and repeat-react
+    // sessions. Scheduled post-commit so a push failure can't roll back
+    // the reaction row.
+    const isSelfReact = String(activity.userId) === String(user._id);
+    if (!isSelfReact && !alreadyNotified) {
+      await ctx.scheduler.runAfter(0, internal.pushActions.sendReactionPush, {
+        toUserId: activity.userId,
+        fromUserId: user._id,
+        emoji,
+        activityLabel: describeActivity(activity),
+      });
+    }
+
     return { reacted: true };
   },
 });

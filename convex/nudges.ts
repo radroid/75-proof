@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { getAuthenticatedUser, getAuthenticatedUserOrNull } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
 
@@ -64,6 +65,16 @@ export const sendNudge = mutation({
       toUserId: args.toUserId,
       createdAt: new Date().toISOString(),
     });
+
+    // Fire-and-forget push to the recipient. Scheduled with delay 0 so it
+    // runs after this mutation commits — any failure (VAPID missing, no
+    // subs, recipient opted out) is handled inside the action and cannot
+    // roll back the nudge record.
+    await ctx.scheduler.runAfter(0, internal.pushActions.sendNudgePush, {
+      toUserId: args.toUserId,
+      fromUserId: user._id,
+    });
+
     return { ok: true };
   },
 });
