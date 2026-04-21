@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,9 +26,20 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { AlertTriangle, Palette, Play, Settings, Shield } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  Palette,
+  Play,
+  Settings,
+  Shield,
+  Smartphone,
+  Monitor,
+  Trash2,
+} from "lucide-react";
 import { useGuest } from "@/components/guest-provider";
 import { sharedUserProfileProps, userButtonPopoverElements } from "@/lib/clerk-appearance";
+import { usePushSubscription } from "@/components/pwa/use-push-subscription";
 
 export default function SettingsPage() {
   const { isGuest, promptSignup } = useGuest();
@@ -56,6 +67,21 @@ export default function SettingsPage() {
   const updateUser = useMutation(api.users.updateUser);
   const resetAndReOnboard = useMutation(api.challenges.resetAndReOnboard);
   const resetTutorial = useMutation(api.users.resetTutorialSeen);
+  const setNotificationPreferences = useMutation(
+    api.pushSubscriptions.setNotificationPreferences
+  );
+  const removeSubscriptionById = useMutation(
+    api.pushSubscriptions.removeSubscription
+  );
+  const mySubs = useQuery(api.pushSubscriptions.listMySubscriptions);
+  const {
+    status: pushStatus,
+    isSubscribed,
+    requiresInstall,
+    missingVapidKey,
+    requestPermission,
+    unsubscribe,
+  } = usePushSubscription();
   const challenge = useQuery(
     api.challenges.getChallenge,
     user?.currentChallengeId
@@ -71,6 +97,14 @@ export default function SettingsPage() {
   const [showHabits, setShowHabits] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Notification prefs
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const [morningReminder, setMorningReminder] = useState(true);
+  const [eveningReminder, setEveningReminder] = useState(true);
+  const [morningTime, setMorningTime] = useState("08:00");
+  const [eveningTime, setEveningTime] = useState("20:00");
+  const notifHydrated = useRef(false);
+
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName ?? "");
@@ -79,8 +113,65 @@ export default function SettingsPage() {
       setShowDayNumber(user.preferences?.sharing?.showDayNumber ?? true);
       setShowCompletionStatus(user.preferences?.sharing?.showCompletionStatus ?? true);
       setShowHabits(user.preferences?.sharing?.showHabits ?? true);
+      const n = user.preferences?.notifications;
+      setNotifEnabled(n?.enabled ?? false);
+      setMorningReminder(n?.morningReminder ?? true);
+      setEveningReminder(n?.eveningReminder ?? true);
+      setMorningTime(n?.morningTime ?? "08:00");
+      setEveningTime(n?.eveningTime ?? "20:00");
+      notifHydrated.current = true;
     }
   }, [user]);
+
+  // Debounced autosave for notification preferences. We fire-and-forget so
+  // the user doesn't see a toast on every tap — the persistence mirrors the
+  // optimistic local state.
+  const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+  useEffect(() => {
+    if (!user || !notifHydrated.current) return;
+    if (!TIME_RE.test(morningTime) || !TIME_RE.test(eveningTime)) return;
+    const t = setTimeout(() => {
+      setNotificationPreferences({
+        enabled: notifEnabled,
+        morningReminder,
+        eveningReminder,
+        morningTime,
+        eveningTime,
+      }).catch(() => {
+        toast.error("Couldn't save notification preferences");
+      });
+    }, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifEnabled, morningReminder, eveningReminder, morningTime, eveningTime]);
+
+  const handleEnableInBrowser = useCallback(async () => {
+    const res = await requestPermission();
+    if (res.granted) {
+      toast.success("Notifications enabled on this device");
+    } else if (missingVapidKey) {
+      toast.error("Push is not configured on this deployment");
+    } else {
+      toast.error("Permission not granted");
+    }
+  }, [requestPermission, missingVapidKey]);
+
+  const handleUnsubscribeDevice = useCallback(async () => {
+    await unsubscribe();
+    toast.success("This device will no longer receive reminders");
+  }, [unsubscribe]);
+
+  const handleRemoveSubscription = useCallback(
+    async (endpoint: string) => {
+      try {
+        await removeSubscriptionById({ endpoint });
+        toast.success("Device removed");
+      } catch {
+        toast.error("Couldn't remove device");
+      }
+    },
+    [removeSubscriptionById]
+  );
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -364,6 +455,209 @@ export default function SettingsPage() {
               <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-border">
                 Progress photos are always private and never shared.
               </p>
+            </CardContent>
+          </Card>
+        </MotionItem>
+      </Section>
+
+      {/* Notifications section */}
+      <Section title="Notifications">
+        <MotionItem>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-primary" />
+                <CardTitle className="text-lg">Daily Reminders</CardTitle>
+              </div>
+              <CardDescription>
+                Get nudges to finish your habits each day. Runs on your phone or
+                desktop while the browser is installed.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="divide-y divide-border -my-2">
+                {/* Master switch */}
+                <div className="flex items-center justify-between gap-4 min-h-11 py-3">
+                  <div className="min-w-0 flex-1">
+                    <Label htmlFor="notif-enabled" className="cursor-pointer">
+                      Daily reminders
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Master switch for morning and evening nudges
+                    </p>
+                  </div>
+                  <Switch
+                    id="notif-enabled"
+                    checked={notifEnabled}
+                    onCheckedChange={setNotifEnabled}
+                    className="scale-125 origin-right"
+                  />
+                </div>
+
+                {/* Morning reminder */}
+                <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <Label htmlFor="morning-reminder" className="cursor-pointer">
+                      Morning nudge
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Kick off the day on time
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="time"
+                      step={900}
+                      value={morningTime}
+                      onChange={(e) => setMorningTime(e.target.value)}
+                      disabled={!notifEnabled || !morningReminder}
+                      aria-label="Morning reminder time"
+                      className="h-11 text-base w-[7.5rem]"
+                    />
+                    <Switch
+                      id="morning-reminder"
+                      checked={morningReminder}
+                      onCheckedChange={setMorningReminder}
+                      disabled={!notifEnabled}
+                      className="scale-125 origin-right"
+                    />
+                  </div>
+                </div>
+
+                {/* Evening reminder */}
+                <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <Label htmlFor="evening-reminder" className="cursor-pointer">
+                      Evening check-in
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Last call to log remaining habits
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="time"
+                      step={900}
+                      value={eveningTime}
+                      onChange={(e) => setEveningTime(e.target.value)}
+                      disabled={!notifEnabled || !eveningReminder}
+                      aria-label="Evening reminder time"
+                      className="h-11 text-base w-[7.5rem]"
+                    />
+                    <Switch
+                      id="evening-reminder"
+                      checked={eveningReminder}
+                      onCheckedChange={setEveningReminder}
+                      disabled={!notifEnabled}
+                      className="scale-125 origin-right"
+                    />
+                  </div>
+                </div>
+
+                {/* Permission / subscription status row */}
+                <div className="py-3">
+                  {missingVapidKey ? (
+                    <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">
+                      Push is not configured on this deployment. Contact the
+                      team.
+                    </div>
+                  ) : requiresInstall ? (
+                    <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">
+                      Add 75 Proof to your home screen to receive reminders on
+                      iOS. Tap the share icon in Safari, then{" "}
+                      <span className="font-medium">Add to Home Screen</span>.
+                    </div>
+                  ) : pushStatus === "denied" ? (
+                    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+                      Notifications are blocked by your browser. Enable them in
+                      your site settings to receive reminders.
+                    </div>
+                  ) : pushStatus === "granted" && isSubscribed ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm text-muted-foreground">
+                        Notifications active on this device
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={handleUnsubscribeDevice}
+                        className="min-h-11"
+                      >
+                        Remove this device
+                      </Button>
+                    </div>
+                  ) : pushStatus === "default" && notifEnabled ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm text-muted-foreground">
+                        Allow this browser to send reminders.
+                      </p>
+                      <Button
+                        onClick={handleEnableInBrowser}
+                        className="min-h-11"
+                      >
+                        Enable in browser
+                      </Button>
+                    </div>
+                  ) : pushStatus === "unsupported" ? (
+                    <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">
+                      This browser does not support push notifications.
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Device list */}
+              {mySubs && mySubs.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <p className="text-sm font-medium mb-3">Active devices</p>
+                  <ul className="space-y-2">
+                    {mySubs.map((sub) => {
+                      const PlatformIcon =
+                        sub.platform === "desktop" ? Monitor : Smartphone;
+                      const platformLabel =
+                        sub.platform === "ios"
+                          ? "iOS"
+                          : sub.platform === "android"
+                            ? "Android"
+                            : "Desktop";
+                      const lastSeen = new Date(
+                        sub.lastSeenAt
+                      ).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      });
+                      return (
+                        <li
+                          key={sub._id}
+                          className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 rounded-md bg-background flex items-center justify-center shrink-0">
+                              <PlatformIcon className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {platformLabel}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Last seen {lastSeen}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Remove device"
+                            onClick={() => handleRemoveSubscription(sub.endpoint)}
+                            className="min-h-11 min-w-11 shrink-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
             </CardContent>
           </Card>
         </MotionItem>
