@@ -243,6 +243,16 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_endpoint", ["endpoint"]),
 
+  // Push notification delivery log — one row per (user, slot, localDate) once
+  // a reminder has been enqueued. Prevents duplicate sends when the cron
+  // fires multiple times within a user's reminder window.
+  notificationDeliveries: defineTable({
+    userId: v.id("users"),
+    slot: v.union(v.literal("morning"), v.literal("evening")),
+    localDate: v.string(), // YYYY-MM-DD in user's timezone
+    sentAt: v.number(),
+  }).index("by_user_slot_date", ["userId", "slot", "localDate"]),
+
   // Connected health devices
   connectedDevices: defineTable({
     userId: v.id("users"),

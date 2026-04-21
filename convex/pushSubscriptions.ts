@@ -3,6 +3,7 @@ import {
   mutation,
   query,
   internalQuery,
+  internalMutation,
 } from "./_generated/server";
 import { getAuthenticatedUser } from "./lib/auth";
 import { Doc, Id } from "./_generated/dataModel";
@@ -158,5 +159,31 @@ export const deleteSubscriptionInternal = internalQuery({
   handler: async (ctx, args): Promise<Id<"pushSubscriptions"> | null> => {
     const sub = await ctx.db.get(args.subscriptionId);
     return sub ? sub._id : null;
+  },
+});
+
+/**
+ * Batch-delete push subscriptions by endpoint. Called by the reminder action
+ * after web-push returns 404/410 indicating the browser has permanently
+ * unsubscribed. Capped to 100 endpoints per call (comfortably within
+ * Convex's per-mutation write limits); the caller should chunk if needed.
+ */
+export const pruneDeadSubscriptions = internalMutation({
+  args: { endpoints: v.array(v.string()) },
+  handler: async (ctx, args): Promise<number> => {
+    let deleted = 0;
+    // Cap to keep the mutation well under Convex's document write limit.
+    const chunk = args.endpoints.slice(0, 100);
+    for (const endpoint of chunk) {
+      const existing = await ctx.db
+        .query("pushSubscriptions")
+        .withIndex("by_endpoint", (q) => q.eq("endpoint", endpoint))
+        .unique();
+      if (existing) {
+        await ctx.db.delete(existing._id);
+        deleted++;
+      }
+    }
+    return deleted;
   },
 });
