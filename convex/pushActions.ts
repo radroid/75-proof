@@ -267,34 +267,56 @@ async function fanOutPush(
   );
   if (subs.length === 0) return { sent: 0, failed: 0, pruned: 0 };
 
+  // Parallel dispatch — sends are independent network calls, ~100ms each.
+  // Users with multiple devices get a proportional latency drop (5 devices:
+  // ~500ms serial → ~100ms parallel). Promise.allSettled ensures one
+  // failed endpoint can't short-circuit the others.
+  const results = await Promise.allSettled(
+    subs
+      .filter((sub) => sub.enabled)
+      .map((sub) =>
+        webpush
+          .sendNotification(
+            { endpoint: sub.endpoint, keys: sub.keys },
+            JSON.stringify(buildPayload(sub.platform)),
+            { TTL: 60 }
+          )
+          .then(() => ({ ok: true as const, endpoint: sub.endpoint }))
+          .catch((err: unknown) => ({
+            ok: false as const,
+            endpoint: sub.endpoint,
+            statusCode:
+              err && typeof err === "object" && "statusCode" in err
+                ? (err as { statusCode?: number }).statusCode
+                : undefined,
+            err,
+          }))
+      )
+  );
+
   let sent = 0;
   let failed = 0;
   const goneEndpoints: string[] = [];
 
-  for (const sub of subs) {
-    if (!sub.enabled) continue;
-    const payload = buildPayload(sub.platform);
-    try {
-      await webpush.sendNotification(
-        { endpoint: sub.endpoint, keys: sub.keys },
-        JSON.stringify(payload),
-        { TTL: 60 }
-      );
-      sent++;
-    } catch (err: unknown) {
+  for (const r of results) {
+    // Inner promise always resolves (catch handler above), so `rejected`
+    // should be impossible — guard it anyway and count as failure.
+    if (r.status === "rejected") {
       failed++;
-      const statusCode =
-        err && typeof err === "object" && "statusCode" in err
-          ? (err as { statusCode?: number }).statusCode
-          : undefined;
-      // 404 / 410 = the push service says this subscription is permanently
-      // gone; queue for pruning below.
-      if (statusCode === 404 || statusCode === 410) {
-        goneEndpoints.push(sub.endpoint);
-      } else {
-        // eslint-disable-next-line no-console
-        console.warn("[push] send failed", statusCode, err);
-      }
+      continue;
+    }
+    if (r.value.ok) {
+      sent++;
+      continue;
+    }
+    failed++;
+    // 404 / 410 = the push service says this subscription is permanently
+    // gone; queue for pruning below.
+    if (r.value.statusCode === 404 || r.value.statusCode === 410) {
+      goneEndpoints.push(r.value.endpoint);
+    } else {
+      // eslint-disable-next-line no-console
+      console.warn("[push] send failed", r.value.statusCode, r.value.err);
     }
   }
 
