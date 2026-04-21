@@ -7,6 +7,8 @@ Today's date is 2026-02-26.
 
 # Rules
 
+Package manager: pnpm
+
 ## Build verification
 Always run `npx next build` and confirm it passes **before** committing any changes. Do not commit code that fails the build.
 
