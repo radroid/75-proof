@@ -335,7 +335,7 @@ export default function ProgressPage() {
                 {effectivePhotos.map((photo: any, index: number) => (
                   <button
                     key={photo.storageId}
-                    className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-[0.97] transition-transform"
                     onClick={() => setSelectedPhotoIndex(index)}
                   >
                     <img
@@ -344,7 +344,7 @@ export default function ProgressPage() {
                       className="w-full h-full object-cover transition-transform group-hover:scale-105"
                       loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity" />
                     <Badge className="absolute bottom-1 left-1 text-[10px] h-5 bg-black/70 text-white border-0">
                       Day {photo.dayNumber}
                     </Badge>
@@ -414,7 +414,7 @@ export default function ProgressPage() {
               {selectedPhotoIndex !== null && selectedPhotoIndex > 0 && (
                 <button
                   onClick={goToPrevPhoto}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 hover:bg-black/70 text-white p-1.5 transition-opacity opacity-0 hover:opacity-100 focus:opacity-100 sm:opacity-70"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 hover:bg-black/70 active:bg-black/80 text-white h-11 w-11 flex items-center justify-center transition-opacity opacity-80 sm:opacity-70 sm:hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   aria-label="Previous photo"
                 >
                   <ChevronLeft className="h-5 w-5" />
@@ -425,7 +425,7 @@ export default function ProgressPage() {
               {selectedPhotoIndex !== null && selectedPhotoIndex < photoCount - 1 && (
                 <button
                   onClick={goToNextPhoto}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 hover:bg-black/70 text-white p-1.5 transition-opacity opacity-0 hover:opacity-100 focus:opacity-100 sm:opacity-70"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 hover:bg-black/70 active:bg-black/80 text-white h-11 w-11 flex items-center justify-center transition-opacity opacity-80 sm:opacity-70 sm:hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   aria-label="Next photo"
                 >
                   <ChevronRight className="h-5 w-5" />
@@ -445,7 +445,7 @@ export default function ProgressPage() {
             initial="hidden"
             animate="visible"
             variants={staggerContainerFast}
-            className="grid grid-cols-15 gap-1.5"
+            className="grid grid-cols-15 gap-1 sm:gap-1.5 min-w-0"
           >
             {Array.from({ length: 75 }, (_, i) => {
               const dayNumber = i + 1;
@@ -461,7 +461,7 @@ export default function ProgressPage() {
                   whileHover={{ scale: 1.1 }}
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   className={cn(
-                    "aspect-square rounded-md flex items-center justify-center text-xs font-medium cursor-default transition-all",
+                    "aspect-square rounded-md flex items-center justify-center text-[10px] sm:text-xs font-medium cursor-default transition-all min-w-0",
                     isComplete
                       ? "bg-success text-success-foreground shadow-sm"
                       : isCurrent
@@ -473,7 +473,7 @@ export default function ProgressPage() {
                   title={`Day ${dayNumber}${isComplete ? " - Complete" : ""}`}
                 >
                   {isComplete ? (
-                    <Check className="h-3 w-3" />
+                    <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   ) : (
                     dayNumber
                   )}
@@ -551,24 +551,24 @@ export default function ProgressPage() {
           <div className="flex gap-2">
             <Button
               variant={filter === "all" ? "default" : "outline"}
-              size="sm"
               onClick={() => setFilter("all")}
+              className="flex-1 sm:flex-none h-11 sm:h-9 active:scale-[0.98] transition-transform"
             >
               <Filter className="h-4 w-4 mr-1" />
               All
             </Button>
             <Button
               variant={filter === "complete" ? "default" : "outline"}
-              size="sm"
               onClick={() => setFilter("complete")}
+              className="flex-1 sm:flex-none h-11 sm:h-9 active:scale-[0.98] transition-transform"
             >
               <Check className="h-4 w-4 mr-1" />
               Complete
             </Button>
             <Button
               variant={filter === "incomplete" ? "default" : "outline"}
-              size="sm"
               onClick={() => setFilter("incomplete")}
+              className="flex-1 sm:flex-none h-11 sm:h-9 active:scale-[0.98] transition-transform"
             >
               <X className="h-4 w-4 mr-1" />
               Incomplete
@@ -674,12 +674,17 @@ export default function ProgressPage() {
 
                     <div
                       className={cn(
-                        "rounded-lg p-3 cursor-pointer transition-colors hover:bg-muted/50",
+                        "rounded-lg transition-colors hover:bg-muted/50",
                         isComplete && "bg-success/5 dark:bg-success/10"
                       )}
-                      onClick={() => toggleExpanded(day)}
                     >
-                      <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(day)}
+                        aria-expanded={isExpanded}
+                        aria-label={`Day ${day} details`}
+                        className="w-full min-h-[44px] p-3 flex items-center justify-between text-left rounded-lg active:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      >
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1">
                             {isExpanded ? (
@@ -727,7 +732,7 @@ export default function ProgressPage() {
                             {isComplete ? "Complete" : log ? "Partial" : "No data"}
                           </Badge>
                         </div>
-                      </div>
+                      </button>
 
                       <AnimatePresence>
                         {isExpanded && log && (
@@ -736,9 +741,10 @@ export default function ProgressPage() {
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
                           >
-                            <div className="pt-3 mt-3 border-t">
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="px-3 pb-3 pt-0">
+                              <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                                 <RequirementCard
                                   label="Workout 1"
                                   icon={<Dumbbell className="h-4 w-4" />}
