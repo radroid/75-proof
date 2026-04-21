@@ -15,6 +15,7 @@ import type * as feed from "../feed.js";
 import type * as friends from "../friends.js";
 import type * as habitDefinitions from "../habitDefinitions.js";
 import type * as habitEntries from "../habitEntries.js";
+import type * as leaderboard from "../leaderboard.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_dayCalculation from "../lib/dayCalculation.js";
 import type * as lib_standardHabits from "../lib/standardHabits.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   friends: typeof friends;
   habitDefinitions: typeof habitDefinitions;
   habitEntries: typeof habitEntries;
+  leaderboard: typeof leaderboard;
   "lib/auth": typeof lib_auth;
   "lib/dayCalculation": typeof lib_dayCalculation;
   "lib/standardHabits": typeof lib_standardHabits;

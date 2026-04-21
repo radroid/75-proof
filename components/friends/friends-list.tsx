@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FriendProgressCard } from "./friend-progress-card";
+import { WeeklyLeaderboard } from "./weekly-leaderboard";
 import { UserPlus, Check, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -76,6 +77,9 @@ export function FriendsList({ friendProgress }: FriendsListProps) {
           No users found matching &ldquo;{debouncedTerm}&rdquo;
         </p>
       )}
+
+      {/* Weekly leaderboard (hidden when no friends) */}
+      <WeeklyLeaderboard />
 
       {/* Friend progress grid */}
       <div>
