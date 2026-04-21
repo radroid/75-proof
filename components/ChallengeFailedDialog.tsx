@@ -31,23 +31,31 @@ export function ChallengeFailedDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onDismiss()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Challenge Reset</DialogTitle>
+          <DialogTitle>A fresh start</DialogTitle>
           <DialogDescription>
-            Day {failedOnDay} was incomplete and your 2-day grace period has
-            ended. Per the 75 HARD rules, the challenge resets to Day 0.
+            Day {failedOnDay} went incomplete past the 2-day grace window, so
+            per 75 HARD rules the counter goes back to Day 0. That&apos;s it —
+            no penalty, just a reset.
           </DialogDescription>
         </DialogHeader>
         {streakReached !== undefined && streakReached > 0 && (
-          <div className="flex items-center justify-between rounded-lg border p-3 text-sm">
-            <div className="text-center flex-1">
+          <div
+            className="flex items-stretch rounded-lg border p-3 text-sm"
+            aria-label="Previous attempt summary"
+          >
+            <div className="flex flex-1 flex-col items-center justify-center gap-0.5">
               <p className="text-2xl font-bold tabular-nums">{streakReached}</p>
-              <p className="text-xs text-muted-foreground">day streak</p>
+              <p className="text-xs text-muted-foreground">
+                {streakReached === 1 ? "day reached" : "days reached"}
+              </p>
             </div>
             {attemptNumber !== undefined && (
               <>
-                <div className="h-8 w-px bg-border" />
-                <div className="text-center flex-1">
-                  <p className="text-2xl font-bold tabular-nums">#{attemptNumber}</p>
+                <div className="mx-2 w-px self-stretch bg-border" aria-hidden />
+                <div className="flex flex-1 flex-col items-center justify-center gap-0.5">
+                  <p className="text-2xl font-bold tabular-nums">
+                    #{attemptNumber}
+                  </p>
                   <p className="text-xs text-muted-foreground">next attempt</p>
                 </div>
               </>
@@ -55,15 +63,25 @@ export function ChallengeFailedDialog({
           </div>
         )}
         <p className="text-sm text-muted-foreground">
-          Don&apos;t give up — every restart is another step forward. You&apos;ve
-          got this.
+          Every restart is data, not failure. You made it
+          {streakReached ? ` ${streakReached} day${streakReached === 1 ? "" : "s"}` : " this far"}
+          {" "}— you can do it again, stronger.
         </p>
-        <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button onClick={onStartNew} className="flex-1">
-            Start New Challenge
+        <DialogFooter className="flex-col-reverse gap-2 pb-[max(0px,env(safe-area-inset-bottom))] sm:flex-row">
+          <Button
+            variant="outline"
+            onClick={onDismiss}
+            size="lg"
+            className="w-full sm:flex-1"
+          >
+            Not now
           </Button>
-          <Button variant="outline" onClick={onDismiss} className="flex-1">
-            Dismiss
+          <Button
+            onClick={onStartNew}
+            size="lg"
+            className="w-full active:scale-[0.98] sm:flex-1"
+          >
+            Start New Challenge
           </Button>
         </DialogFooter>
       </DialogContent>

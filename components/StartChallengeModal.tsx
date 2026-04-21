@@ -55,6 +55,12 @@ export function StartChallengeModal({ open, onOpenChange }: StartChallengeModalP
     }
   };
 
+  const visibilityOptions = [
+    { value: "private" as const, label: "Private", desc: "Only you" },
+    { value: "friends" as const, label: "Friends", desc: "Your friends can see" },
+    { value: "public" as const, label: "Public", desc: "Anyone can see" },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -71,30 +77,30 @@ export function StartChallengeModal({ open, onOpenChange }: StartChallengeModalP
         <Card className="bg-muted/50">
           <CardContent className="pt-4">
             <h3 className="font-medium">Daily Requirements:</h3>
-            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li className="flex items-center gap-2">
-                <Check className="h-3 w-3 text-emerald-500" />
-                Two 45-minute workouts (one must be outdoor)
+            <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                <span>Two 45-minute workouts (one must be outdoor)</span>
               </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-3 w-3 text-emerald-500" />
-                Follow a diet (no cheat meals)
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                <span>Follow a diet (no cheat meals)</span>
               </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-3 w-3 text-emerald-500" />
-                No alcohol
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                <span>No alcohol</span>
               </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-3 w-3 text-emerald-500" />
-                Drink 1 gallon (128 oz) of water
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                <span>Drink 1 gallon (128 oz) of water</span>
               </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-3 w-3 text-emerald-500" />
-                Read 10 pages of non-fiction
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                <span>Read 10 pages of non-fiction</span>
               </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-3 w-3 text-emerald-500" />
-                Take a progress photo
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                <span>Take a progress photo</span>
               </li>
             </ul>
             <p className="mt-3 text-xs text-muted-foreground">
@@ -106,54 +112,71 @@ export function StartChallengeModal({ open, onOpenChange }: StartChallengeModalP
         {/* Form */}
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="start-date">Start Date</Label>
+            <Label htmlFor="start-date" className="text-sm font-medium">
+              Start Date
+            </Label>
             <Input
               id="start-date"
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
+              className="h-11 text-base md:h-10 md:text-sm"
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Who can see your progress?</Label>
+            <Label className="text-sm font-medium">Who can see your progress?</Label>
             <RadioGroup
               value={visibility}
               onValueChange={(value) => setVisibility(value as typeof visibility)}
-              className="space-y-2"
+              className="gap-2"
             >
-              {[
-                { value: "private", label: "Private", desc: "Only you" },
-                { value: "friends", label: "Friends", desc: "Your friends can see" },
-                { value: "public", label: "Public", desc: "Anyone can see" },
-              ].map((option) => (
-                <div key={option.value} className="flex items-center space-x-2">
-                  <RadioGroupItem value={option.value} id={option.value} />
-                  <Label htmlFor={option.value} className="flex-1 cursor-pointer">
-                    <span className="font-medium">{option.label}</span>
-                    <span className="text-sm text-muted-foreground ml-2">
-                      {option.desc}
+              {visibilityOptions.map((option) => {
+                const selected = visibility === option.value;
+                return (
+                  <Label
+                    key={option.value}
+                    htmlFor={option.value}
+                    className={`flex min-h-[48px] cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 transition-colors active:bg-muted ${
+                      selected
+                        ? "border-emerald-500 bg-emerald-500/5"
+                        : "border-input hover:bg-muted/50"
+                    }`}
+                  >
+                    <RadioGroupItem
+                      value={option.value}
+                      id={option.value}
+                      className="size-5"
+                    />
+                    <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
+                      <span className="font-medium">{option.label}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {option.desc}
+                      </span>
                     </span>
                   </Label>
-                </div>
-              ))}
+                );
+              })}
             </RadioGroup>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 pt-2">
+        <div className="sticky bottom-0 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-background/95 px-6 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:flex-row">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="flex-1"
+            size="lg"
+            className="w-full sm:flex-1"
           >
             Cancel
           </Button>
           <Button
             onClick={handleStart}
             disabled={isStarting || !user}
-            className="flex-1 bg-emerald-500 hover:bg-emerald-600"
+            loading={isStarting}
+            size="lg"
+            className="w-full bg-emerald-500 text-white shadow-sm hover:bg-emerald-600 active:bg-emerald-700 sm:flex-1"
           >
             {isStarting ? "Starting..." : "Start Challenge"}
           </Button>
