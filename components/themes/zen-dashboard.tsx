@@ -87,7 +87,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
   const progressOffset = circumference - (completion / 100) * circumference;
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto px-1 sm:px-0">
       {hasFailed && (
         <ChallengeFailedDialog
           open={showFailedDialog}
@@ -115,7 +115,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex items-center justify-between mb-20"
+          className="flex items-center justify-between mb-8 md:mb-20"
         >
           <p className="text-xs tracking-[0.3em] uppercase text-muted-foreground">
             Seventy-Five Hard
@@ -130,10 +130,10 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1, duration: 0.8 }}
-          className="flex flex-col items-center mb-24"
+          className="flex flex-col items-center mb-10 md:mb-24"
         >
           <div className="relative">
-            <svg width="180" height="180" viewBox="0 0 180 180">
+            <svg className="h-[152px] w-[152px] md:h-[180px] md:w-[180px]" viewBox="0 0 180 180">
               <circle
                 cx="90" cy="90" r="68"
                 fill="none"
@@ -159,7 +159,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
 
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span
-                className="text-6xl font-light leading-none text-foreground"
+                className="text-5xl md:text-6xl font-light leading-none text-foreground"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
                 {displayDay}
@@ -170,7 +170,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
             </div>
           </div>
 
-          <div className="text-center mt-12">
+          <div className="text-center mt-6 md:mt-12">
             <p
               className="text-2xl font-light text-foreground"
               style={{ fontFamily: "var(--font-heading)" }}
@@ -184,7 +184,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
         </motion.div>
 
         {/* Horizontal brush stroke divider */}
-        <div className="flex items-center justify-center mb-16">
+        <div className="flex items-center justify-center mb-8 md:mb-16">
           <svg width="200" height="8" viewBox="0 0 200 8">
             <path
               d="M 0 4 Q 50 1, 100 4 Q 150 7, 200 4"
@@ -197,7 +197,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
         </div>
 
         {/* Day navigator */}
-        <div className="mb-12">
+        <div className="mb-8 md:mb-12">
           <DayNavigator
             selectedDayNumber={displayDay}
             todayDayNumber={todayDayNumber}
@@ -211,7 +211,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="space-y-8"
+          className="space-y-4 md:space-y-8"
         >
           <SwipeableDayView
             displayDay={displayDay}
@@ -247,7 +247,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="mt-24 text-center"
+          className="mt-10 md:mt-24 text-center"
         >
           <svg width="60" height="3" viewBox="0 0 60 3" className="mx-auto mb-8">
             <line x1="0" y1="1.5" x2="60" y2="1.5" className="stroke-muted-foreground" strokeWidth="1" opacity="0.4" />

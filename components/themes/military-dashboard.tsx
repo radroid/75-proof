@@ -90,7 +90,7 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
   const missionTime = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-1 sm:px-0">
       {hasFailed && (
         <ChallengeFailedDialog
           open={showFailedDialog}
@@ -122,14 +122,14 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex items-center justify-between text-[10px] tracking-[0.3em] uppercase mb-10 pb-4 border-b border-border"
+          className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between text-[9px] md:text-[10px] tracking-[0.24em] md:tracking-[0.3em] uppercase mb-6 md:mb-10 pb-3 md:pb-4 border-b border-border"
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <span className="text-muted-foreground">CLASSIFIED</span>
             <span className="text-border">|</span>
             <span className="text-foreground">OPERATOR-1</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <span className="text-foreground">MISSION TIME: {missionTime}</span>
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full animate-pulse bg-primary" />
@@ -143,14 +143,14 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-12"
+          className="mb-7 md:mb-12"
         >
           <p className="text-[10px] tracking-[0.4em] uppercase mb-4 text-muted-foreground">
             OPERATION DAY
           </p>
           <div className="flex items-baseline gap-3">
             <h1
-              className="text-[100px] md:text-[140px] leading-none text-foreground"
+              className="text-[76px] md:text-[140px] leading-none text-foreground"
               style={{
                 fontFamily: "var(--font-heading)",
                 textShadow: "0 0 40px rgba(194,178,128,0.15)",
@@ -158,12 +158,12 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
             >
               {String(displayDay).padStart(2, "0")}
             </h1>
-            <span className="text-3xl font-light text-border">/75</span>
+            <span className="text-2xl md:text-3xl font-light text-border">/75</span>
           </div>
 
           {/* 75-segment tactical progress bar */}
-          <div className="mt-6 max-w-xl">
-            <div className="flex items-center gap-[1px]">
+          <div className="mt-4 md:mt-6 max-w-xl">
+            <div className="flex items-center gap-px">
               {Array.from({ length: 75 }).map((_, i) => (
                 <div
                   key={i}
@@ -182,7 +182,7 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
           </div>
 
           {/* Stats grid */}
-          <div className="mt-8 grid grid-cols-2 gap-px rounded overflow-hidden bg-border">
+          <div className="mt-5 md:mt-8 grid grid-cols-2 gap-px rounded overflow-hidden bg-border">
             {[
               { label: "COMPLETION", value: `${completion}%` },
               { label: "OBJECTIVES", value: `${totalDone}/${totalItems}` },
@@ -203,7 +203,7 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
         </motion.div>
 
         {/* Day navigator */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <DayNavigator
             selectedDayNumber={displayDay}
             todayDayNumber={todayDayNumber}
@@ -218,7 +218,7 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.25 }}
         >
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-start gap-3 justify-between mb-4 md:mb-6">
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 bg-primary" style={{ boxShadow: "0 0 8px var(--primary)" }} />
               <div>
@@ -271,7 +271,7 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="mt-12 pt-6 text-center border-t border-border"
+          className="mt-8 md:mt-12 pt-5 md:pt-6 text-center border-t border-border"
         >
           <p className="text-[10px] tracking-[0.3em] uppercase text-border">
             &ldquo;Discipline is the bridge between goals and accomplishment.&rdquo;

@@ -98,7 +98,7 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
   const edition = hours < 12 ? "Morning Edition" : hours < 17 ? "Afternoon Edition" : "Evening Edition";
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-1 sm:px-0">
       {hasFailed && (
         <ChallengeFailedDialog
           open={showFailedDialog}
@@ -127,7 +127,7 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <div className="border-t-[3px] border-foreground pt-[2px] border-b border-foreground">
+          <div className="border-t-[3px] border-b border-foreground pt-[2px]">
             <div className="h-[2px]" />
           </div>
 
@@ -137,9 +137,9 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
             <span>Vol. {vol} — No. {todayDayNumber}</span>
           </div>
 
-          <div className="text-center py-6 border-b border-border">
+          <div className="text-center py-4 md:py-6 border-b border-border">
             <h1
-              className="text-5xl md:text-6xl tracking-tight font-bold text-foreground"
+              className="text-4xl md:text-6xl tracking-tight font-bold text-foreground"
               style={{
                 fontFamily: "var(--font-heading)",
                 letterSpacing: "-0.02em",
@@ -147,12 +147,12 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
             >
               The 75 Proof Daily
             </h1>
-            <p className="mt-1 text-xs tracking-[0.35em] uppercase text-muted-foreground">
+            <p className="mt-1 text-[10px] md:text-xs tracking-[0.28em] md:tracking-[0.35em] uppercase text-muted-foreground">
               A Record of Discipline & Transformation
             </p>
           </div>
 
-          <div className="flex items-center justify-between py-3 text-[10px] tracking-wider uppercase text-muted-foreground border-b-2 border-foreground">
+          <div className="flex items-center justify-between py-2 md:py-3 text-[9px] md:text-[10px] tracking-wider uppercase text-muted-foreground border-b-2 border-foreground">
             <div>
               <span className="text-foreground text-[16px] font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
                 {totalDone}/{totalItems}
@@ -169,7 +169,7 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
         </motion.header>
 
         {/* Day navigator */}
-        <div className="mt-6 mb-2">
+        <div className="mt-4 md:mt-6 mb-1 md:mb-2">
           <DayNavigator
             selectedDayNumber={displayDay}
             todayDayNumber={todayDayNumber}
@@ -183,7 +183,7 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="mt-8"
+          className="mt-5 md:mt-8"
         >
           <SwipeableDayView
             displayDay={displayDay}
@@ -219,10 +219,10 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="my-12 py-6 px-6 border-t-2 border-b-2 border-foreground"
+          className="my-6 md:my-12 py-4 md:py-6 px-4 md:px-6 border-t-2 border-b-2 border-foreground"
         >
           <p
-            className="text-2xl leading-snug italic text-foreground"
+            className="text-xl md:text-2xl leading-snug italic text-foreground"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             &ldquo;Discipline is choosing between what you want now and what you want most.&rdquo;
@@ -241,7 +241,7 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           <p className="text-[11px] tracking-widest uppercase mb-4 font-medium text-muted-foreground">
             75-Day Campaign Progress
           </p>
-          <div className="flex items-end gap-[2px] h-16">
+          <div className="flex items-end gap-[2px] h-12 md:h-16">
             {Array.from({ length: 75 }).map((_, i) => (
               <div
                 key={i}
@@ -265,7 +265,7 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="mt-10 pt-4 text-center border-t-[3px] border-foreground"
+          className="mt-6 md:mt-10 pt-4 text-center border-t-[3px] border-foreground"
         >
           <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
             Published continuously since Day 1 — All rights reserved — 75 Proof Daily

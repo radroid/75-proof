@@ -88,7 +88,7 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
   const progressOffset = circumference - (completion / 100) * circumference;
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto px-1 sm:px-0">
       {hasFailed && (
         <ChallengeFailedDialog
           open={showFailedDialog}
@@ -108,14 +108,14 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="relative mb-16"
+        className="relative mb-8 md:mb-16"
       >
         {/* Giant faint background number */}
         <div
-          className="absolute -top-8 -left-4 select-none pointer-events-none text-primary opacity-[0.06]"
+          className="absolute -top-5 -left-2 md:-top-8 md:-left-4 select-none pointer-events-none text-primary opacity-[0.06]"
           style={{
             fontFamily: "var(--font-heading)",
-            fontSize: "280px",
+            fontSize: "clamp(150px, 42vw, 280px)",
             fontWeight: 700,
             lineHeight: 0.85,
           }}
@@ -123,23 +123,23 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
           {displayDay}
         </div>
 
-        <div className="relative flex items-start gap-12">
+        <div className="relative flex flex-col gap-4 md:flex-row md:items-start md:gap-12">
           {/* Left: day number + progress */}
           <div className="flex-1">
-            <div className="flex items-end gap-4">
+            <div className="flex items-end gap-3 md:gap-4">
               <h1
-                className="text-[140px] md:text-[180px] font-bold leading-[0.85] tracking-tight text-foreground"
+                className="text-[84px] md:text-[180px] font-bold leading-[0.85] tracking-tight text-foreground"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
                 {displayDay}
               </h1>
-              <div className="pb-6">
-                <p className="text-4xl font-light text-muted-foreground/40">/75</p>
+              <div className="pb-3 md:pb-6">
+                <p className="text-2xl md:text-4xl font-light text-muted-foreground/40">/75</p>
               </div>
             </div>
 
             {/* Segmented progress bar */}
-            <div className="mt-8 max-w-md">
+            <div className="mt-4 md:mt-8 max-w-md">
               <div className="flex gap-1">
                 {Array.from({ length: 15 }).map((_, i) => {
                   const segmentDays = 5;
@@ -205,7 +205,7 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
       </motion.div>
 
       {/* Geometric divider */}
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex items-center gap-3 mb-6 md:mb-8">
         <div className="h-px flex-1 bg-border" />
         <div className="flex gap-1.5">
           <div className="w-2 h-2 rotate-45 bg-primary" />
@@ -216,7 +216,7 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
       </div>
 
       {/* Day navigator */}
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8">
         <DayNavigator
           selectedDayNumber={displayDay}
           todayDayNumber={todayDayNumber}
@@ -226,8 +226,8 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
       </div>
 
       {/* Today's progress — centered */}
-      <div className="text-center mb-12">
-        <p className="text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
+      <div className="text-center mb-8 md:mb-12">
+        <p className="text-lg md:text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
           {totalDone}/{totalItems}
         </p>
         <div className="mt-2 h-[3px] rounded-full bg-muted max-w-[200px] mx-auto">

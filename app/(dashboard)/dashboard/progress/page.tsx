@@ -253,8 +253,8 @@ export default function ProgressPage() {
 
   return (
     <PageContainer>
-      <div className="mb-16">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+      <div className="mb-8 md:mb-16">
+        <h1 className="text-3xl md:text-5xl font-bold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
           Progress
         </h1>
         <p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground mt-2">
@@ -263,71 +263,71 @@ export default function ProgressPage() {
       </div>
 
       {/* Stats grid */}
-      <MotionGrid className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <motion.div variants={fadeUp} className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
+      <MotionGrid className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3">
+        <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
+          <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
             <Calendar className="h-5 w-5 text-primary" />
-            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Days Completed</span>
+            <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Days Completed</span>
           </div>
-          <p className="text-4xl md:text-5xl font-light tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
+          <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
             {completedDays}
-            <span className="text-lg text-muted-foreground/50 ml-1">/ 75</span>
+            <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">/ 75</span>
           </p>
         </motion.div>
-        <motion.div variants={fadeUp} className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
+        <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
+          <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
             <Flame className="h-5 w-5 text-orange-500" />
-            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Best Streak</span>
+            <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Best Streak</span>
           </div>
-          <p className="text-4xl md:text-5xl font-light tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
+          <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
             {lifetimeStats?.longestStreak ?? 0}
-            <span className="text-lg text-muted-foreground/50 ml-1">days</span>
+            <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">days</span>
           </p>
         </motion.div>
-        <motion.div variants={fadeUp} className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
+        <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
+          <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
             <RotateCcw className="h-5 w-5 text-chart-4" />
-            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Attempt</span>
+            <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Attempt</span>
           </div>
-          <p className="text-4xl md:text-5xl font-light tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
+          <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
             #{lifetimeStats?.attemptNumber ?? 1}
           </p>
         </motion.div>
-        <motion.div variants={fadeUp} className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
+        <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
+          <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
             <Dumbbell className="h-5 w-5 text-chart-1" />
-            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Total Workouts</span>
+            <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Total Workouts</span>
           </div>
-          <p className="text-4xl md:text-5xl font-light tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
+          <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
             {totalWorkouts}
           </p>
         </motion.div>
-        <motion.div variants={fadeUp} className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
+        <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
+          <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
             <Droplets className="h-5 w-5 text-chart-2" />
-            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Water Consumed</span>
+            <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Water Consumed</span>
           </div>
-          <p className="text-4xl md:text-5xl font-light tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
+          <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
             {Math.round(totalWater / 128)}
-            <span className="text-lg text-muted-foreground/50 ml-1">gallons</span>
+            <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">gallons</span>
           </p>
         </motion.div>
-        <motion.div variants={fadeUp} className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
+        <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
+          <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
             <BookOpen className="h-5 w-5 text-chart-3" />
-            <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Reading Time</span>
+            <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Reading Time</span>
           </div>
-          <p className="text-4xl md:text-5xl font-light tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
+          <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
             {totalReading}
-            <span className="text-lg text-muted-foreground/50 ml-1">min</span>
+            <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">min</span>
           </p>
         </motion.div>
       </MotionGrid>
 
       {/* Progress Photos Gallery */}
-      <div className="h-px bg-border my-16" />
+      <div className="h-px bg-border my-8 md:my-16" />
       <div>
-        <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-8">Progress Photos</p>
+        <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 md:mb-8">Progress Photos</p>
         <MotionItem>
           {effectivePhotos && effectivePhotos.length > 0 ? (
             <>
@@ -344,7 +344,7 @@ export default function ProgressPage() {
                       className="w-full h-full object-cover transition-transform group-hover:scale-105"
                       loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <Badge className="absolute bottom-1 left-1 text-[10px] h-5 bg-black/70 text-white border-0">
                       Day {photo.dayNumber}
                     </Badge>
@@ -437,9 +437,9 @@ export default function ProgressPage() {
       </Dialog>
 
       {/* Calendar view */}
-      <div className="h-px bg-border my-16" />
+      <div className="h-px bg-border my-8 md:my-16" />
       <div>
-        <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-8">75-Day Calendar</p>
+        <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 md:mb-8">75-Day Calendar</p>
         <MotionItem>
           <motion.div
             initial="hidden"
@@ -481,7 +481,7 @@ export default function ProgressPage() {
               );
             })}
           </motion.div>
-          <div className="mt-6 flex flex-wrap items-center gap-4 text-xs">
+          <div className="mt-4 md:mt-6 flex flex-wrap items-center gap-3 md:gap-4 text-xs">
             <div className="flex items-center gap-2">
               <div className="h-3.5 w-3.5 rounded-md bg-success shadow-sm" />
               <span className="text-muted-foreground">Completed</span>
@@ -503,9 +503,9 @@ export default function ProgressPage() {
       </div>
 
       {/* Day-by-Day History */}
-      <div className="h-px bg-border my-16" />
+      <div className="h-px bg-border my-8 md:my-16" />
       <div>
-        <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-8">Day-by-Day History</p>
+        <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 md:mb-8">Day-by-Day History</p>
         {/* Challenge Selector and Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           {!isGuest && challenges && challenges.length > 1 && (
@@ -639,7 +639,7 @@ export default function ProgressPage() {
           />
         ) : (
           <div className="relative">
-            <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-muted to-transparent" />
+            <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-linear-to-b from-primary via-muted to-transparent" />
 
             <MotionList className="space-y-3">
               {filteredDays.map((day, index) => {
