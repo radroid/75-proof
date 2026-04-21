@@ -158,20 +158,40 @@ export function setHapticsEnabled(enabled: boolean): void {
   }
 }
 
+// Dev-only trace so we can see from Web Inspector on an iPhone which
+// branch actually ran (and why nothing fired). Stripped out of prod
+// bundles by Next.js's NODE_ENV-gated dead-code elimination.
+const DEV = process.env.NODE_ENV !== "production";
+function trace(msg: string, extra?: Record<string, unknown>): void {
+  if (!DEV) return;
+  // eslint-disable-next-line no-console
+  console.log(`[haptic] ${msg}`, extra ?? "");
+}
+
 export function haptic(type: HapticType = "selection"): void {
-  if (prefersReducedMotion() || !isHapticsEnabled()) return;
+  if (prefersReducedMotion()) {
+    trace("skip: prefers-reduced-motion", { type });
+    return;
+  }
+  if (!isHapticsEnabled()) {
+    trace("skip: disabled in settings", { type });
+    return;
+  }
 
   if (isIOS()) {
-    // iOS: prefer the UISwitch trick. Fall through to vibrate() as a
-    // belt-and-suspenders for devices where it happens to work.
+    trace("iOS path: UISwitch trick", { type });
     fireIOSHaptic(type);
     return;
   }
 
-  if (!hasVibrate()) return;
+  if (!hasVibrate()) {
+    trace("skip: no navigator.vibrate support", { type });
+    return;
+  }
   try {
     navigator.vibrate(PATTERNS[type]);
-  } catch {
-    // Some browsers throw outside a user-gesture context; silently ignore.
+    trace("vibrate() fired", { type, pattern: PATTERNS[type] });
+  } catch (err) {
+    trace("vibrate() threw", { err });
   }
 }
