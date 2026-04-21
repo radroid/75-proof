@@ -178,15 +178,12 @@ export default defineSchema({
     .index("by_from_to_created", ["fromUserId", "toUserId", "createdAt"]),
 
   // Reactions on activity feed items (emoji cheers)
+  // emoji stores either a legacy key ("fire"|"muscle"|"clap"|"heart") or a
+  // raw unicode emoji sequence; UI maps legacy keys to glyphs for display.
   feedReactions: defineTable({
     activityId: v.id("activityFeed"),
     userId: v.id("users"),
-    emoji: v.union(
-      v.literal("fire"),
-      v.literal("muscle"),
-      v.literal("clap"),
-      v.literal("heart")
-    ),
+    emoji: v.string(),
     createdAt: v.string(),
   })
     .index("by_activity", ["activityId"])

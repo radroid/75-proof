@@ -15,8 +15,7 @@ import {
   Activity,
 } from "lucide-react";
 import { toast } from "sonner";
-
-type ReactionEmoji = "fire" | "muscle" | "clap" | "heart";
+import { EmojiPicker } from "./emoji-picker";
 
 type FeedItem = {
   _id: string;
@@ -38,12 +37,19 @@ const typeIcons: Record<FeedItem["type"], React.ReactNode> = {
   milestone: <Flame className="h-4 w-4 text-orange-500" />,
 };
 
-const REACTION_OPTIONS: { emoji: ReactionEmoji; glyph: string; label: string }[] = [
-  { emoji: "fire", glyph: "🔥", label: "Fire" },
-  { emoji: "muscle", glyph: "💪", label: "Strong" },
-  { emoji: "clap", glyph: "👏", label: "Clap" },
-  { emoji: "heart", glyph: "❤️", label: "Love" },
-];
+// Legacy preset keys → display glyph (kept for backwards compat with v1 data)
+const LEGACY_GLYPHS: Record<string, string> = {
+  fire: "🔥",
+  muscle: "💪",
+  clap: "👏",
+  heart: "❤️",
+};
+
+const DEFAULT_REACTIONS: string[] = ["🔥", "💪", "👏", "❤️"];
+
+function displayGlyph(emoji: string): string {
+  return LEGACY_GLYPHS[emoji] ?? emoji;
+}
 
 function relativeTime(isoString: string): string {
   const now = Date.now();
@@ -70,7 +76,7 @@ interface ActivityFeedProps {
   feed: FeedItem[] | undefined;
 }
 
-type OverrideKey = `${string}:${ReactionEmoji}`;
+type OverrideKey = `${string}:${string}`;
 type Override = { reacted: boolean; delta: number };
 
 export function ActivityFeed({ feed }: ActivityFeedProps) {
@@ -87,9 +93,17 @@ export function ActivityFeed({ feed }: ActivityFeedProps) {
     new Map()
   );
   const [tapped, setTapped] = useState<OverrideKey | null>(null);
+  // Per-item set of user-picked emojis that aren't yet on the server
+  const [locallyPicked, setLocallyPicked] = useState<Map<string, Set<string>>>(
+    new Map()
+  );
 
   const handleToggle = useCallback(
-    async (activityId: Id<"activityFeed">, emoji: ReactionEmoji, serverReacted: boolean) => {
+    async (
+      activityId: Id<"activityFeed">,
+      emoji: string,
+      serverReacted: boolean
+    ) => {
       const key: OverrideKey = `${activityId}:${emoji}`;
       const nextReacted = !serverReacted;
       setOverrides((prev) => {
@@ -121,6 +135,21 @@ export function ActivityFeed({ feed }: ActivityFeedProps) {
     [toggleReaction]
   );
 
+  const handlePick = useCallback(
+    (activityId: string, emoji: string) => {
+      setLocallyPicked((prev) => {
+        const next = new Map(prev);
+        const set = new Set(next.get(activityId) ?? []);
+        set.add(emoji);
+        next.set(activityId, set);
+        return next;
+      });
+      // Toggle it on (serverReacted=false because we're adding)
+      handleToggle(activityId as Id<"activityFeed">, emoji, false);
+    },
+    [handleToggle]
+  );
+
   if (!feed || feed.length === 0) {
     return (
       <Card>
@@ -142,6 +171,19 @@ export function ActivityFeed({ feed }: ActivityFeedProps) {
       {feed.map((item) => {
         const itemReactions = reactions?.[item._id] ?? [];
         const reactionMap = new Map(itemReactions.map((r) => [r.emoji, r]));
+        const localPicks = locallyPicked.get(item._id) ?? new Set<string>();
+
+        // Compose the visible set: server emojis + defaults + local picks
+        const visible = new Set<string>([
+          ...DEFAULT_REACTIONS,
+          ...Array.from(reactionMap.keys()).map(displayGlyph),
+          ...Array.from(localPicks),
+        ]);
+        // But for each visible emoji, we need to know the storage key on the
+        // server (legacy presets store as "fire" etc., new ones store raw).
+        // Group together when display glyph matches.
+        const visibleList = Array.from(visible);
+
         return (
           <Card key={item._id}>
             <CardContent className="py-3 px-4">
@@ -174,11 +216,22 @@ export function ActivityFeed({ feed }: ActivityFeedProps) {
                     className="mt-2 flex flex-wrap items-center gap-1.5"
                     aria-label="Reactions"
                   >
-                    {REACTION_OPTIONS.map(({ emoji, glyph, label }) => {
-                      const r = reactionMap.get(emoji);
-                      const serverCount = r?.count ?? 0;
-                      const serverReacted = r?.reacted ?? false;
-                      const key: OverrideKey = `${item._id}:${emoji}`;
+                    {visibleList.map((glyph) => {
+                      // Find server reaction for this glyph: check raw key + legacy key
+                      const legacyKey = Object.entries(LEGACY_GLYPHS).find(
+                        ([, g]) => g === glyph
+                      )?.[0];
+                      const rLegacy = legacyKey
+                        ? reactionMap.get(legacyKey)
+                        : undefined;
+                      const rRaw = reactionMap.get(glyph);
+                      const serverCount =
+                        (rLegacy?.count ?? 0) + (rRaw?.count ?? 0);
+                      const serverReacted =
+                        !!rLegacy?.reacted || !!rRaw?.reacted;
+                      // The storage key to send on toggle: prefer raw glyph going forward
+                      const storageKey = rLegacy && !rRaw ? legacyKey! : glyph;
+                      const key: OverrideKey = `${item._id}:${storageKey}`;
                       const override = overrides.get(key);
                       const reacted = override?.reacted ?? serverReacted;
                       const count = Math.max(
@@ -186,19 +239,24 @@ export function ActivityFeed({ feed }: ActivityFeedProps) {
                         serverCount + (override?.delta ?? 0)
                       );
                       const isTapped = tapped === key;
+                      if (count === 0 && !reacted && !DEFAULT_REACTIONS.includes(glyph)) {
+                        // Hide empty locally-picked reaction once the optimistic
+                        // state clears (e.g. user un-reacted before server confirmed)
+                        return null;
+                      }
                       return (
                         <button
-                          key={emoji}
+                          key={glyph}
                           type="button"
                           onClick={() =>
                             handleToggle(
                               item._id as Id<"activityFeed">,
-                              emoji,
+                              storageKey,
                               serverReacted
                             )
                           }
                           aria-pressed={reacted}
-                          aria-label={`${label} reaction${
+                          aria-label={`${glyph} reaction${
                             count > 0 ? `, ${count}` : ""
                           }`}
                           className={[
@@ -224,6 +282,10 @@ export function ActivityFeed({ feed }: ActivityFeedProps) {
                         </button>
                       );
                     })}
+                    <EmojiPicker
+                      onPick={(emoji) => handlePick(item._id, emoji)}
+                      ariaLabel="React with any emoji"
+                    />
                   </div>
                 </div>
               </div>

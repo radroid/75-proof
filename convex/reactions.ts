@@ -1,22 +1,28 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthenticatedUser, getAuthenticatedUserOrNull } from "./lib/auth";
-import { Id } from "./_generated/dataModel";
 
-const emojiValidator = v.union(
-  v.literal("fire"),
-  v.literal("muscle"),
-  v.literal("clap"),
-  v.literal("heart")
-);
+const MAX_EMOJI_LEN = 16;
+
+function normalizeEmoji(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) {
+    throw new Error("Emoji required");
+  }
+  if (trimmed.length > MAX_EMOJI_LEN) {
+    throw new Error("Emoji too long");
+  }
+  return trimmed;
+}
 
 export const toggleReaction = mutation({
   args: {
     activityId: v.id("activityFeed"),
-    emoji: emojiValidator,
+    emoji: v.string(),
   },
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);
+    const emoji = normalizeEmoji(args.emoji);
 
     const activity = await ctx.db.get(args.activityId);
     if (!activity) throw new Error("Activity not found");
@@ -27,7 +33,7 @@ export const toggleReaction = mutation({
         q
           .eq("activityId", args.activityId)
           .eq("userId", user._id)
-          .eq("emoji", args.emoji)
+          .eq("emoji", emoji)
       )
       .unique();
 
@@ -39,7 +45,7 @@ export const toggleReaction = mutation({
     await ctx.db.insert("feedReactions", {
       activityId: args.activityId,
       userId: user._id,
-      emoji: args.emoji,
+      emoji,
       createdAt: new Date().toISOString(),
     });
     return { reacted: true };
@@ -47,7 +53,7 @@ export const toggleReaction = mutation({
 });
 
 export type ReactionSummary = {
-  emoji: "fire" | "muscle" | "clap" | "heart";
+  emoji: string;
   count: number;
   reacted: boolean;
 };
@@ -74,7 +80,7 @@ export const getReactionsForActivities = query({
       const summary: ReactionSummary[] = [];
       for (const [emoji, count] of counts) {
         summary.push({
-          emoji: emoji as ReactionSummary["emoji"],
+          emoji,
           count,
           reacted: mine.has(emoji),
         });
