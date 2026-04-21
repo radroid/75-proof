@@ -18,6 +18,8 @@ type PulseRow = {
 type PulseResult = {
   totalFriendsWithChallenge: number;
   friendsCompleteToday: number;
+  youCompleteToday: boolean | null;
+  youHaveChallenge: boolean;
   categories: PulseRow[];
 };
 
@@ -48,27 +50,70 @@ export const getTodayPulse = query({
   args: {},
   handler: async (ctx): Promise<PulseResult> => {
     const user = await getAuthenticatedUserOrNull(ctx);
-    if (!user) {
-      return {
-        totalFriendsWithChallenge: 0,
-        friendsCompleteToday: 0,
-        categories: [],
-      };
-    }
+    const empty: PulseResult = {
+      totalFriendsWithChallenge: 0,
+      friendsCompleteToday: 0,
+      youCompleteToday: null,
+      youHaveChallenge: false,
+      categories: [],
+    };
+    if (!user) return empty;
 
     const friendIds = await getFriendIds(ctx, user._id);
-    if (friendIds.length === 0) {
-      return {
-        totalFriendsWithChallenge: 0,
-        friendsCompleteToday: 0,
-        categories: [],
-      };
-    }
 
     const today = new Date().toISOString().split("T")[0];
     const categoryCounts: Record<string, number> = {};
     let totalFriendsWithChallenge = 0;
     let friendsCompleteToday = 0;
+
+    const ownChallenge = await ctx.db
+      .query("challenges")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .unique();
+
+    let youCompleteToday: boolean | null = null;
+    if (ownChallenge) {
+      const ownHabitDefs = await ctx.db
+        .query("habitDefinitions")
+        .withIndex("by_challenge", (q) =>
+          q.eq("challengeId", ownChallenge._id)
+        )
+        .collect();
+      const ownHardHabits = ownHabitDefs.filter((h) => h.isActive && h.isHard);
+      if (ownHardHabits.length > 0) {
+        const entries = await ctx.db
+          .query("habitEntries")
+          .withIndex("by_challenge_day", (q) =>
+            q
+              .eq("challengeId", ownChallenge._id)
+              .eq("dayNumber", ownChallenge.currentDay)
+          )
+          .collect();
+        const entryMap = new Map(
+          entries.map((e) => [String(e.habitDefinitionId), e])
+        );
+        youCompleteToday = ownHardHabits.every(
+          (h) => entryMap.get(String(h._id))?.completed === true
+        );
+      } else {
+        const log = await ctx.db
+          .query("dailyLogs")
+          .withIndex("by_date", (q) =>
+            q.eq("userId", user._id).eq("date", today)
+          )
+          .unique();
+        youCompleteToday = log?.allRequirementsMet === true;
+      }
+    }
+
+    if (friendIds.length === 0) {
+      return {
+        ...empty,
+        youCompleteToday,
+        youHaveChallenge: ownChallenge !== null,
+      };
+    }
 
     for (const friendId of friendIds) {
       const friend = await ctx.db.get(friendId);
@@ -165,6 +210,8 @@ export const getTodayPulse = query({
     return {
       totalFriendsWithChallenge,
       friendsCompleteToday,
+      youCompleteToday,
+      youHaveChallenge: ownChallenge !== null,
       categories,
     };
   },
