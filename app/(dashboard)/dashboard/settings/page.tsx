@@ -68,6 +68,7 @@ export default function SettingsPage() {
   const [showStreak, setShowStreak] = useState(true);
   const [showDayNumber, setShowDayNumber] = useState(true);
   const [showCompletionStatus, setShowCompletionStatus] = useState(true);
+  const [showHabits, setShowHabits] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -77,6 +78,7 @@ export default function SettingsPage() {
       setShowStreak(user.preferences?.sharing?.showStreak ?? true);
       setShowDayNumber(user.preferences?.sharing?.showDayNumber ?? true);
       setShowCompletionStatus(user.preferences?.sharing?.showCompletionStatus ?? true);
+      setShowHabits(user.preferences?.sharing?.showHabits ?? true);
     }
   }, [user]);
 
@@ -92,6 +94,7 @@ export default function SettingsPage() {
             showStreak,
             showDayNumber,
             showCompletionStatus,
+            showHabits,
           },
         },
       });
@@ -338,6 +341,22 @@ export default function SettingsPage() {
                     id="show-completion"
                     checked={showCompletionStatus}
                     onCheckedChange={setShowCompletionStatus}
+                    className="scale-125 origin-right"
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-4 min-h-11 py-3">
+                  <div className="min-w-0 flex-1">
+                    <Label htmlFor="show-habits" className="cursor-pointer">
+                      Show habits
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Let friends see which habits you&apos;re tracking
+                    </p>
+                  </div>
+                  <Switch
+                    id="show-habits"
+                    checked={showHabits}
+                    onCheckedChange={setShowHabits}
                     className="scale-125 origin-right"
                   />
                 </div>

@@ -172,6 +172,7 @@ export const getFriendProgress = query({
           const sharing = friend.preferences?.sharing;
           const showDayNumber = sharing?.showDayNumber ?? true;
           const showCompletionStatus = sharing?.showCompletionStatus ?? true;
+          const showHabits = sharing?.showHabits ?? true;
 
           let todayComplete = false;
           let friendCompletionByDate: Map<string, boolean> = new Map();
@@ -188,6 +189,59 @@ export const getFriendProgress = query({
             ? computeCoStreak(myCompletionByDate, friendCompletionByDate)
             : 0;
 
+          let habits: Array<{
+            _id: Id<"habitDefinitions">;
+            name: string;
+            icon?: string;
+            category?: string;
+            isHard: boolean;
+            completedToday: boolean | null;
+          }> | null = null;
+
+          if (showHabits) {
+            const habitDefs = await ctx.db
+              .query("habitDefinitions")
+              .withIndex("by_challenge", (q) =>
+                q.eq("challengeId", activeChallenge._id)
+              )
+              .collect();
+
+            const activeHabits = habitDefs
+              .filter((h) => h.isActive)
+              .sort((a, b) => a.sortOrder - b.sortOrder);
+
+            if (activeHabits.length > 0) {
+              let todayCompletionByHabit = new Map<string, boolean>();
+              if (showCompletionStatus) {
+                const entries = await ctx.db
+                  .query("habitEntries")
+                  .withIndex("by_challenge_day", (q) =>
+                    q
+                      .eq("challengeId", activeChallenge._id)
+                      .eq("dayNumber", activeChallenge.currentDay)
+                  )
+                  .collect();
+                todayCompletionByHabit = new Map(
+                  entries.map((e) => [
+                    String(e.habitDefinitionId),
+                    e.completed,
+                  ])
+                );
+              }
+
+              habits = activeHabits.map((h) => ({
+                _id: h._id,
+                name: h.name,
+                icon: h.icon,
+                category: h.category,
+                isHard: h.isHard,
+                completedToday: showCompletionStatus
+                  ? todayCompletionByHabit.get(String(h._id)) === true
+                  : null,
+              }));
+            }
+          }
+
           return {
             user: {
               _id: friend._id,
@@ -200,6 +254,7 @@ export const getFriendProgress = query({
             },
             todayComplete: showCompletionStatus ? todayComplete : null,
             coStreak,
+            habits,
           };
         })
     );

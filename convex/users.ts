@@ -84,6 +84,7 @@ export const updateUser = mutation({
           showStreak: v.boolean(),
           showDayNumber: v.boolean(),
           showCompletionStatus: v.boolean(),
+          showHabits: v.optional(v.boolean()),
         })),
       })
     ),

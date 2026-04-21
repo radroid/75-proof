@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Check, MoreHorizontal, UserMinus, Ban, HandHeart } from "lucide-react";
 import { CoStreakChip } from "./co-streak-chip";
+import { FriendHabitsStrip, type FriendHabit } from "./friend-habits-strip";
 import { toast } from "sonner";
 
 interface FriendProgressCardProps {
@@ -41,6 +42,7 @@ interface FriendProgressCardProps {
     };
     todayComplete: boolean | null;
     coStreak?: number;
+    habits?: FriendHabit[] | null;
   };
 }
 
@@ -189,6 +191,9 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
               days={friend.coStreak ?? 0}
               friendName={friend.user.displayName}
             />
+          )}
+          {friend.habits && friend.habits.length > 0 && (
+            <FriendHabitsStrip habits={friend.habits} />
           )}
         </CardContent>
       </Card>

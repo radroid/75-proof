@@ -18,6 +18,7 @@ export default defineSchema({
         showStreak: v.boolean(),
         showDayNumber: v.boolean(),
         showCompletionStatus: v.boolean(),
+        showHabits: v.optional(v.boolean()),
       })),
     }),
     onboardingComplete: v.optional(v.boolean()),

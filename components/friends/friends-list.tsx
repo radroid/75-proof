@@ -20,6 +20,14 @@ interface FriendsListProps {
     challenge: { currentDay: number | null; startDate: string };
     todayComplete: boolean | null;
     coStreak?: number;
+    habits?: Array<{
+      _id: string;
+      name: string;
+      icon?: string;
+      category?: string;
+      isHard: boolean;
+      completedToday: boolean | null;
+    }> | null;
   }> | undefined;
 }
 
