@@ -28,6 +28,7 @@ import { Check, MoreHorizontal, UserMinus, Ban, HandHeart } from "lucide-react";
 import { CoStreakChip } from "./co-streak-chip";
 import { FriendHabitsStrip, type FriendHabit } from "./friend-habits-strip";
 import { toast } from "sonner";
+import { haptic } from "@/lib/haptics";
 
 interface FriendProgressCardProps {
   friend: {
@@ -59,6 +60,7 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
 
   const handleNudge = async () => {
     if (alreadyNudged || nudging) return;
+    haptic("impact");
     setNudging(true);
     try {
       await sendNudge({ toUserId: friend.user._id });

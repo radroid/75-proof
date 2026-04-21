@@ -2,9 +2,11 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthenticatedUser, getAuthenticatedUserOrNull } from "./lib/auth";
-import { Doc } from "./_generated/dataModel";
 
 const MAX_EMOJI_LEN = 16;
+// Notification body cap — push services silently truncate far-longer
+// strings anyway, but a tight ceiling keeps the lockscreen readable.
+const MAX_ACTIVITY_LABEL_LEN = 80;
 
 function normalizeEmoji(raw: string): string {
   const trimmed = raw.trim();
@@ -17,28 +19,10 @@ function normalizeEmoji(raw: string): string {
   return trimmed;
 }
 
-/**
- * Short human-readable context for a reaction notification body, e.g.
- * "on your Day 42" or "on your challenge completion 🎉". Kept in the
- * mutation so the Node action doesn't need to refetch the activity.
- */
-function describeActivity(activity: Doc<"activityFeed">): string {
-  switch (activity.type) {
-    case "day_completed":
-      return activity.dayNumber
-        ? `on your Day ${activity.dayNumber}`
-        : "on your day";
-    case "challenge_started":
-      return "on your challenge start";
-    case "challenge_completed":
-      return "on your challenge completion 🎉";
-    case "challenge_failed":
-      return "on your latest update";
-    case "milestone":
-      return activity.dayNumber
-        ? `on your Day ${activity.dayNumber} milestone`
-        : "on your milestone";
-  }
+function clampLabel(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.length <= MAX_ACTIVITY_LABEL_LEN) return trimmed;
+  return `${trimmed.slice(0, MAX_ACTIVITY_LABEL_LEN - 1)}…`;
 }
 
 export const toggleReaction = mutation({
@@ -95,7 +79,7 @@ export const toggleReaction = mutation({
         toUserId: activity.userId,
         fromUserId: user._id,
         emoji,
-        activityLabel: describeActivity(activity),
+        activityLabel: clampLabel(activity.message),
       });
     }
 

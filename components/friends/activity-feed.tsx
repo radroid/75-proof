@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { EmojiPicker } from "./emoji-picker";
+import { haptic } from "@/lib/haptics";
 
 type FeedItem = {
   _id: string;
@@ -106,6 +107,7 @@ export function ActivityFeed({ feed }: ActivityFeedProps) {
     ) => {
       const key: OverrideKey = `${activityId}:${emoji}`;
       const nextReacted = !serverReacted;
+      haptic("selection");
       setOverrides((prev) => {
         const next = new Map(prev);
         next.set(key, { reacted: nextReacted, delta: nextReacted ? 1 : -1 });
