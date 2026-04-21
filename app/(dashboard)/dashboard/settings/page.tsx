@@ -178,20 +178,24 @@ export default function SettingsPage() {
       <Section title="Tutorial">
         <MotionItem>
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+            <CardContent className="p-5 sm:p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <Play className="h-4 w-4 text-primary" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-medium text-sm">Replay Tutorial</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground truncate">
                       Watch the intro video again
                     </p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleReplayTutorial}>
+                <Button
+                  variant="outline"
+                  onClick={handleReplayTutorial}
+                  className="min-h-11 shrink-0"
+                >
                   Watch
                 </Button>
               </div>
@@ -204,20 +208,20 @@ export default function SettingsPage() {
       <Section title="Profile">
         <MotionItem>
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-5 sm:p-6">
               <div className="flex items-center gap-4 mb-6">
                 <UserButton
                   userProfileProps={sharedUserProfileProps}
                   appearance={{
                     elements: {
-                      avatarBox: "w-16 h-16",
+                      avatarBox: "w-14 h-14 sm:w-16 sm:h-16",
                       ...userButtonPopoverElements,
                     },
                   }}
                 />
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm text-muted-foreground">
-                    Click to manage your Clerk account
+                    Tap your avatar to manage your account
                   </p>
                 </div>
               </div>
@@ -230,7 +234,7 @@ export default function SettingsPage() {
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="h-11"
+                    className="h-11 text-base"
                   />
                 </div>
               </div>
@@ -243,7 +247,7 @@ export default function SettingsPage() {
       <Section title="Preferences">
         <MotionItem>
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-5 sm:p-6">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Water Unit</Label>
@@ -252,7 +256,8 @@ export default function SettingsPage() {
                       type="button"
                       variant={waterUnit === "oz" ? "default" : "outline"}
                       onClick={() => setWaterUnit("oz")}
-                      className="flex-1"
+                      aria-pressed={waterUnit === "oz"}
+                      className="flex-1 min-h-11"
                     >
                       Ounces (oz)
                     </Button>
@@ -260,7 +265,8 @@ export default function SettingsPage() {
                       type="button"
                       variant={waterUnit === "ml" ? "default" : "outline"}
                       onClick={() => setWaterUnit("ml")}
-                      className="flex-1"
+                      aria-pressed={waterUnit === "ml"}
+                      className="flex-1 min-h-11"
                     >
                       Milliliters (ml)
                     </Button>
@@ -286,10 +292,12 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="show-streak">Show current streak</Label>
+              <div className="divide-y divide-border -my-2">
+                <div className="flex items-center justify-between gap-4 min-h-11 py-3">
+                  <div className="min-w-0 flex-1">
+                    <Label htmlFor="show-streak" className="cursor-pointer">
+                      Show current streak
+                    </Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Let friends see your consecutive day count
                     </p>
@@ -298,11 +306,14 @@ export default function SettingsPage() {
                     id="show-streak"
                     checked={showStreak}
                     onCheckedChange={setShowStreak}
+                    className="scale-125 origin-right"
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="show-day">Show day number</Label>
+                <div className="flex items-center justify-between gap-4 min-h-11 py-3">
+                  <div className="min-w-0 flex-1">
+                    <Label htmlFor="show-day" className="cursor-pointer">
+                      Show day number
+                    </Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Let friends see what day you&apos;re on
                     </p>
@@ -311,11 +322,14 @@ export default function SettingsPage() {
                     id="show-day"
                     checked={showDayNumber}
                     onCheckedChange={setShowDayNumber}
+                    className="scale-125 origin-right"
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="show-completion">Show daily completion status</Label>
+                <div className="flex items-center justify-between gap-4 min-h-11 py-3">
+                  <div className="min-w-0 flex-1">
+                    <Label htmlFor="show-completion" className="cursor-pointer">
+                      Show daily completion status
+                    </Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Let friends see if you&apos;ve completed today
                     </p>
@@ -324,12 +338,13 @@ export default function SettingsPage() {
                     id="show-completion"
                     checked={showCompletionStatus}
                     onCheckedChange={setShowCompletionStatus}
+                    className="scale-125 origin-right"
                   />
                 </div>
-                <p className="text-xs text-muted-foreground pt-2 border-t border-border">
-                  Progress photos are always private and never shared.
-                </p>
               </div>
+              <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-border">
+                Progress photos are always private and never shared.
+              </p>
             </CardContent>
           </Card>
         </MotionItem>
@@ -341,6 +356,7 @@ export default function SettingsPage() {
           <Button
             onClick={handleSave}
             loading={isSaving}
+            size="lg"
             className="w-full"
           >
             Save Changes
@@ -367,7 +383,9 @@ export default function SettingsPage() {
               <CardContent>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive">Reset &amp; Reconfigure</Button>
+                    <Button variant="destructive" className="w-full sm:w-auto min-h-11">
+                      Reset &amp; Reconfigure
+                    </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
@@ -379,10 +397,10 @@ export default function SettingsPage() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel className="min-h-11">Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleResetChallenge}
-                        className="bg-destructive hover:bg-destructive/90"
+                        className="bg-destructive hover:bg-destructive/90 min-h-11"
                       >
                         Yes, Reset &amp; Reconfigure
                       </AlertDialogAction>
