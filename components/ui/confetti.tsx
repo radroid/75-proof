@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { haptic } from "@/lib/haptics";
 
 interface ConfettiProps {
   isActive: boolean;
@@ -128,7 +127,9 @@ export function useConfetti() {
   const [isActive, setIsActive] = React.useState(false);
 
   const trigger = React.useCallback(() => {
-    haptic("success");
+    // Haptic intentionally lives at the tap site (see useHabitEntries) —
+    // iOS 18.4+ gates navigator.vibrate() on a recent click, and this
+    // runs from a reactive effect after the server round-trip.
     setIsActive(true);
     // Reset after animation
     setTimeout(() => setIsActive(false), 100);

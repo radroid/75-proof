@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
 
@@ -40,6 +40,16 @@ export function useHabitEntries({
     (entries ?? []).map((e) => [e.habitDefinitionId, e])
   );
 
+  // Keep the latest completion state available to click handlers without
+  // forcing useCallback to re-create on every render (entryMap is a fresh
+  // ref each render). This lets us predict at tap time whether the toggle
+  // will complete the day — needed so the success haptic fires inside the
+  // trusted-event window iOS 18.4+ enforces for navigator.vibrate(). The
+  // post-mutation confetti effect is too late for that window.
+  const stateRef = useRef({ habitDefs, entryMap });
+  stateRef.current.habitDefs = habitDefs;
+  stateRef.current.entryMap = entryMap;
+
   const guardEdit = useCallback((): boolean => {
     if (!isEditable) {
       toast.error("This day is locked and can no longer be edited.");
@@ -51,7 +61,29 @@ export function useHabitEntries({
   const handleToggleTask = useCallback(
     async (habitDefinitionId: Id<"habitDefinitions">) => {
       if (!guardEdit()) return;
-      haptic("impact");
+
+      // Predict: is this tap going to flip the last required habit to done?
+      // If yes, fire success haptic; otherwise a regular impact. Both fire
+      // synchronously — iOS gates navigator.vibrate() on a recent click.
+      const defs = stateRef.current.habitDefs;
+      const em = stateRef.current.entryMap;
+      const required = defs?.filter((h) => h.isHard) ?? [];
+      const requiredCount = required.length;
+      let requiredDoneAfter = 0;
+      let willFlip = false;
+      for (const h of required) {
+        const wasDone = Boolean(em.get(h._id)?.completed);
+        const flipsNow = h._id === habitDefinitionId;
+        const doneAfter = flipsNow ? !wasDone : wasDone;
+        if (flipsNow) willFlip = !wasDone; // true iff this tap is completing the habit
+        if (doneAfter) requiredDoneAfter++;
+      }
+      const completesDay =
+        requiredCount > 0 &&
+        willFlip &&
+        requiredDoneAfter === requiredCount;
+      haptic(completesDay ? "success" : "impact");
+
       try {
         await toggleTask({
           habitDefinitionId,
