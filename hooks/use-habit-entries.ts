@@ -73,7 +73,8 @@ export function useHabitEntries({
       increment: number
     ) => {
       if (!guardEdit()) return;
-      const newValue = Math.max(0, currentValue + increment);
+      const nextValue = Math.max(0, currentValue + increment);
+      const newValue = Math.round((nextValue + Number.EPSILON) * 1000) / 1000;
       try {
         await updateCounter({
           habitDefinitionId,

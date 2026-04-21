@@ -45,7 +45,15 @@ export const MockCounterItem: React.FC<MockCounterItemProps> = ({
   const isComplete = currentFill >= 0.99;
 
   // Increment amount matches real app logic
-  const increment = unit === "oz" ? 16 : unit === "ml" ? 250 : unit === "min" ? 5 : unit === "pages" ? 5 : 1;
+  const increment = unit === "oz"
+    ? 16
+    : unit === "ml"
+      ? 250
+      : unit === "min"
+        ? 5
+        : unit === "pages"
+          ? 5
+          : target / 5;
 
   return (
     <div
