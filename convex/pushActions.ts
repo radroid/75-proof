@@ -183,7 +183,7 @@ export function buildNudgePayload(
 ): PushPayload {
   const name = clampName(fromName);
   const title = `${name} nudged you 👊`;
-  const body = "They want to see how today's going.";
+  const body = "They're cheering you on — finish today strong.";
   const tag = `nudge-${fromUserId}`;
   const data = { url: "/dashboard/friends", kind: "nudge", fromUserId };
 
@@ -308,36 +308,6 @@ async function fanOutPush(
 
   return { sent, failed, pruned };
 }
-
-/**
- * Send a test push to all of a user's registered subscriptions. Invalid
- * subscriptions (HTTP 404/410) are pruned via the shared `fanOutPush`
- * path — the caller just gets a summary.
- *
- * Builds a per-platform payload per subscription row (same as the
- * scheduled reminder path), so "send me a test" mirrors what a real
- * reminder looks like on this device.
- */
-export const sendTestPush = internalAction({
-  args: {
-    userId: v.id("users"),
-    title: v.optional(v.string()),
-    body: v.optional(v.string()),
-    slot: v.optional(v.union(v.literal("morning"), v.literal("evening"))),
-  },
-  handler: async (
-    ctx,
-    args
-  ): Promise<{ sent: number; failed: number; pruned: number }> => {
-    const slot: Slot = args.slot ?? "morning";
-    return await fanOutPush(ctx, args.userId, (platform) => {
-      const payload = buildReminderPayload(slot, platform);
-      if (args.title) payload.title = args.title;
-      if (args.body) payload.body = args.body;
-      return payload;
-    });
-  },
-});
 
 /**
  * Send the morning/evening reminder push to every active subscription of the
