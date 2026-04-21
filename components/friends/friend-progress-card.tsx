@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Check, MoreHorizontal, UserMinus, Ban } from "lucide-react";
+import { Check, MoreHorizontal, UserMinus, Ban, HandHeart } from "lucide-react";
 import { toast } from "sonner";
 
 interface FriendProgressCardProps {
@@ -45,7 +45,25 @@ interface FriendProgressCardProps {
 export function FriendProgressCard({ friend }: FriendProgressCardProps) {
   const removeFriend = useMutation(api.friends.removeFriend);
   const blockUser = useMutation(api.friends.blockUser);
+  const sendNudge = useMutation(api.nudges.sendNudge);
+  const nudgedIds = useQuery(api.nudges.getRecentNudgedFriendIds);
   const [confirmAction, setConfirmAction] = useState<"remove" | "block" | null>(null);
+  const [nudging, setNudging] = useState(false);
+
+  const alreadyNudged = nudgedIds?.includes(String(friend.user._id)) ?? false;
+
+  const handleNudge = async () => {
+    if (alreadyNudged || nudging) return;
+    setNudging(true);
+    try {
+      await sendNudge({ toUserId: friend.user._id });
+      toast.success(`Nudged ${friend.user.displayName} 👋`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not send nudge";
+      toast.error(msg);
+    }
+    setNudging(false);
+  };
 
   const handleRemove = async () => {
     try {
@@ -99,6 +117,31 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
                   <Check className="h-4 w-4 text-success" />
                 </div>
               )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleNudge}
+                disabled={alreadyNudged || nudging}
+                aria-label={
+                  alreadyNudged
+                    ? `Already nudged ${friend.user.displayName}`
+                    : `Nudge ${friend.user.displayName}`
+                }
+                title={
+                  alreadyNudged
+                    ? "Already nudged today"
+                    : `Nudge ${friend.user.displayName}`
+                }
+                className="h-11 w-11"
+              >
+                <HandHeart
+                  className={
+                    alreadyNudged
+                      ? "h-4 w-4 text-primary"
+                      : "h-4 w-4 text-muted-foreground"
+                  }
+                />
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button

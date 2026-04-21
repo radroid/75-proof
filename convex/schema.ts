@@ -165,6 +165,16 @@ export default defineSchema({
     .index("by_created", ["createdAt"])
     .index("by_user_created", ["userId", "createdAt"]),
 
+  // Nudges — lightweight friendly pings between friends
+  nudges: defineTable({
+    fromUserId: v.id("users"),
+    toUserId: v.id("users"),
+    createdAt: v.string(),
+  })
+    .index("by_to", ["toUserId"])
+    .index("by_to_created", ["toUserId", "createdAt"])
+    .index("by_from_to_created", ["fromUserId", "toUserId", "createdAt"]),
+
   // Reactions on activity feed items (emoji cheers)
   feedReactions: defineTable({
     activityId: v.id("activityFeed"),

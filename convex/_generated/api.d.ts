@@ -19,6 +19,7 @@ import type * as leaderboard from "../leaderboard.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_dayCalculation from "../lib/dayCalculation.js";
 import type * as lib_standardHabits from "../lib/standardHabits.js";
+import type * as nudges from "../nudges.js";
 import type * as onboarding from "../onboarding.js";
 import type * as reactions from "../reactions.js";
 import type * as users from "../users.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   "lib/auth": typeof lib_auth;
   "lib/dayCalculation": typeof lib_dayCalculation;
   "lib/standardHabits": typeof lib_standardHabits;
+  nudges: typeof nudges;
   onboarding: typeof onboarding;
   reactions: typeof reactions;
   users: typeof users;
