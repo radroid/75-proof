@@ -165,6 +165,22 @@ export default defineSchema({
     .index("by_created", ["createdAt"])
     .index("by_user_created", ["userId", "createdAt"]),
 
+  // Reactions on activity feed items (emoji cheers)
+  feedReactions: defineTable({
+    activityId: v.id("activityFeed"),
+    userId: v.id("users"),
+    emoji: v.union(
+      v.literal("fire"),
+      v.literal("muscle"),
+      v.literal("clap"),
+      v.literal("heart")
+    ),
+    createdAt: v.string(),
+  })
+    .index("by_activity", ["activityId"])
+    .index("by_activity_user", ["activityId", "userId"])
+    .index("by_activity_user_emoji", ["activityId", "userId", "emoji"]),
+
   // Habit Definitions — what habits a challenge tracks (new onboarding system)
   habitDefinitions: defineTable({
     challengeId: v.id("challenges"),
