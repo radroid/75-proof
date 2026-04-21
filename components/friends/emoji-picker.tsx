@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
+
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 const POPULAR_EMOJIS: string[] = [
   "🔥", "💪", "👏", "❤️", "🎉", "🙌",
@@ -21,8 +24,35 @@ export function EmojiPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [custom, setCustom] = useState("");
+  const [placement, setPlacement] = useState<{
+    vertical: "top" | "bottom";
+    horizontal: "left" | "right";
+  }>({ vertical: "top", horizontal: "left" });
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Decide which direction the popover opens so it never clips the viewport.
+  useIsoLayoutEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const viewportH = window.innerHeight;
+    const viewportW = window.innerWidth;
+    const POPOVER_H = 280; // approx; close enough for placement
+    const POPOVER_W = 260;
+
+    const spaceAbove = rect.top;
+    const spaceBelow = viewportH - rect.bottom;
+    const vertical: "top" | "bottom" =
+      spaceAbove >= POPOVER_H || spaceAbove >= spaceBelow ? "top" : "bottom";
+
+    // If the trigger is in the right half of the viewport (or would clip
+    // on the right), anchor the popover's right edge to the trigger's right.
+    const wouldClipRight = rect.left + POPOVER_W > viewportW - 8;
+    const horizontal: "left" | "right" = wouldClipRight ? "right" : "left";
+
+    setPlacement({ vertical, horizontal });
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -44,12 +74,19 @@ export function EmojiPicker({
   }, [open]);
 
   useEffect(() => {
-    if (open) {
-      // Focus input after a tick so the popover is on screen
+    if (!open) {
+      setCustom("");
+      return;
+    }
+    // Only auto-focus the input on pointer-fine devices (desktop). On touch
+    // devices this would pop the virtual keyboard immediately and cover the
+    // emoji grid, which is the main affordance.
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(pointer: fine)").matches
+    ) {
       const t = window.setTimeout(() => inputRef.current?.focus(), 20);
       return () => window.clearTimeout(t);
-    } else {
-      setCustom("");
     }
   }, [open]);
 
@@ -63,6 +100,7 @@ export function EmojiPicker({
   return (
     <div ref={containerRef} className="relative inline-block">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={ariaLabel}
@@ -79,7 +117,11 @@ export function EmojiPicker({
         <div
           role="dialog"
           aria-label="Pick an emoji"
-          className="absolute z-20 bottom-full mb-2 left-0 w-64 max-w-[calc(100vw-2rem)] rounded-lg border bg-popover text-popover-foreground shadow-lg p-2"
+          className={[
+            "absolute z-20 w-64 max-w-[min(16rem,calc(100vw-1.5rem))] rounded-lg border bg-popover text-popover-foreground shadow-lg p-2",
+            placement.vertical === "top" ? "bottom-full mb-2" : "top-full mt-2",
+            placement.horizontal === "left" ? "left-0" : "right-0",
+          ].join(" ")}
         >
           <div className="flex items-center justify-between gap-2 pb-1.5">
             <span className="pl-1 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
@@ -121,9 +163,12 @@ export function EmojiPicker({
               }}
               placeholder="Type or paste any emoji"
               aria-label="Custom emoji"
+              inputMode="text"
               autoCapitalize="off"
               autoCorrect="off"
+              autoComplete="off"
               spellCheck={false}
+              enterKeyHint="done"
               className="flex-1 min-w-0 h-10 rounded-md border bg-background px-2.5 text-base sm:text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               maxLength={16}
             />
