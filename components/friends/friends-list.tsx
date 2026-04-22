@@ -13,6 +13,7 @@ import { WeeklyLeaderboard } from "./weekly-leaderboard";
 import { TodayPulse } from "./today-pulse";
 import { UserPlus, Check, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 interface FriendsListProps {
   friendProgress: Array<{
@@ -137,6 +138,7 @@ function SearchResultRow({
     setLoading(true);
     try {
       await sendRequest({ toUserId: user._id });
+      posthog.capture("friend_request_sent");
       toast.success("Friend request sent!");
     } catch {
       toast.error("Could not send request");

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGuest } from "@/components/guest-provider";
+import posthog from "posthog-js";
 
 export function GuestSignupBanner() {
   const { promptSignup } = useGuest();
@@ -30,7 +31,10 @@ export function GuestSignupBanner() {
           </p>
           <Button
             size="sm"
-            onClick={promptSignup}
+            onClick={() => {
+              posthog.capture("guest_signup_clicked");
+              promptSignup();
+            }}
             className="min-h-10 px-4 shrink-0 touch-manipulation"
           >
             Sign Up Free

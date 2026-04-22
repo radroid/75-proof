@@ -127,7 +127,7 @@
 | P-2 | Account deletion flow | P2 | todo | "Delete my account and all data" in settings. Cascade delete across all tables + file storage. Confirmation email on completion. |
 | P-3 | Plain-english privacy policy page | P2 | todo | No legalese. Clearly explain what we store, what we don't, and what we'll never do. |
 | P-4 | Data portability documentation | P3 | todo | Include schema docs with exports so users can understand and reuse their data. |
-| P-5 | Integrate PostHog for analytics | P2 | todo | Add PostHog SDK (`posthog-js` + `posthog-node`) for privacy-friendly product analytics. Track key events (sign-up, challenge start/restart/complete, day completion, theme switch). Respect Do Not Track. Configure EU hosting or self-host if needed to align with privacy-first stance. |
+| P-5 | ~~Integrate PostHog for analytics~~ | | done | Full integration on branch `feat/posthog-full-integration` (2026-04-22): 19 events instrumented, session replay enabled, Clerk-identified persons with enriched properties (streak, restart count, theme, current day), global error boundary → `captureException`, Product Health dashboard with 7 insights, error-rate alert, dashboard tour gated by `show-onboarding-tour` feature flag, production-only init. Replaces Remotion R-1 through R-7. See POSTHOG_INTEGRATION.md. |
 
 ---
 
@@ -162,7 +162,12 @@
 
 ---
 
-## Remotion — Video & Animation
+## ~~Remotion — Video & Animation~~ (removed 2026-04-22)
+
+> Remotion was removed in favor of a PostHog-driven in-app tour and future PostHog Surveys for contextual guidance. All Remotion items (R-1 through R-7) are cancelled. See `POSTHOG_INTEGRATION.md` and the `DashboardTour` component for the replacement.
+
+<details>
+<summary>Original Remotion plan (for history)</summary>
 
 ### Landing Page Showcase Videos
 
@@ -206,6 +211,8 @@ A Remotion-powered animated walkthrough that plays after a new user completes on
 |---|------|----------|--------|-------|
 | R-6 | Set up Remotion in the project | P1 | todo | Install `remotion`, `@remotion/cli`, `@remotion/player`, `@remotion/bundler`. Create `remotion/` directory at project root with `Root.tsx` and composition registry. Configure `remotion.config.ts`. Add `pnpm remotion:studio` and `pnpm remotion:render` scripts. Ensure it coexists with the Next.js build without conflicts. |
 | R-7 | Remotion render pipeline for landing page videos | P2 | todo | Decide render strategy: (a) pre-render to MP4/WebM at build time and serve as static assets, or (b) use `@remotion/player` for client-side playback. Pre-rendered is better for landing page (no JS overhead). Set up a render script that outputs to `public/videos/`. Add to CI if needed. |
+
+</details>
 
 ---
 

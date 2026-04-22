@@ -53,3 +53,4 @@ next-env.d.ts
 .vscode/
 convex/_generated/ai/
 skills-lock.json
+.env.local

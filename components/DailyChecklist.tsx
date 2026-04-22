@@ -23,6 +23,7 @@ import { Check, Dumbbell, Sparkles, Brain, Apple, Camera, Loader2, Lock } from "
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { resizeImage } from "@/lib/image-utils";
+import posthog from "posthog-js";
 
 interface DailyChecklistProps {
   challengeId: Id<"challenges">;
@@ -56,9 +57,10 @@ export function DailyChecklist({
   useEffect(() => {
     if (dailyLog?.allRequirementsMet && !prevAllMetRef.current) {
       triggerConfetti();
+      posthog.capture("day_completed", { day_number: dayNumber });
     }
     prevAllMetRef.current = dailyLog?.allRequirementsMet ?? false;
-  }, [dailyLog?.allRequirementsMet, triggerConfetti]);
+  }, [dailyLog?.allRequirementsMet, triggerConfetti, dayNumber]);
 
   const guardEdit = (): boolean => {
     if (!isEditable) {
@@ -98,6 +100,12 @@ export function DailyChecklist({
         date,
         workoutNumber,
         userTimezone,
+      });
+      posthog.capture("workout_logged", {
+        workout_number: workoutNumber,
+        workout_type: workoutNumber === 2 ? "outdoor" : "indoor",
+        day_number: dayNumber,
+        method: "quick",
       });
       toast.success("Workout logged!");
     } catch {
@@ -757,6 +765,14 @@ function WorkoutButton({
         date,
         ...(workoutNumber === 1 ? { workout1: workoutData } : { workout2: workoutData }),
       });
+      posthog.capture("workout_details_saved", {
+        workout_number: workoutNumber,
+        workout_type: workoutData.type,
+        duration_minutes: workoutData.durationMinutes,
+        is_outdoor: workoutData.isOutdoor,
+        day_number: dayNumber,
+        is_edit: !!existingWorkout,
+      });
       toast.success("Workout logged!");
       setShowForm(false);
     } catch {
@@ -900,6 +916,10 @@ function PhotoRow({
         date,
         progressPhotoId: storageId,
         ...(thumbStorageId ? { progressPhotoThumbId: thumbStorageId } : {}),
+      });
+      posthog.capture("progress_photo_uploaded", {
+        day_number: dayNumber,
+        has_thumbnail: !!thumbStorageId,
       });
       toast.success("Photo uploaded!");
     } catch {

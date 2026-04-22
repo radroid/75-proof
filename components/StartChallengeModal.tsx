@@ -17,6 +17,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 interface StartChallengeModalProps {
   open: boolean;
@@ -44,6 +45,10 @@ export function StartChallengeModal({ open, onOpenChange }: StartChallengeModalP
       await startChallenge({
         userId: user._id,
         startDate,
+        visibility,
+      });
+      posthog.capture("challenge_started", {
+        start_date: startDate,
         visibility,
       });
       toast.success("Challenge started! Let's go!");

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useInstallPrompt } from "./use-install-prompt";
+import posthog from "posthog-js";
 
 // Slight delay before surfacing the prompt so it doesn't slam the user on
 // the very first paint of the dashboard.
@@ -38,6 +39,7 @@ export function InstallPrompt() {
   };
 
   const handleInstall = async () => {
+    posthog.capture("pwa_install_accepted");
     await promptInstall();
     setOpen(false);
   };

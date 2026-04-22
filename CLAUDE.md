@@ -18,6 +18,9 @@ The dev server is always already running — do not start it yourself (no `npx n
 ## Tailwind class style
 Do not proactively rewrite Tailwind utility classes into canonical shorthand forms (for example, bracket/arbitrary values to parenthesis variants) unless the user explicitly asks for that refactor.
 
+## Pull request workflow
+When you open a PR, set the assignee to `@me` (the authenticated gh user — currently `radroid`) and request a review from `radroid`. GitHub silently rejects the review request when the author and requested reviewer are the same account, so until a separate collaborator or bot identity is added to the repo, only the assignee field will stick — this is expected, not a failure to report. Use `gh pr edit <N> --add-assignee @me --add-reviewer radroid` right after `gh pr create`.
+
 <!-- convex-ai-start -->
 This project uses [Convex](https://convex.dev) as its backend.
 

@@ -8,6 +8,7 @@ import { GuestProvider } from "@/components/guest-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { clerkProviderAppearance } from "@/lib/clerk-appearance";
+import { PostHogUserIdentifier } from "@/components/PostHogUserIdentifier";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -206,6 +207,7 @@ export default function RootLayout({
         <ClerkProvider appearance={clerkProviderAppearance}>
           <ThemeProvider>
             <ConvexClientProvider>
+              <PostHogUserIdentifier />
               <GuestProvider>{children}</GuestProvider>
             </ConvexClientProvider>
             <Toaster />

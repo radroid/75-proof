@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import posthog from "posthog-js";
 
 interface ChallengeFailedDialogProps {
   open: boolean;
@@ -77,7 +78,14 @@ export function ChallengeFailedDialog({
             Not now
           </Button>
           <Button
-            onClick={onStartNew}
+            onClick={() => {
+              posthog.capture("challenge_failed_restart_clicked", {
+                failed_on_day: failedOnDay,
+                streak_reached: streakReached,
+                attempt_number: attemptNumber,
+              });
+              onStartNew();
+            }}
             size="lg"
             className="w-full active:scale-[0.98] sm:flex-1"
           >

@@ -15,6 +15,8 @@ import { Rocket } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
 import { useGuest } from "@/components/guest-provider";
 import { NotificationPromptGate } from "@/components/pwa/notification-prompt-gate";
+import { DashboardTour } from "@/components/DashboardTour";
+import { useFeatureFlagEnabled } from "posthog-js/react";
 
 // Themed dashboard components
 import { ArcticDashboard } from "@/components/themes/arctic-dashboard";
@@ -69,13 +71,6 @@ function AuthenticatedDashboard() {
     }
   }, [user, router]);
 
-  // Tutorial redirect: onboarding complete but tutorial not yet seen
-  useEffect(() => {
-    if (user && user.onboardingComplete && !user.hasSeenTutorial) {
-      router.replace("/onboarding/tutorial");
-    }
-  }, [user, router]);
-
   if (user === undefined || user === null || isCreatingUser) {
     return (
       <div className="max-w-4xl space-y-6">
@@ -89,8 +84,8 @@ function AuthenticatedDashboard() {
     );
   }
 
-  // Show loading while redirecting to onboarding or tutorial
-  if ((!user.onboardingComplete && !user.currentChallengeId) || (user.onboardingComplete && !user.hasSeenTutorial)) {
+  // Show loading while redirecting to onboarding
+  if (!user.onboardingComplete && !user.currentChallengeId) {
     return (
       <div className="max-w-4xl space-y-6">
         <HeroSkeleton />
@@ -99,10 +94,18 @@ function AuthenticatedDashboard() {
     );
   }
 
-  return user?.currentChallengeId ? (
-    <ActiveChallenge userId={user._id} challengeId={user.currentChallengeId} user={user} />
-  ) : (
-    <NoActiveChallenge />
+  const tourFlag = useFeatureFlagEnabled("show-onboarding-tour");
+  const showTour = !!tourFlag && user.onboardingComplete === true && user.hasSeenTutorial !== true;
+
+  return (
+    <>
+      <DashboardTour enabled={showTour} />
+      {user?.currentChallengeId ? (
+        <ActiveChallenge userId={user._id} challengeId={user.currentChallengeId} user={user} />
+      ) : (
+        <NoActiveChallenge />
+      )}
+    </>
   );
 }
 

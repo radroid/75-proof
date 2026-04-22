@@ -21,6 +21,7 @@ import { OnboardingTierSelect } from "@/components/onboarding/OnboardingTierSele
 import { OnboardingHabitConfig } from "@/components/onboarding/OnboardingHabitConfig";
 import { OnboardingReview } from "@/components/onboarding/OnboardingReview";
 import { HeroSkeleton } from "@/components/ui/skeleton-enhanced";
+import posthog from "posthog-js";
 
 const STORAGE_KEY = "75hard-onboarding-state";
 const STEP_KEY = "75hard-onboarding-step";
@@ -161,16 +162,17 @@ export default function OnboardingPage() {
         visibility: state.visibility,
       });
 
-      // Keep session storage alive for the tutorial page to read theme/habits
-      sessionStorage.removeItem(STEP_KEY);
+      posthog.capture("onboarding_completed", {
+        setup_tier: state.setupTier,
+        theme: state.theme,
+        active_habit_count: state.habits.filter((h) => h.isActive).length,
+        visibility: state.visibility,
+        is_re_onboarding: user.hasSeenTutorial,
+      });
 
-      // Skip tutorial if user has already seen it (re-onboarding flow)
-      if (user.hasSeenTutorial) {
-        sessionStorage.removeItem(STORAGE_KEY);
-        router.push("/dashboard");
-      } else {
-        router.push("/onboarding/tutorial");
-      }
+      sessionStorage.removeItem(STEP_KEY);
+      sessionStorage.removeItem(STORAGE_KEY);
+      router.push("/dashboard");
     } catch (err) {
       console.error("Onboarding failed:", err);
       setIsSubmitting(false);
