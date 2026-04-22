@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FriendProgressCard } from "./friend-progress-card";
+import { WeeklyLeaderboard } from "./weekly-leaderboard";
+import { TodayPulse } from "./today-pulse";
 import { UserPlus, Check, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,6 +19,15 @@ interface FriendsListProps {
     user: { _id: Id<"users">; displayName: string; avatarUrl?: string };
     challenge: { currentDay: number | null; startDate: string };
     todayComplete: boolean | null;
+    coStreak?: number;
+    habits?: Array<{
+      _id: string;
+      name: string;
+      icon?: string;
+      category?: string;
+      isHard: boolean;
+      completedToday: boolean | null;
+    }> | null;
   }> | undefined;
 }
 
@@ -76,6 +87,10 @@ export function FriendsList({ friendProgress }: FriendsListProps) {
           No users found matching &ldquo;{debouncedTerm}&rdquo;
         </p>
       )}
+
+      {/* Today's pulse + weekly leaderboard (hidden when no friends) */}
+      <TodayPulse />
+      <WeeklyLeaderboard />
 
       {/* Friend progress grid */}
       <div>

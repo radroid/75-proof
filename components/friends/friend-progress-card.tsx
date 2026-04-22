@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,8 +24,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Check, MoreHorizontal, UserMinus, Ban } from "lucide-react";
+import { Check, MoreHorizontal, UserMinus, Ban, HandHeart } from "lucide-react";
+import { CoStreakChip } from "./co-streak-chip";
+import { FriendHabitsStrip, type FriendHabit } from "./friend-habits-strip";
 import { toast } from "sonner";
+import { haptic } from "@/lib/haptics";
 
 interface FriendProgressCardProps {
   friend: {
@@ -39,13 +42,37 @@ interface FriendProgressCardProps {
       startDate: string;
     };
     todayComplete: boolean | null;
+    coStreak?: number;
+    habits?: FriendHabit[] | null;
   };
 }
 
 export function FriendProgressCard({ friend }: FriendProgressCardProps) {
   const removeFriend = useMutation(api.friends.removeFriend);
   const blockUser = useMutation(api.friends.blockUser);
+  const sendNudge = useMutation(api.nudges.sendNudge);
+  const nudgedIds = useQuery(api.nudges.getRecentNudgedFriendIds);
   const [confirmAction, setConfirmAction] = useState<"remove" | "block" | null>(null);
+  const [nudging, setNudging] = useState(false);
+  const [justNudged, setJustNudged] = useState(false);
+
+  const alreadyNudged = nudgedIds?.includes(String(friend.user._id)) ?? false;
+
+  const handleNudge = async () => {
+    if (alreadyNudged || nudging) return;
+    haptic("impact");
+    setNudging(true);
+    try {
+      await sendNudge({ toUserId: friend.user._id });
+      setJustNudged(true);
+      window.setTimeout(() => setJustNudged(false), 400);
+      toast.success(`Nudged ${friend.user.displayName} 👋`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not send nudge";
+      toast.error(msg);
+    }
+    setNudging(false);
+  };
 
   const handleRemove = async () => {
     try {
@@ -99,6 +126,32 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
                   <Check className="h-4 w-4 text-success" />
                 </div>
               )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleNudge}
+                disabled={alreadyNudged || nudging}
+                aria-label={
+                  alreadyNudged
+                    ? `Already nudged ${friend.user.displayName}`
+                    : `Nudge ${friend.user.displayName}`
+                }
+                title={
+                  alreadyNudged
+                    ? "Already nudged today"
+                    : `Nudge ${friend.user.displayName}`
+                }
+                className="h-11 w-11 transition-transform duration-200 touch-manipulation active:scale-95 disabled:active:scale-100"
+                data-just-nudged={justNudged ? "true" : undefined}
+              >
+                <HandHeart
+                  className={[
+                    "h-4 w-4 transition-transform duration-200",
+                    alreadyNudged ? "text-primary" : "text-muted-foreground",
+                    justNudged ? "scale-125" : "",
+                  ].join(" ")}
+                />
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -134,6 +187,15 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
               value={(friend.challenge.currentDay / 75) * 100}
               className="mt-3 h-2"
             />
+          )}
+          {(friend.coStreak ?? 0) >= 2 && (
+            <CoStreakChip
+              days={friend.coStreak ?? 0}
+              friendName={friend.user.displayName}
+            />
+          )}
+          {friend.habits && friend.habits.length > 0 && (
+            <FriendHabitsStrip habits={friend.habits} />
           )}
         </CardContent>
       </Card>

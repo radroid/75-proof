@@ -14,6 +14,7 @@ import { MotionItem } from "@/components/ui/motion";
 import { Rocket } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
 import { useGuest } from "@/components/guest-provider";
+import { NotificationPromptGate } from "@/components/pwa/notification-prompt-gate";
 
 // Themed dashboard components
 import { ArcticDashboard } from "@/components/themes/arctic-dashboard";
@@ -40,7 +41,12 @@ export default function DashboardPage() {
     return <ThemedDashboard user={demoUser} challenge={demoChallenge} />;
   }
 
-  return <AuthenticatedDashboard />;
+  return (
+    <>
+      <NotificationPromptGate />
+      <AuthenticatedDashboard />
+    </>
+  );
 }
 
 function AuthenticatedDashboard() {

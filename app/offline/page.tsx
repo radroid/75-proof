@@ -1,4 +1,9 @@
-"use client";
+import { TryAgainButton } from "./try-again-button";
+
+// Ensure this page is statically generated so the service worker can
+// reliably precache it as the offline fallback.
+export const dynamic = "force-static";
+export const revalidate = false;
 
 export default function OfflinePage() {
   return (
@@ -71,26 +76,7 @@ export default function OfflinePage() {
         Get back online and keep going.
       </p>
 
-      <button
-        onClick={() => window.location.reload()}
-        style={{
-          minHeight: 48,
-          minWidth: 44,
-          padding: "12px 32px",
-          backgroundColor: "#FF6154",
-          color: "#ffffff",
-          border: "none",
-          borderRadius: 0,
-          fontSize: 16,
-          fontWeight: 700,
-          cursor: "pointer",
-          letterSpacing: "0.01em",
-          touchAction: "manipulation",
-          WebkitTapHighlightColor: "transparent",
-        }}
-      >
-        Try Again
-      </button>
+      <TryAgainButton />
     </div>
   );
 }

@@ -18,6 +18,18 @@ export default defineSchema({
         showStreak: v.boolean(),
         showDayNumber: v.boolean(),
         showCompletionStatus: v.boolean(),
+        showHabits: v.optional(v.boolean()),
+      })),
+      notifications: v.optional(v.object({
+        enabled: v.boolean(),
+        morningReminder: v.boolean(),
+        eveningReminder: v.boolean(),
+        morningTime: v.string(), // "HH:mm" local
+        eveningTime: v.string(), // "HH:mm" local
+        // Social push opt-outs. Optional — absent means "on" (existing
+        // users predate these toggles and shouldn't go silent).
+        nudges: v.optional(v.boolean()),
+        reactions: v.optional(v.boolean()),
       })),
     }),
     onboardingComplete: v.optional(v.boolean()),
@@ -165,6 +177,30 @@ export default defineSchema({
     .index("by_created", ["createdAt"])
     .index("by_user_created", ["userId", "createdAt"]),
 
+  // Nudges — lightweight friendly pings between friends
+  nudges: defineTable({
+    fromUserId: v.id("users"),
+    toUserId: v.id("users"),
+    createdAt: v.string(),
+    seenAt: v.optional(v.string()),
+  })
+    .index("by_to", ["toUserId"])
+    .index("by_to_created", ["toUserId", "createdAt"])
+    .index("by_from_to_created", ["fromUserId", "toUserId", "createdAt"]),
+
+  // Reactions on activity feed items (emoji cheers)
+  // emoji stores either a legacy key ("fire"|"muscle"|"clap"|"heart") or a
+  // raw unicode emoji sequence; UI maps legacy keys to glyphs for display.
+  feedReactions: defineTable({
+    activityId: v.id("activityFeed"),
+    userId: v.id("users"),
+    emoji: v.string(),
+    createdAt: v.string(),
+  })
+    .index("by_activity", ["activityId"])
+    .index("by_activity_user", ["activityId", "userId"])
+    .index("by_activity_user_emoji", ["activityId", "userId", "emoji"]),
+
   // Habit Definitions — what habits a challenge tracks (new onboarding system)
   habitDefinitions: defineTable({
     challengeId: v.id("challenges"),
@@ -194,6 +230,32 @@ export default defineSchema({
   })
     .index("by_challenge_day", ["challengeId", "dayNumber"])
     .index("by_habit_day", ["habitDefinitionId", "dayNumber"]),
+
+  // Web Push subscriptions — one row per registered browser/device.
+  // We look up by endpoint because that's what the browser uniquely
+  // issues per subscription; a single user may have many devices.
+  pushSubscriptions: defineTable({
+    userId: v.id("users"),
+    endpoint: v.string(),
+    keys: v.object({ auth: v.string(), p256dh: v.string() }),
+    userAgent: v.optional(v.string()),
+    platform: v.union(v.literal("ios"), v.literal("android"), v.literal("desktop")),
+    createdAt: v.number(),
+    lastSeenAt: v.number(),
+    enabled: v.boolean(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_endpoint", ["endpoint"]),
+
+  // Push notification delivery log — one row per (user, slot, localDate) once
+  // a reminder has been enqueued. Prevents duplicate sends when the cron
+  // fires multiple times within a user's reminder window.
+  notificationDeliveries: defineTable({
+    userId: v.id("users"),
+    slot: v.union(v.literal("morning"), v.literal("evening")),
+    localDate: v.string(), // YYYY-MM-DD in user's timezone
+    sentAt: v.number(),
+  }).index("by_user_slot_date", ["userId", "slot", "localDate"]),
 
   // Connected health devices
   connectedDevices: defineTable({

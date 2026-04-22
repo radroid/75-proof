@@ -150,6 +150,8 @@ export const getFriendProgress = query({
     const friendIds = await getFriendIds(ctx, user._id);
     const blockedIds = await getBlockedUserIds(ctx, user._id);
 
+    const myCompletionByDate = await getUserCompletionByDate(ctx, user._id);
+
     const friendProgress = await Promise.all(
       friendIds
         .filter((id) => !blockedIds.has(id))
@@ -170,12 +172,33 @@ export const getFriendProgress = query({
           const sharing = friend.preferences?.sharing;
           const showDayNumber = sharing?.showDayNumber ?? true;
           const showCompletionStatus = sharing?.showCompletionStatus ?? true;
+          const showHabits = sharing?.showHabits ?? true;
 
           let todayComplete = false;
+          let friendCompletionByDate: Map<string, boolean> = new Map();
           if (showCompletionStatus) {
+            friendCompletionByDate = await getUserCompletionByDate(
+              ctx,
+              friendId
+            );
             const today = new Date().toISOString().split("T")[0];
+            todayComplete = friendCompletionByDate.get(today) === true;
+          }
 
-            // Dual-path: check new habit system first, fall back to legacy dailyLogs
+          const coStreak = showCompletionStatus
+            ? computeCoStreak(myCompletionByDate, friendCompletionByDate)
+            : 0;
+
+          let habits: Array<{
+            _id: Id<"habitDefinitions">;
+            name: string;
+            icon?: string;
+            category?: string;
+            isHard: boolean;
+            completedToday: boolean | null;
+          }> | null = null;
+
+          if (showHabits) {
             const habitDefs = await ctx.db
               .query("habitDefinitions")
               .withIndex("by_challenge", (q) =>
@@ -183,36 +206,39 @@ export const getFriendProgress = query({
               )
               .collect();
 
-            const hardHabits = habitDefs.filter((h) => h.isActive && h.isHard);
+            const activeHabits = habitDefs
+              .filter((h) => h.isActive)
+              .sort((a, b) => a.sortOrder - b.sortOrder);
 
-            if (hardHabits.length > 0) {
-              // New habit system
-              const entries = await ctx.db
-                .query("habitEntries")
-                .withIndex("by_challenge_day", (q) =>
-                  q
-                    .eq("challengeId", activeChallenge._id)
-                    .eq("dayNumber", activeChallenge.currentDay)
-                )
-                .collect();
+            if (activeHabits.length > 0) {
+              let todayCompletionByHabit = new Map<string, boolean>();
+              if (showCompletionStatus) {
+                const entries = await ctx.db
+                  .query("habitEntries")
+                  .withIndex("by_challenge_day", (q) =>
+                    q
+                      .eq("challengeId", activeChallenge._id)
+                      .eq("dayNumber", activeChallenge.currentDay)
+                  )
+                  .collect();
+                todayCompletionByHabit = new Map(
+                  entries.map((e) => [
+                    String(e.habitDefinitionId),
+                    e.completed,
+                  ])
+                );
+              }
 
-              const entryMap = new Map(
-                entries.map((e) => [String(e.habitDefinitionId), e])
-              );
-
-              todayComplete = hardHabits.every((h) => {
-                const entry = entryMap.get(String(h._id));
-                return entry?.completed === true;
-              });
-            } else {
-              // Legacy dailyLogs system
-              const todayLog = await ctx.db
-                .query("dailyLogs")
-                .withIndex("by_date", (q) =>
-                  q.eq("userId", friendId).eq("date", today)
-                )
-                .unique();
-              todayComplete = todayLog?.allRequirementsMet ?? false;
+              habits = activeHabits.map((h) => ({
+                _id: h._id,
+                name: h.name,
+                icon: h.icon,
+                category: h.category,
+                isHard: h.isHard,
+                completedToday: showCompletionStatus
+                  ? todayCompletionByHabit.get(String(h._id)) === true
+                  : null,
+              }));
             }
           }
 
@@ -227,6 +253,8 @@ export const getFriendProgress = query({
               startDate: activeChallenge.startDate,
             },
             todayComplete: showCompletionStatus ? todayComplete : null,
+            coStreak,
+            habits,
           };
         })
     );
@@ -234,3 +262,91 @@ export const getFriendProgress = query({
     return friendProgress.filter(Boolean);
   },
 });
+
+async function getUserCompletionByDate(
+  ctx: any,
+  userId: Id<"users">
+): Promise<Map<string, boolean>> {
+  const activeChallenge = await ctx.db
+    .query("challenges")
+    .withIndex("by_user", (q: any) => q.eq("userId", userId))
+    .filter((q: any) => q.eq(q.field("status"), "active"))
+    .unique();
+
+  const result = new Map<string, boolean>();
+  if (!activeChallenge) return result;
+
+  const habitDefs = await ctx.db
+    .query("habitDefinitions")
+    .withIndex("by_challenge", (q: any) =>
+      q.eq("challengeId", activeChallenge._id)
+    )
+    .collect();
+
+  const hardHabits = habitDefs.filter((h: any) => h.isActive && h.isHard);
+
+  if (hardHabits.length > 0) {
+    const entries = await ctx.db
+      .query("habitEntries")
+      .withIndex("by_challenge_day", (q: any) =>
+        q.eq("challengeId", activeChallenge._id)
+      )
+      .collect();
+
+    const byDate = new Map<string, Map<string, boolean>>();
+    for (const entry of entries) {
+      if (!byDate.has(entry.date)) byDate.set(entry.date, new Map());
+      byDate.get(entry.date)!.set(String(entry.habitDefinitionId), entry.completed);
+    }
+    for (const [date, habitMap] of byDate) {
+      const allDone = hardHabits.every((h: any) => habitMap.get(String(h._id)) === true);
+      result.set(date, allDone);
+    }
+  } else {
+    const logs = await ctx.db
+      .query("dailyLogs")
+      .withIndex("by_challenge", (q: any) =>
+        q.eq("challengeId", activeChallenge._id)
+      )
+      .collect();
+    for (const log of logs) {
+      result.set(log.date, log.allRequirementsMet === true);
+    }
+  }
+
+  return result;
+}
+
+function computeCoStreak(
+  mine: Map<string, boolean>,
+  theirs: Map<string, boolean>
+): number {
+  if (mine.size === 0 || theirs.size === 0) return 0;
+
+  const MAX_LOOKBACK = 75;
+  let streak = 0;
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+
+  // Allow today to not yet be complete: if either isn't complete today,
+  // start counting from yesterday instead.
+  const date = new Date(cursor);
+  const todayStr = date.toISOString().split("T")[0];
+  const bothToday =
+    mine.get(todayStr) === true && theirs.get(todayStr) === true;
+  if (!bothToday) {
+    date.setDate(date.getDate() - 1);
+  }
+
+  for (let i = 0; i < MAX_LOOKBACK; i++) {
+    const dateStr = date.toISOString().split("T")[0];
+    if (mine.get(dateStr) === true && theirs.get(dateStr) === true) {
+      streak += 1;
+      date.setDate(date.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+
+  return streak;
+}

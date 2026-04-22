@@ -11,6 +11,7 @@ import { useFriends } from "@/hooks/use-friends";
 import { ActivityFeed } from "@/components/friends/activity-feed";
 import { FriendsList } from "@/components/friends/friends-list";
 import { RequestsTab } from "@/components/friends/requests-tab";
+import { IncomingNudges } from "@/components/friends/incoming-nudges";
 
 export default function FriendsPage() {
   const { isGuest, promptSignup } = useGuest();
@@ -83,6 +84,8 @@ function AuthenticatedFriendsPage() {
           </Button>
         }
       />
+
+      <IncomingNudges />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full sm:max-w-sm h-11 sm:h-9">
