@@ -67,6 +67,7 @@ export default function SettingsPage() {
   const user = useQuery(api.users.getCurrentUser);
   const updateUser = useMutation(api.users.updateUser);
   const resetAndReOnboard = useMutation(api.challenges.resetAndReOnboard);
+  const resetKeepingSetup = useMutation(api.challenges.resetKeepingSetup);
   const resetTutorial = useMutation(api.users.resetTutorialSeen);
   const setNotificationPreferences = useMutation(
     api.pushSubscriptions.setNotificationPreferences
@@ -242,6 +243,25 @@ export default function SettingsPage() {
       router.push("/onboarding");
     } catch {
       toast.error("Failed to reset challenge");
+    }
+  };
+
+  const handleQuickReset = async () => {
+    if (!user?.currentChallengeId || !challenge) return;
+    try {
+      const tz = user.preferences?.timezone ?? "UTC";
+      const startDate = new Date().toLocaleDateString("en-CA", {
+        timeZone: tz,
+      });
+      await resetKeepingSetup({
+        challengeId: user.currentChallengeId,
+        failedOnDay: challenge.currentDay,
+        startDate,
+      });
+      toast.success("Progress reset — back to Day 1 with your habits");
+      router.push("/dashboard");
+    } catch {
+      toast.error("Failed to reset progress");
     }
   };
 
@@ -816,41 +836,97 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="text-destructive flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5" />
-                  Reset &amp; Reconfigure
+                  Reset challenge
                 </CardTitle>
                 <CardDescription>
-                  End your current challenge and reconfigure your habits through
-                  onboarding. Your previous choices will be pre-filled. This action
-                  cannot be undone.
+                  Starting over? Pick how much you want to redo.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="w-full sm:w-auto min-h-11">
-                      Reset &amp; Reconfigure
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Reset &amp; Reconfigure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will end your current challenge and take you back through
-                        onboarding where you can reconfigure your habits. Your previous
-                        choices will be pre-filled. This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel className="min-h-11">Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleResetChallenge}
-                        className="bg-destructive hover:bg-destructive/90 min-h-11"
+              <CardContent className="space-y-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 sm:pr-4">
+                    <p className="font-medium">Reset progress</p>
+                    <p className="text-sm text-muted-foreground">
+                      Back to Day 1 with the same habits. Fastest way to
+                      start over.
+                    </p>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        className="w-full sm:w-auto sm:shrink-0 min-h-11"
                       >
-                        Yes, Reset &amp; Reconfigure
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        Reset progress
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Reset progress?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Your current streak will end and a new challenge will
+                          start from Day 1 with the same habits. This cannot be
+                          undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="min-h-11">
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleQuickReset}
+                          className="bg-destructive hover:bg-destructive/90 min-h-11"
+                        >
+                          Yes, reset progress
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+
+                <div className="border-t border-destructive/20" />
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 sm:pr-4">
+                    <p className="font-medium">Reset &amp; reconfigure</p>
+                    <p className="text-sm text-muted-foreground">
+                      End the challenge and walk onboarding again to change
+                      your habits.
+                    </p>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        className="w-full sm:w-auto sm:shrink-0 min-h-11"
+                      >
+                        Reset &amp; reconfigure
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Reset &amp; reconfigure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will end your current challenge and take you back
+                          through onboarding where you can reconfigure your
+                          habits. Your previous choices will be pre-filled. This
+                          action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="min-h-11">
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleResetChallenge}
+                          className="bg-destructive hover:bg-destructive/90 min-h-11"
+                        >
+                          Yes, reset &amp; reconfigure
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </CardContent>
             </Card>
           </MotionItem>
