@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Inbox, Send } from "lucide-react";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 type RequestWithUser = {
   request: {
@@ -104,6 +105,7 @@ function ReceivedRequestCard({
   const handleAccept = async () => {
     try {
       await acceptRequest({ friendshipId: requestId });
+      posthog.capture("friend_request_accepted");
       toast.success("Friend request accepted!");
     } catch {
       toast.error("Failed to accept request");
@@ -113,6 +115,7 @@ function ReceivedRequestCard({
   const handleDecline = async () => {
     try {
       await declineRequest({ friendshipId: requestId });
+      posthog.capture("friend_request_declined");
       toast.success("Request declined");
     } catch {
       toast.error("Failed to decline request");

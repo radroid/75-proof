@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import posthog from "posthog-js";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
@@ -224,6 +225,7 @@ export default function SettingsPage() {
           notifications: user?.preferences?.notifications,
         },
       });
+      posthog.capture("settings_saved", { water_unit: waterUnit });
       toast.success("Settings saved!");
     } catch {
       toast.error("Failed to save settings");
@@ -238,6 +240,9 @@ export default function SettingsPage() {
       await resetAndReOnboard({
         challengeId: user.currentChallengeId,
         failedOnDay: challenge.currentDay,
+      });
+      posthog.capture("challenge_reset_reconfigure", {
+        failed_on_day: challenge.currentDay,
       });
       toast.success("Challenge reset — let's reconfigure your habits");
       router.push("/onboarding");
@@ -258,6 +263,9 @@ export default function SettingsPage() {
         failedOnDay: challenge.currentDay,
         startDate,
       });
+      posthog.capture("challenge_reset_progress", {
+        failed_on_day: challenge.currentDay,
+      });
       toast.success("Progress reset — back to Day 1 with your habits");
       router.push("/dashboard");
     } catch {
@@ -268,9 +276,10 @@ export default function SettingsPage() {
   const handleReplayTutorial = useCallback(async () => {
     try {
       await resetTutorial();
-      router.push("/onboarding/tutorial?from=settings");
+      posthog.capture("tour_replay_requested");
+      router.push("/dashboard");
     } catch {
-      toast.error("Failed to replay tutorial");
+      toast.error("Failed to replay tour");
     }
   }, [resetTutorial, router]);
 
@@ -322,8 +331,8 @@ export default function SettingsPage() {
         </MotionItem>
       </Section>
 
-      {/* Tutorial section */}
-      <Section title="Tutorial">
+      {/* Tour section */}
+      <Section title="Tour">
         <MotionItem>
           <Card>
             <CardContent className="p-5 sm:p-6">
@@ -333,9 +342,9 @@ export default function SettingsPage() {
                     <Play className="h-4 w-4 text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-medium text-sm">Replay Tutorial</p>
+                    <p className="font-medium text-sm">Replay Tour</p>
                     <p className="text-xs text-muted-foreground truncate">
-                      Watch the intro video again
+                      Show the dashboard walkthrough again
                     </p>
                   </div>
                 </div>
@@ -344,7 +353,7 @@ export default function SettingsPage() {
                   onClick={handleReplayTutorial}
                   className="min-h-11 shrink-0"
                 >
-                  Watch
+                  Replay
                 </Button>
               </div>
             </CardContent>

@@ -8,9 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "remotion:studio": "pnpm exec remotion studio remotion/index.ts",
-    "remotion:render": "pnpm exec remotion render remotion/index.ts Tutorial out/tutorial.mp4"
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.39.2",
@@ -28,10 +26,6 @@
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-switch": "^1.2.6",
-    "@remotion/cli": "4.0.425",
-    "@remotion/google-fonts": "4.0.425",
-    "@remotion/player": "4.0.425",
-    "@remotion/transitions": "4.0.425",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "convex": "^1.35.1",
@@ -39,10 +33,11 @@
     "lucide-react": "^0.562.0",
     "next": "16.1.6",
     "next-themes": "^0.4.6",
+    "posthog-js": "^1.370.1",
+    "posthog-node": "^5.29.5",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "remotion": "4.0.425",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "web-push": "^3.6.7"

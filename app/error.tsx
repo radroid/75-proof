@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import posthog from "posthog-js";
 
 export default function Error({
   error,
@@ -13,6 +14,7 @@ export default function Error({
   useEffect(() => {
     // Log to console; telemetry hook-point for future
     console.error("App error boundary:", error);
+    posthog.captureException(error, { digest: error.digest });
   }, [error]);
 
   return (
