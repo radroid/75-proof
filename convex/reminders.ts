@@ -176,9 +176,10 @@ export const recordDelivery = internalMutation({
 });
 
 /**
- * Internal query: has the user already completed today (all requirements
- * met on today's dailyLog)? Used by the evening reminder to skip users who
- * are already done. Morning is always sent as a "start the day" nudge.
+ * Internal query: has the user already completed today? Used by the evening
+ * reminder to skip users who are already done. Morning is always sent as a
+ * "start the day" nudge. Handles both the new habit system (hard-only) and
+ * the legacy dailyLogs system.
  */
 export const isDayAlreadyComplete = internalQuery({
   args: {
@@ -186,6 +187,37 @@ export const isDayAlreadyComplete = internalQuery({
     localDate: v.string(),
   },
   handler: async (ctx, args): Promise<boolean> => {
+    const activeChallenge = await ctx.db
+      .query("challenges")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .unique();
+
+    if (activeChallenge) {
+      const habitDefs = await ctx.db
+        .query("habitDefinitions")
+        .withIndex("by_challenge", (q) => q.eq("challengeId", activeChallenge._id))
+        .collect();
+      if (habitDefs.length > 0) {
+        const hardHabits = habitDefs.filter((h) => h.isActive && h.isHard);
+        if (hardHabits.length === 0) return false;
+        const entries = await ctx.db
+          .query("habitEntries")
+          .withIndex("by_challenge_day", (q) =>
+            q
+              .eq("challengeId", activeChallenge._id)
+              .eq("dayNumber", activeChallenge.currentDay)
+          )
+          .collect();
+        const entryMap = new Map(
+          entries.map((e) => [String(e.habitDefinitionId), e])
+        );
+        return hardHabits.every(
+          (h) => entryMap.get(String(h._id))?.completed === true
+        );
+      }
+    }
+
     const log: Doc<"dailyLogs"> | null = await ctx.db
       .query("dailyLogs")
       .withIndex("by_date", (q) =>

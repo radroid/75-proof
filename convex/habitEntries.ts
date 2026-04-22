@@ -21,6 +21,16 @@ export const getEntriesForDay = query({
   },
 });
 
+export const getAllEntriesForChallenge = query({
+  args: { challengeId: v.id("challenges") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("habitEntries")
+      .withIndex("by_challenge_day", (q) => q.eq("challengeId", args.challengeId))
+      .collect();
+  },
+});
+
 export const toggleTaskEntry = mutation({
   args: {
     habitDefinitionId: v.id("habitDefinitions"),
