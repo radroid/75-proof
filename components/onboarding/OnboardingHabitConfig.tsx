@@ -38,8 +38,7 @@ export function OnboardingHabitConfig({
   const [newCategory, setNewCategory] = useState("fitness");
 
   const isOriginal = state.setupTier === "original";
-  const canAdd = state.setupTier === "added";
-  const canToggle = state.setupTier !== "original";
+  const canCustomize = !isOriginal;
 
   const updateHabit = (index: number, updates: Partial<OnboardingHabit>) => {
     const habits = [...state.habits];
@@ -81,11 +80,7 @@ export function OnboardingHabitConfig({
     >
       <div className="text-center space-y-3">
         <h1 className="text-3xl font-bold tracking-tight">
-          {isOriginal
-            ? "Your habits"
-            : canAdd
-              ? "Customize & add habits"
-              : "Customize habits"}
+          {isOriginal ? "Your habits" : "Customize & add habits"}
         </h1>
         <p className="text-muted-foreground max-w-md mx-auto">
           {isOriginal
@@ -100,20 +95,20 @@ export function OnboardingHabitConfig({
           <HabitCard
             key={`${habit.name}-${i}`}
             habit={habit}
-            mode={
-              isOriginal ? "readonly" : canAdd ? "full" : "toggle"
-            }
+            mode={isOriginal ? "readonly" : "full"}
             onToggleActive={(active) => updateHabit(i, { isActive: active })}
             onToggleHard={(hard) => updateHabit(i, { isHard: hard })}
             onRemove={
-              canAdd && habit.sortOrder > 7 ? () => removeHabit(i) : undefined
+              canCustomize && habit.sortOrder > 7
+                ? () => removeHabit(i)
+                : undefined
             }
           />
         ))}
       </div>
 
       {/* Add custom habit form */}
-      {canAdd && (
+      {canCustomize && (
         <div>
           {showAddForm ? (
             <motion.div

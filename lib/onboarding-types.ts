@@ -12,7 +12,7 @@ export interface OnboardingHabit {
   icon?: string;
 }
 
-export type SetupTier = "original" | "customized" | "added";
+export type SetupTier = "original" | "added";
 
 export interface OnboardingState {
   ageRange: string | null;

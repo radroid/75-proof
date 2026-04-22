@@ -41,8 +41,10 @@ export function OnboardingReview({
 
   const tierLabels: Record<string, string> = {
     original: "Original 75 HARD",
-    customized: "Customized",
-    added: "Custom + Added",
+    added: "Fully customized",
+    // Legacy — pre-existing users may still carry this value on their
+    // profile; preserved so re-onboarding doesn't blank the label.
+    customized: "Fully customized",
   };
 
   return (
