@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Shield,
   Sliders,
-  Plus,
   Star,
 } from "lucide-react";
 import type { OnboardingState, SetupTier } from "@/lib/onboarding-types";
@@ -37,20 +36,12 @@ const tiers: {
     icon: <Shield className="h-6 w-6" />,
   },
   {
-    id: "customized",
-    title: "Customized",
-    description: "Standard habits with your rules",
-    detail:
-      "Toggle habits on/off, set which ones are hard (reset on miss) vs soft (no penalty).",
-    icon: <Sliders className="h-6 w-6" />,
-  },
-  {
     id: "added",
-    title: "Custom + Added",
-    description: "Add your own habits on top",
+    title: "Fully customize",
+    description: "Build it your way",
     detail:
-      "Everything in Customized, plus create custom task or counter habits.",
-    icon: <Plus className="h-6 w-6" />,
+      "Toggle habits on/off, pick hard vs soft, and add your own task or counter habits.",
+    icon: <Sliders className="h-6 w-6" />,
   },
 ];
 
@@ -60,11 +51,12 @@ export function OnboardingTierSelect({
   onNext,
   onBack,
 }: Props) {
-  // Recommend tier based on goals
+  // Recommend tier based on goals — users with "softer" goals like
+  // sobriety/consistency tend to want flexibility over the strict original.
   const hasAdvancedGoals = state.goals.some((g) =>
     ["sobriety", "consistency"].includes(g)
   );
-  const recommendedTier: SetupTier = hasAdvancedGoals ? "customized" : "original";
+  const recommendedTier: SetupTier = hasAdvancedGoals ? "added" : "original";
 
   return (
     <motion.div

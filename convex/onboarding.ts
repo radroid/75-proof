@@ -24,7 +24,7 @@ export const completeOnboarding = mutation({
     goals: v.optional(v.array(v.string())),
 
     // Challenge setup
-    setupTier: v.union(v.literal("original"), v.literal("customized"), v.literal("added")),
+    setupTier: v.union(v.literal("original"), v.literal("added")),
     habits: v.array(habitValidator),
     startDate: v.string(),
     visibility: v.union(v.literal("private"), v.literal("friends"), v.literal("public")),
@@ -164,6 +164,12 @@ export const getPreviousOnboardingState = query({
       }));
     }
 
+    // Legacy "customized" tier has been folded into "added" — map for any
+    // pre-existing users so the UI only has to know the two-tier model.
+    const rawTier = user.onboarding.setupTier;
+    const setupTier: "original" | "added" =
+      rawTier === "original" ? "original" : "added";
+
     return {
       displayName: user.displayName,
       timezone: user.preferences?.timezone ?? "America/New_York",
@@ -171,7 +177,7 @@ export const getPreviousOnboardingState = query({
       healthConditions: user.onboarding.healthConditions ?? [],
       healthAdvisoryAcknowledged: user.onboarding.healthAdvisoryAcknowledged,
       goals: user.onboarding.goals ?? [],
-      setupTier: user.onboarding.setupTier,
+      setupTier,
       habits,
     };
   },

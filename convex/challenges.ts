@@ -475,6 +475,73 @@ export const resetAndReOnboard = mutation({
   },
 });
 
+/**
+ * Reset progress while keeping the existing habit setup. Fails the current
+ * challenge, then starts a fresh one from day 1 with the same visibility,
+ * setupTier, and habit definitions copied over. Leaves `onboardingComplete`
+ * as true so the user lands directly on the dashboard — no onboarding walk.
+ */
+export const resetKeepingSetup = mutation({
+  args: {
+    challengeId: v.id("challenges"),
+    failedOnDay: v.number(),
+    startDate: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const oldChallenge = await ctx.db.get(args.challengeId);
+    if (!oldChallenge) throw new Error("Challenge not found");
+
+    // Snapshot habit definitions before failing (fail doesn't touch them,
+    // but doing the read first keeps the data flow linear and obvious).
+    const oldHabits = await ctx.db
+      .query("habitDefinitions")
+      .withIndex("by_challenge", (q) => q.eq("challengeId", args.challengeId))
+      .collect();
+
+    await failChallengeInternal(ctx, args.challengeId, args.failedOnDay);
+
+    const newChallengeId = await ctx.db.insert("challenges", {
+      userId: oldChallenge.userId,
+      startDate: args.startDate,
+      currentDay: 1,
+      status: "active",
+      visibility: oldChallenge.visibility,
+      restartCount: 0,
+      setupTier: oldChallenge.setupTier,
+    });
+
+    for (const h of oldHabits) {
+      await ctx.db.insert("habitDefinitions", {
+        challengeId: newChallengeId,
+        userId: h.userId,
+        name: h.name,
+        blockType: h.blockType,
+        target: h.target,
+        unit: h.unit,
+        isHard: h.isHard,
+        isActive: h.isActive,
+        sortOrder: h.sortOrder,
+        category: h.category,
+        icon: h.icon,
+      });
+    }
+
+    await ctx.db.patch(oldChallenge.userId, {
+      currentChallengeId: newChallengeId,
+    });
+
+    await ctx.db.insert("activityFeed", {
+      userId: oldChallenge.userId,
+      type: "challenge_started",
+      challengeId: newChallengeId,
+      message: "Started the 75 HARD challenge!",
+      createdAt: new Date().toISOString(),
+    });
+
+    return newChallengeId;
+  },
+});
+
 export const updateVisibility = mutation({
   args: {
     challengeId: v.id("challenges"),
