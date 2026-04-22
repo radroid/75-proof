@@ -408,6 +408,30 @@
 }
 
 /* ==========================================
+   GLOBAL LAYOUT TOKENS
+   Shared across themes. Bottom nav height is the pill
+   nav (56px) + its bottom offset (2rem = 32px). Components
+   that pin to the bottom on mobile should reserve this space
+   plus the device safe-area inset.
+   ========================================== */
+:root {
+  --bottom-nav-height: 56px;
+  --bottom-nav-offset: 2rem;
+  --bottom-nav-gap: calc(var(--bottom-nav-height) + var(--bottom-nav-offset) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Suppress the default iOS/Android tap-highlight (a semi-transparent black
+   rgba flash on every tap). It clashes with our custom themed palettes
+   (cream, olive, warm stone) and fights the explicit `active:bg-*` states
+   we use for touch feedback. Safe because:
+   - Every interactive surface already has an `active:` state
+   - `:focus-visible` rings are unaffected (different mechanism)
+   - Keyboard navigation remains fully indicated */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ==========================================
    BASE STYLES
    ========================================== */
 @layer base {
@@ -438,7 +462,7 @@
 
 @keyframes confetti-fall {
   0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  100% { transform: translateY(100dvh) rotate(720deg); opacity: 0; }
 }
 
 @keyframes check-draw {

@@ -73,7 +73,11 @@ function AuthenticatedFriendsPage() {
         title="Friends"
         description="Connect with friends and stay accountable together."
         action={
-          <Button size="sm" onClick={() => setActiveTab("friends")}>
+          <Button
+            size="sm"
+            onClick={() => setActiveTab("friends")}
+            className="min-h-[44px] px-4"
+          >
             <UserPlus className="mr-2 h-4 w-4" />
             Add Friend
           </Button>
@@ -81,7 +85,7 @@ function AuthenticatedFriendsPage() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full max-w-sm">
+        <TabsList className="w-full sm:max-w-sm h-11 sm:h-9">
           <TabsTrigger value="activity" className="flex-1">
             Activity
           </TabsTrigger>

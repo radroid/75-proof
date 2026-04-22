@@ -90,6 +90,11 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
     month: "long",
     day: "numeric",
   });
+  const formattedDateShort = today.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 
   const romanNumerals = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII","XVIII","XIX","XX","XXI","XXII","XXIII","XXIV","XXV","XXVI","XXVII","XXVIII","XXIX","XXX","XXXI","XXXII","XXXIII","XXXIV","XXXV","XXXVI","XXXVII","XXXVIII","XXXIX","XL","XLI","XLII","XLIII","XLIV","XLV","XLVI","XLVII","XLVIII","XLIX","L","LI","LII","LIII","LIV","LV","LVI","LVII","LVIII","LIX","LX","LXI","LXII","LXIII","LXIV","LXV","LXVI","LXVII","LXVIII","LXIX","LXX","LXXI","LXXII","LXXIII","LXXIV","LXXV"];
   const vol = romanNumerals[Math.min(todayDayNumber - 1, 74)] || String(todayDayNumber);
@@ -131,10 +136,11 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
             <div className="h-[2px]" />
           </div>
 
-          <div className="flex items-center justify-between py-2 text-[11px] tracking-wider uppercase text-muted-foreground border-b border-border">
-            <span>{formattedDate}</span>
-            <span>{edition}</span>
-            <span>Vol. {vol} — No. {todayDayNumber}</span>
+          <div className="flex items-center justify-between gap-2 py-2 text-[10px] sm:text-[11px] tracking-wider uppercase text-muted-foreground border-b border-border">
+            <span className="hidden sm:inline min-w-0 truncate">{formattedDate}</span>
+            <span className="sm:hidden min-w-0 truncate">{formattedDateShort}</span>
+            <span className="hidden sm:inline min-w-0 truncate">{edition}</span>
+            <span className="whitespace-nowrap shrink-0">Vol. {vol} &mdash; No. {todayDayNumber}</span>
           </div>
 
           <div className="text-center py-4 md:py-6 border-b border-border">
@@ -152,18 +158,18 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
             </p>
           </div>
 
-          <div className="flex items-center justify-between py-2 md:py-3 text-[9px] md:text-[10px] tracking-wider uppercase text-muted-foreground border-b-2 border-foreground">
-            <div>
-              <span className="text-foreground text-[16px] font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
+          <div className="flex items-center justify-between gap-3 py-2 md:py-3 text-[10px] md:text-[11px] tracking-wider uppercase text-muted-foreground border-b-2 border-foreground">
+            <div className="whitespace-nowrap">
+              <span className="text-foreground text-[16px] md:text-[17px] font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
                 {totalDone}/{totalItems}
               </span>
-              {" "}Objectives
+              {" "}<span className="hidden sm:inline">Objectives</span><span className="sm:hidden">Done</span>
             </div>
-            <div>
-              <span className="text-foreground text-[16px] font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
+            <div className="whitespace-nowrap">
+              <span className="text-foreground text-[16px] md:text-[17px] font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
                 {completion}%
               </span>
-              {" "}Campaign Complete
+              {" "}<span className="hidden sm:inline">Campaign Complete</span><span className="sm:hidden">Complete</span>
             </div>
           </div>
         </motion.header>
@@ -219,16 +225,16 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="my-6 md:my-12 py-4 md:py-6 px-4 md:px-6 border-t-2 border-b-2 border-foreground"
+          className="my-6 md:my-12 py-5 md:py-6 px-4 md:px-6 border-t-2 border-b-2 border-foreground"
         >
           <p
-            className="text-xl md:text-2xl leading-snug italic text-foreground"
+            className="text-[19px] md:text-2xl leading-snug italic text-foreground text-balance"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             &ldquo;Discipline is choosing between what you want now and what you want most.&rdquo;
           </p>
-          <p className="mt-3 text-xs tracking-widest uppercase text-muted-foreground">
-            — Abraham Lincoln
+          <p className="mt-3 text-[11px] md:text-xs tracking-widest uppercase text-muted-foreground">
+            &mdash; Abraham Lincoln
           </p>
         </motion.blockquote>
 
@@ -241,7 +247,7 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           <p className="text-[11px] tracking-widest uppercase mb-4 font-medium text-muted-foreground">
             75-Day Campaign Progress
           </p>
-          <div className="flex items-end gap-[2px] h-12 md:h-16">
+          <div className="flex items-end gap-[1px] sm:gap-[2px] h-12 md:h-16">
             {Array.from({ length: 75 }).map((_, i) => (
               <div
                 key={i}
@@ -265,10 +271,11 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="mt-6 md:mt-10 pt-4 text-center border-t-[3px] border-foreground"
+          className="mt-6 md:mt-10 pt-4 pb-2 text-center border-t-[3px] border-foreground"
         >
-          <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
-            Published continuously since Day 1 — All rights reserved — 75 Proof Daily
+          <p className="text-[9px] sm:text-[10px] tracking-[0.18em] sm:tracking-[0.3em] uppercase text-muted-foreground leading-relaxed">
+            <span className="hidden sm:inline">Published continuously since Day 1 &mdash; All rights reserved &mdash; 75 Proof Daily</span>
+            <span className="sm:hidden">Published since Day 1 &middot; 75 Proof Daily</span>
           </p>
         </motion.footer>
       </div>

@@ -10,6 +10,7 @@ import { TOTAL_FRAMES, FPS, COMP_WIDTH, COMP_HEIGHT } from "@/remotion/compositi
 import type { ThemeName } from "@/remotion/compositions/Tutorial/lib/theme-styles";
 import { defaultTutorialProps } from "@/remotion/compositions/Tutorial/lib/mock-data";
 import { useThemePersonality } from "@/components/theme-provider";
+import { X } from "lucide-react";
 
 const STORAGE_KEY = "75hard-onboarding-state";
 const SPEEDS = [1, 1.5, 2, 3] as const;
@@ -18,8 +19,8 @@ export default function TutorialPage() {
   return (
     <Suspense
       fallback={
-        <div className="bg-background min-h-dvh flex items-center justify-center">
-          <div style={{ width: 24, height: 24, borderRadius: "50%", border: "2px solid #e5e7eb", borderTopColor: "#2563eb" }} />
+        <div className="bg-background min-h-[100dvh] flex items-center justify-center">
+          <div className="h-6 w-6 rounded-full border-2 border-muted border-t-primary animate-spin" />
         </div>
       }
     >
@@ -110,8 +111,8 @@ function TutorialPageInner() {
 
   if (user === undefined) {
     return (
-      <div className="bg-background min-h-dvh flex items-center justify-center">
-        <div style={{ width: 24, height: 24, borderRadius: "50%", border: "2px solid #e5e7eb", borderTopColor: "#2563eb" }} />
+      <div className="bg-background min-h-[100dvh] flex items-center justify-center">
+        <div className="h-6 w-6 rounded-full border-2 border-muted border-t-primary animate-spin" />
       </div>
     );
   }
@@ -122,36 +123,24 @@ function TutorialPageInner() {
   }
 
   return (
-    <div className="bg-background min-h-dvh flex flex-col items-center justify-center p-4 gap-5" style={{ position: "relative" }}>
+    <div className="relative bg-background min-h-[100dvh] flex flex-col items-center justify-center gap-4 px-4 pt-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
       {fromSettings && (
         <button
           onClick={goToDashboard}
           disabled={leaving}
           aria-label="Close tutorial"
-          style={{
-            position: "absolute",
-            top: 16,
-            right: 16,
-            width: 36,
-            height: 36,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "var(--muted, #f3f4f6)",
-            border: "none",
-            borderRadius: "50%",
-            cursor: "pointer",
-            opacity: leaving ? 0.5 : 1,
-          }}
+          className="absolute top-3 right-3 flex h-11 w-11 items-center justify-center rounded-full bg-muted text-foreground transition-opacity hover:opacity-80 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 z-10"
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M4 4l8 8M12 4l-8 8" />
-          </svg>
+          <X className="h-5 w-5" aria-hidden="true" />
         </button>
       )}
 
-      <div style={{ width: "100%", maxWidth: COMP_WIDTH }}>
-        <div style={{ position: "relative" }}>
+      {/* Video container — cap by both width and height so it never overflows on short viewports */}
+      <div
+        className="w-full"
+        style={{ maxWidth: `min(100%, calc((100dvh - 10rem) * ${COMP_WIDTH / COMP_HEIGHT}))` }}
+      >
+        <div className="relative">
           <Player
             ref={playerRef}
             component={TutorialVideo}
@@ -172,22 +161,8 @@ function TutorialPageInner() {
 
           <button
             onClick={() => setSpeedIndex((i) => (i + 1) % SPEEDS.length)}
-            style={{
-              position: "absolute",
-              bottom: 12,
-              right: 12,
-              background: "rgba(0,0,0,0.55)",
-              backdropFilter: "blur(8px)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "4px 10px",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              lineHeight: 1.4,
-              userSelect: "none",
-            }}
+            aria-label={`Playback speed: ${SPEEDS[speedIndex]}x. Tap to change.`}
+            className="absolute bottom-3 right-3 inline-flex h-11 min-w-[44px] items-center justify-center rounded-lg bg-black/55 px-3 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-0 active:bg-black/80"
           >
             {SPEEDS[speedIndex]}x
           </button>
@@ -195,22 +170,16 @@ function TutorialPageInner() {
 
         {/* Progress bar */}
         <div
-          style={{
-            marginTop: 8,
-            height: 4,
-            borderRadius: 2,
-            background: "var(--muted, #e5e7eb)",
-            overflow: "hidden",
-          }}
+          className="mt-2 h-1 overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-label="Tutorial progress"
+          aria-valuenow={Math.round(progress * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
         >
           <div
-            style={{
-              height: "100%",
-              width: `${progress * 100}%`,
-              background: "var(--primary, #2563eb)",
-              borderRadius: 2,
-              transition: "width 0.15s linear",
-            }}
+            className="h-full rounded-full bg-primary transition-[width] duration-150 ease-linear"
+            style={{ width: `${progress * 100}%` }}
           />
         </div>
       </div>
@@ -219,16 +188,7 @@ function TutorialPageInner() {
         <button
           onClick={goToDashboard}
           disabled={leaving}
-          style={{
-            background: "none",
-            border: "none",
-            color: "var(--muted-foreground, #6b7280)",
-            fontSize: 15,
-            fontWeight: 500,
-            cursor: "pointer",
-            padding: "8px 16px",
-            opacity: leaving ? 0.5 : 1,
-          }}
+          className="inline-flex min-h-[44px] items-center justify-center rounded-lg px-4 py-2 text-base font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:text-foreground"
         >
           Skip &rarr;
         </button>

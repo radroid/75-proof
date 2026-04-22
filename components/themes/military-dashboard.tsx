@@ -122,17 +122,17 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between text-[9px] md:text-[10px] tracking-[0.24em] md:tracking-[0.3em] uppercase mb-6 md:mb-10 pb-3 md:pb-4 border-b border-border"
+          className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between text-[10px] md:text-[11px] tracking-[0.24em] md:tracking-[0.3em] uppercase mb-6 md:mb-10 pb-3 md:pb-4 border-b border-border"
         >
           <div className="flex items-center gap-2 md:gap-4">
             <span className="text-muted-foreground">CLASSIFIED</span>
-            <span className="text-border">|</span>
+            <span className="text-border" aria-hidden="true">|</span>
             <span className="text-foreground">OPERATOR-1</span>
           </div>
           <div className="flex items-center gap-2 md:gap-4">
-            <span className="text-foreground">MISSION TIME: {missionTime}</span>
+            <span className="text-foreground tabular-nums">MISSION TIME: {missionTime}</span>
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full animate-pulse bg-primary" />
+              <div className="w-2 h-2 rounded-full animate-pulse bg-primary" aria-hidden="true" />
               <span className="text-primary">ACTIVE</span>
             </div>
           </div>
@@ -145,12 +145,12 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
           transition={{ delay: 0.1 }}
           className="mb-7 md:mb-12"
         >
-          <p className="text-[10px] tracking-[0.4em] uppercase mb-4 text-muted-foreground">
+          <p className="text-[11px] md:text-[12px] tracking-[0.4em] uppercase mb-4 text-muted-foreground">
             OPERATION DAY
           </p>
           <div className="flex items-baseline gap-3">
             <h1
-              className="text-[76px] md:text-[140px] leading-none text-foreground"
+              className="text-[76px] md:text-[140px] leading-none text-foreground tabular-nums"
               style={{
                 fontFamily: "var(--font-heading)",
                 textShadow: "0 0 40px rgba(194,178,128,0.15)",
@@ -158,24 +158,30 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
             >
               {String(displayDay).padStart(2, "0")}
             </h1>
-            <span className="text-2xl md:text-3xl font-light text-border">/75</span>
+            <span className="text-2xl md:text-3xl font-light text-border tabular-nums">/75</span>
           </div>
 
           {/* 75-segment tactical progress bar */}
-          <div className="mt-4 md:mt-6 max-w-xl">
-            <div className="flex items-center gap-px">
+          <div
+            className="mt-4 md:mt-6 max-w-xl"
+            role="progressbar"
+            aria-valuenow={todayDayNumber}
+            aria-valuemin={0}
+            aria-valuemax={75}
+            aria-label={`Operation day ${todayDayNumber} of 75`}
+          >
+            <div className="flex items-center gap-px min-w-0">
               {Array.from({ length: 75 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex-1 h-2"
+                  className="flex-1 min-w-0 h-2"
                   style={{
                     background: i < todayDayNumber ? "var(--muted-foreground)" : "var(--secondary)",
-                    borderRight: i < 74 ? "1px solid var(--background)" : "none",
                   }}
                 />
               ))}
             </div>
-            <div className="flex justify-between mt-3 text-[10px] tracking-wider text-muted-foreground">
+            <div className="flex justify-between mt-3 text-[10px] md:text-[11px] tracking-wider text-muted-foreground tabular-nums">
               <span>DAY 01</span>
               <span>OBJECTIVE: DAY 75</span>
             </div>
@@ -191,10 +197,10 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
                 key={stat.label}
                 className="px-4 py-3 text-center bg-card"
               >
-                <p className="text-[9px] tracking-[0.2em] uppercase text-muted-foreground">
+                <p className="text-[10px] md:text-[11px] tracking-[0.2em] uppercase text-muted-foreground">
                   {stat.label}
                 </p>
-                <p className="text-lg font-bold mt-1" style={{ fontFamily: "var(--font-heading)" }}>
+                <p className="text-lg md:text-xl font-bold mt-1 tabular-nums" style={{ fontFamily: "var(--font-heading)" }}>
                   {stat.value}
                 </p>
               </div>
@@ -219,15 +225,15 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
           transition={{ delay: 0.25 }}
         >
           <div className="flex items-start gap-3 justify-between mb-4 md:mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-primary" style={{ boxShadow: "0 0 8px var(--primary)" }} />
-              <div>
-                <h3 className="text-sm font-bold tracking-wider text-foreground">DAILY OBJECTIVES</h3>
-                <p className="text-[10px] text-muted-foreground">Mission Requirements</p>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-3 h-3 shrink-0 bg-primary" style={{ boxShadow: "0 0 8px var(--primary)" }} aria-hidden="true" />
+              <div className="min-w-0">
+                <h3 className="text-sm md:text-base font-bold tracking-wider text-foreground">DAILY OBJECTIVES</h3>
+                <p className="text-[11px] md:text-xs text-muted-foreground">Mission Requirements</p>
               </div>
             </div>
             <span
-              className="text-[9px] tracking-[0.2em] font-bold px-3 py-1 border"
+              className="shrink-0 text-[10px] md:text-[11px] tracking-[0.2em] font-bold px-2.5 py-1.5 border whitespace-nowrap"
               style={{
                 borderColor: totalDone === totalItems ? "var(--primary)" : "var(--warning)",
                 color: totalDone === totalItems ? "var(--primary)" : "var(--warning)",
@@ -273,10 +279,10 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
           transition={{ delay: 0.7 }}
           className="mt-8 md:mt-12 pt-5 md:pt-6 text-center border-t border-border"
         >
-          <p className="text-[10px] tracking-[0.3em] uppercase text-border">
+          <p className="text-[11px] md:text-xs tracking-[0.3em] uppercase text-border leading-relaxed">
             &ldquo;Discipline is the bridge between goals and accomplishment.&rdquo;
           </p>
-          <p className="text-[9px] mt-2 text-muted">
+          <p className="text-[10px] md:text-[11px] mt-2 text-muted tracking-wider">
             TRANSMISSION END // OPERATOR-1
           </p>
         </motion.div>

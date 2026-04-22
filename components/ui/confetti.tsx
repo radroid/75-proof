@@ -102,7 +102,7 @@ export function Confetti({ isActive, duration = 3000 }: ConfettiProps) {
                 rotate: 0,
               }}
               animate={{
-                y: "100vh",
+                y: "100dvh",
                 opacity: 0,
                 rotate: particle.rotation + 720,
               }}

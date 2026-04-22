@@ -86,15 +86,17 @@ export function OnboardingReview({
         {/* Habits */}
         <Card>
           <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 gap-2">
               <p className="text-sm font-medium">
                 Habits ({activeHabits.length} active, {hardCount} hard)
               </p>
               <button
+                type="button"
                 onClick={() => onGoToStep("habits")}
-                className="text-xs text-primary hover:underline flex items-center gap-1"
+                aria-label="Edit habits"
+                className="inline-flex min-h-[44px] items-center gap-1 rounded px-2 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                <Pencil className="h-3 w-3" />
+                <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                 Edit
               </button>
             </div>
@@ -151,25 +153,26 @@ export function OnboardingReview({
             },
             { value: "public", label: "Public", desc: "Anyone can see" },
           ].map((option) => (
-            <div key={option.value} className="flex items-center space-x-2">
+            <Label
+              key={option.value}
+              htmlFor={`vis-${option.value}`}
+              className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg border border-transparent px-2 py-1 hover:border-border active:bg-muted/40"
+            >
               <RadioGroupItem value={option.value} id={`vis-${option.value}`} />
-              <Label
-                htmlFor={`vis-${option.value}`}
-                className="flex-1 cursor-pointer"
-              >
+              <span className="flex-1">
                 <span className="font-medium">{option.label}</span>
                 <span className="text-sm text-muted-foreground ml-2">
                   {option.desc}
                 </span>
-              </Label>
-            </div>
+              </span>
+            </Label>
           ))}
         </RadioGroup>
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-between pt-4">
-        <Button variant="ghost" onClick={onBack} className="gap-1">
+      <div className="flex items-center justify-between gap-3 pt-4">
+        <Button variant="ghost" onClick={onBack} className="gap-1 min-h-[44px]">
           <ChevronLeft className="h-4 w-4" />
           Back
         </Button>
@@ -178,11 +181,11 @@ export function OnboardingReview({
           disabled={isSubmitting}
           size="lg"
           variant="default"
-          className="gap-2 min-w-[180px]"
+          className="flex-1 sm:flex-initial gap-2 sm:min-w-[180px] min-h-[48px]"
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
               Starting...
             </>
           ) : (
@@ -207,16 +210,18 @@ function SummaryRow({
   onEdit: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between py-3 px-4 rounded-lg border">
-      <div>
+    <div className="flex items-center justify-between gap-2 py-3 px-4 rounded-lg border">
+      <div className="min-w-0">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm font-medium">{value}</p>
+        <p className="text-sm font-medium truncate">{value}</p>
       </div>
       <button
+        type="button"
         onClick={onEdit}
-        className="text-xs text-primary hover:underline flex items-center gap-1"
+        aria-label={`Edit ${label}`}
+        className="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded px-2 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
-        <Pencil className="h-3 w-3" />
+        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
         Edit
       </button>
     </div>

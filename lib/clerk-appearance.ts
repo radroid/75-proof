@@ -21,14 +21,16 @@ export const clerkProviderAppearance = {
     rootBox: "w-full max-w-[min(400px,calc(100vw-2rem))]",
     card: "shadow-none border border-border",
     socialButtonsBlockButton:
-      "min-h-[44px] border-border font-bold text-[14px]",
+      "min-h-[44px] border-border font-bold text-[14px] touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     socialButtonsBlockButtonText: "font-bold",
     formButtonPrimary:
-      "min-h-[44px] bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-[14px]",
-    formFieldInput: "min-h-[44px] border-border text-[16px]",
+      "min-h-[44px] bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-[14px] touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    formFieldInput:
+      "min-h-[44px] border-border text-[16px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0",
     headerTitle: "font-black text-foreground",
     headerSubtitle: "text-muted-foreground",
-    footerActionLink: "text-primary hover:text-primary/80 font-bold",
+    footerActionLink:
+      "text-primary hover:text-primary/80 font-bold rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     modalBackdrop: "backdrop-blur-sm",
   },
 } as const;

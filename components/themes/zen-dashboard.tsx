@@ -87,7 +87,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
   const progressOffset = circumference - (completion / 100) * circumference;
 
   return (
-    <div className="max-w-3xl mx-auto px-1 sm:px-0">
+    <div className="max-w-3xl mx-auto px-5 sm:px-6 md:px-0">
       {hasFailed && (
         <ChallengeFailedDialog
           open={showFailedDialog}
@@ -104,6 +104,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
 
       {/* Subtle washi paper texture */}
       <div
+        aria-hidden="true"
         className="fixed inset-0 pointer-events-none opacity-[0.03]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
@@ -117,10 +118,10 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
           animate={{ opacity: 1 }}
           className="flex items-center justify-between mb-8 md:mb-20"
         >
-          <p className="text-xs tracking-[0.3em] uppercase text-muted-foreground">
+          <p className="text-[11px] sm:text-xs tracking-[0.25em] sm:tracking-[0.3em] uppercase text-muted-foreground">
             Seventy-Five Hard
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">
             Day {displayDay}
           </p>
         </motion.div>
@@ -133,7 +134,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
           className="flex flex-col items-center mb-10 md:mb-24"
         >
           <div className="relative">
-            <svg className="h-[152px] w-[152px] md:h-[180px] md:w-[180px]" viewBox="0 0 180 180">
+            <svg aria-hidden="true" className="h-[152px] w-[152px] md:h-[180px] md:w-[180px]" viewBox="0 0 180 180">
               <circle
                 cx="90" cy="90" r="68"
                 fill="none"
@@ -164,7 +165,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
               >
                 {displayDay}
               </span>
-              <span className="text-[10px] tracking-[0.3em] uppercase mt-2 text-muted-foreground">
+              <span className="text-[11px] tracking-[0.25em] md:tracking-[0.3em] uppercase mt-2 text-muted-foreground">
                 of seventy-five
               </span>
             </div>
@@ -177,7 +178,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
             >
               {totalDone}/{totalItems}
             </p>
-            <p className="text-[10px] tracking-[0.2em] uppercase mt-1 text-muted-foreground">
+            <p className="text-[11px] tracking-[0.2em] uppercase mt-2 text-muted-foreground">
               fulfilled
             </p>
           </div>
@@ -185,7 +186,12 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
 
         {/* Horizontal brush stroke divider */}
         <div className="flex items-center justify-center mb-8 md:mb-16">
-          <svg width="200" height="8" viewBox="0 0 200 8">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 200 8"
+            preserveAspectRatio="xMidYMid meet"
+            className="w-full max-w-[200px] h-2"
+          >
             <path
               d="M 0 4 Q 50 1, 100 4 Q 150 7, 200 4"
               fill="none"
@@ -249,17 +255,26 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
           transition={{ delay: 0.8 }}
           className="mt-10 md:mt-24 text-center"
         >
-          <svg width="60" height="3" viewBox="0 0 60 3" className="mx-auto mb-8">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 60 3"
+            preserveAspectRatio="xMidYMid meet"
+            className="mx-auto mb-8 h-[3px] w-[60px]"
+          >
             <line x1="0" y1="1.5" x2="60" y2="1.5" className="stroke-muted-foreground" strokeWidth="1" opacity="0.4" />
           </svg>
 
           <p
-            className="text-lg italic text-muted-foreground"
+            className="text-[17px] md:text-lg italic leading-relaxed text-muted-foreground px-4"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             &ldquo;Fall seven times, stand up eight.&rdquo;
           </p>
-          <p className="text-[10px] tracking-[0.2em] uppercase mt-3 text-muted">
+          <p
+            className="text-[11px] tracking-[0.2em] uppercase mt-3 text-muted-foreground/70"
+            lang="ja"
+            style={{ fontFeatureSettings: '"palt"' }}
+          >
             &#x4E03;&#x8EE2;&#x3073;&#x516B;&#x8D77;&#x304D;
           </p>
         </motion.div>

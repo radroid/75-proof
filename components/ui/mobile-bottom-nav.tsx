@@ -12,21 +12,27 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
+type IconProps = { className?: string; strokeWidth?: number; style?: React.CSSProperties };
+
 export type NavItem = {
   label: string;
   href: string;
-  icon: typeof LayoutDashboard | React.ComponentType<{ className?: string }>;
+  icon: typeof LayoutDashboard | React.ComponentType<IconProps>;
   action?: () => void;
 };
 
-function FriendsMobileIcon({ className }: { className?: string }) {
+function FriendsMobileIcon(props: IconProps) {
   const count = useQuery(api.friends.getPendingRequestCount);
   return (
-    <span className="relative inline-flex" aria-label={count ? `Friends, ${count} pending requests` : "Friends"}>
-      <Users className={className} />
+    <span className="relative inline-flex">
+      <Users {...props} />
       {(count ?? 0) > 0 && (
-        <span aria-hidden="true" className="absolute -top-1 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground leading-none">
-          {count! > 9 ? "9+" : count}
+        <span
+          role="status"
+          aria-label={`${count} pending friend request${count! === 1 ? "" : "s"}`}
+          className="absolute -top-1 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground leading-none"
+        >
+          <span aria-hidden="true">{count! > 9 ? "9+" : count}</span>
         </span>
       )}
     </span>
@@ -62,15 +68,27 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
 
   return (
     <motion.div
-      className="fixed bottom-8 left-6 right-6 z-50 md:hidden"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      className="fixed left-6 right-6 z-50 md:hidden"
+      style={{
+        // Pin above the home indicator / gesture bar. Using CSS vars keeps
+        // `--bottom-nav-gap` (consumed by the guest signup banner) in sync.
+        bottom: "var(--bottom-nav-offset)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        // Prevent the nav's own scroll attempts from bubbling to the body
+        // (belt-and-braces with `overscroll-behavior` on the page container).
+        touchAction: "manipulation",
+      }}
+      // Only animate in on first mount — not on every route change. This
+      // avoids the pill popping in each time the user taps a tab.
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 200, damping: 20 }}
     >
       <nav
-        className="flex justify-around items-center h-[56px] mx-auto max-w-[360px]"
+        aria-label="Primary"
+        className="flex justify-around items-center mx-auto max-w-[360px]"
         style={{
+          height: "var(--bottom-nav-height)",
           background: "var(--nav-bg)",
           borderRadius: "var(--nav-radius)",
           backdropFilter: "blur(24px) saturate(180%)",
@@ -89,6 +107,7 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
                 <motion.div
                   layoutId="nav-indicator"
                   className="absolute inset-0 m-auto"
+                  aria-hidden="true"
                   style={{
                     width: 68,
                     height: 46,
@@ -105,10 +124,13 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
               <motion.div
                 className="relative z-10 flex flex-col items-center gap-1"
                 whileTap={{ scale: 0.92 }}
+                // Lift the active icon slightly for clearer affordance.
+                animate={{ y: isActive ? -1 : 0 }}
                 transition={{ type: "spring", stiffness: 350, damping: 20 }}
               >
                 <Icon
                   className="h-5 w-5 transition-colors"
+                  strokeWidth={isActive ? 2.5 : 2}
                   style={{
                     color: isActive ? "var(--primary)" : "var(--muted-foreground)",
                     transitionDuration: "var(--duration-normal)",
@@ -119,7 +141,7 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
                   style={{
                     color: isActive ? "var(--primary)" : "var(--muted-foreground)",
                     fontFamily: "var(--font-body)",
-                    fontWeight: isActive ? 600 : 500,
+                    fontWeight: isActive ? 700 : 500,
                     transitionDuration: "var(--duration-normal)",
                   }}
                 >
@@ -129,12 +151,20 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
             </>
           );
 
+          // Icon-only SR fallback: the visible label already names the link,
+          // but Link/button should have an explicit label for AT parity with
+          // pending-request badges, etc.
+          const commonClass =
+            "flex flex-col items-center justify-center gap-1 relative flex-1 min-w-0 py-2 px-3 " +
+            "rounded-[var(--nav-radius)] outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0";
+
           if (action) {
             return (
               <button
                 key={label}
                 onClick={action}
-                className="flex flex-col items-center justify-center gap-1 relative flex-1 min-w-0 py-2 px-3"
+                aria-label={label}
+                className={commonClass}
               >
                 {inner}
               </button>
@@ -145,7 +175,9 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
             <Link
               key={href}
               href={href}
-              className="flex flex-col items-center justify-center gap-1 relative flex-1 min-w-0 py-2 px-3"
+              aria-label={label}
+              aria-current={isActive ? "page" : undefined}
+              className={commonClass}
             >
               {inner}
             </Link>

@@ -103,11 +103,14 @@ export function HabitCard({
 
       {/* Controls */}
       {mode === "toggle" && (
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <button
+            type="button"
             onClick={() => onToggleHard?.(!habit.isHard)}
+            aria-pressed={habit.isHard}
+            aria-label={`Toggle difficulty for ${habit.name}. Currently ${habit.isHard ? "hard" : "soft"}.`}
             className={cn(
-              "text-[10px] px-2.5 py-1.5 rounded border font-medium transition-colors min-h-[32px]",
+              "inline-flex items-center justify-center min-h-[44px] min-w-[52px] px-2.5 rounded border text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.97] motion-reduce:active:scale-100",
               habit.isHard
                 ? "border-destructive/40 text-destructive bg-destructive/5 hover:bg-destructive/10"
                 : "border-border text-muted-foreground hover:border-muted-foreground/50"
@@ -118,16 +121,20 @@ export function HabitCard({
           <Switch
             checked={habit.isActive}
             onCheckedChange={(checked) => onToggleActive?.(checked)}
+            aria-label={`${habit.isActive ? "Disable" : "Enable"} ${habit.name}`}
           />
         </div>
       )}
 
       {mode === "full" && (
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <button
+            type="button"
             onClick={() => onToggleHard?.(!habit.isHard)}
+            aria-pressed={habit.isHard}
+            aria-label={`Toggle difficulty for ${habit.name}. Currently ${habit.isHard ? "hard" : "soft"}.`}
             className={cn(
-              "text-[10px] px-2.5 py-1.5 rounded border font-medium transition-colors min-h-[32px]",
+              "inline-flex items-center justify-center min-h-[44px] min-w-[52px] px-2.5 rounded border text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.97] motion-reduce:active:scale-100",
               habit.isHard
                 ? "border-destructive/40 text-destructive bg-destructive/5 hover:bg-destructive/10"
                 : "border-border text-muted-foreground hover:border-muted-foreground/50"
@@ -138,11 +145,14 @@ export function HabitCard({
           <Switch
             checked={habit.isActive}
             onCheckedChange={(checked) => onToggleActive?.(checked)}
+            aria-label={`${habit.isActive ? "Disable" : "Enable"} ${habit.name}`}
           />
           {onRemove && (
             <button
+              type="button"
               onClick={onRemove}
-              className="text-xs text-destructive hover:text-destructive/80 transition-colors"
+              aria-label={`Remove ${habit.name}`}
+              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-2 rounded text-xs text-destructive hover:text-destructive/80 hover:bg-destructive/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               Remove
             </button>

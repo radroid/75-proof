@@ -73,7 +73,8 @@ export function useHabitEntries({
       increment: number
     ) => {
       if (!guardEdit()) return;
-      const newValue = Math.max(0, currentValue + increment);
+      const nextValue = Math.max(0, currentValue + increment);
+      const newValue = Math.round((nextValue + Number.EPSILON) * 1000) / 1000;
       try {
         await updateCounter({
           habitDefinitionId,
@@ -98,6 +99,14 @@ export function useHabitEntries({
       const entry = entryMap.get(h._id);
       return entry?.completed;
     }).length ?? 0;
+  const requiredItems =
+    habitDefs?.filter((h) => h.isHard).length ?? 0;
+  const requiredDone =
+    habitDefs?.filter((h) => {
+      if (!h.isHard) return false;
+      const entry = entryMap.get(h._id);
+      return entry?.completed;
+    }).length ?? 0;
 
   return {
     habitDefs,
@@ -105,6 +114,8 @@ export function useHabitEntries({
     entryMap,
     totalItems,
     totalDone,
+    requiredItems,
+    requiredDone,
     handleToggleTask,
     handleUpdateCounter,
   };

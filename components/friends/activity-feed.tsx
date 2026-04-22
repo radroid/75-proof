@@ -79,7 +79,7 @@ export function ActivityFeed({ feed }: ActivityFeedProps) {
         <Card key={item._id}>
           <CardContent className="py-3 px-4">
             <div className="flex items-start gap-3">
-              <Avatar className="h-8 w-8 mt-0.5">
+              <Avatar className="h-9 w-9 mt-0.5 shrink-0">
                 <AvatarImage
                   src={item.user?.avatarUrl}
                   alt={item.user?.displayName}
@@ -89,19 +89,21 @@ export function ActivityFeed({ feed }: ActivityFeedProps) {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm truncate">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-medium text-sm truncate min-w-0">
                     {item.user?.displayName ?? "Unknown"}
                   </span>
-                  {typeIcons[item.type]}
+                  <span className="shrink-0" aria-hidden="true">
+                    {typeIcons[item.type]}
+                  </span>
+                  <span className="text-xs text-muted-foreground/60 shrink-0 ml-auto">
+                    {relativeTime(item.createdAt)}
+                  </span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-0.5">
+                <p className="text-sm text-muted-foreground mt-0.5 break-words">
                   {item.message}
                 </p>
               </div>
-              <span className="text-xs text-muted-foreground/60 flex-shrink-0 mt-0.5">
-                {relativeTime(item.createdAt)}
-              </span>
             </div>
           </CardContent>
         </Card>

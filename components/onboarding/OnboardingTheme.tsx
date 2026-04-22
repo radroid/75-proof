@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { themeMetadata, themeOrder, type ThemePersonality } from "@/lib/themes";
 import { useThemePersonality } from "@/components/theme-provider";
+import { ThemePreviewArt } from "@/components/theme-switcher";
 import type { OnboardingState } from "@/lib/onboarding-types";
 
 interface Props {
@@ -46,55 +47,21 @@ export function OnboardingTheme({ state, updateState, onNext, onBack }: Props) {
           return (
             <button
               key={key}
+              type="button"
               onClick={() => handleSelectTheme(key)}
+              aria-pressed={selected}
+              aria-label={`Theme: ${theme.name}. ${theme.description}`}
               className={cn(
                 "relative rounded-xl border-2 overflow-hidden text-left transition-all",
-                "hover:shadow-md",
+                "hover:shadow-md active:scale-[0.98] motion-reduce:active:scale-100",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 selected
                   ? "border-primary shadow-md ring-2 ring-primary/20"
                   : "border-border hover:border-primary/40"
               )}
             >
-              {/* Theme preview */}
-              <div
-                className="h-24 sm:h-28 p-3 sm:p-4 flex flex-col justify-between"
-                style={{ backgroundColor: theme.preview.bg }}
-              >
-                {/* Mini dashboard mockup */}
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-8 h-8 rounded-md font-bold text-xs flex items-center justify-center"
-                    style={{
-                      backgroundColor: theme.preview.accent,
-                      color: theme.preview.bg,
-                    }}
-                  >
-                    12
-                  </div>
-                  <div className="space-y-1 flex-1">
-                    <div
-                      className="h-1.5 rounded-full w-3/4"
-                      style={{ backgroundColor: theme.preview.accent, opacity: 0.3 }}
-                    />
-                    <div
-                      className="h-1 rounded-full w-1/2"
-                      style={{ backgroundColor: theme.preview.fg, opacity: 0.15 }}
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-1.5">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="h-2 flex-1 rounded-sm"
-                      style={{
-                        backgroundColor: i <= 2 ? theme.preview.accent : theme.preview.fg,
-                        opacity: i <= 2 ? 0.6 : 0.1,
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
+              {/* Theme preview — true-to-theme mini mockup */}
+              <ThemePreviewArt personality={key} />
 
               {/* Label */}
               <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-card">
@@ -120,12 +87,12 @@ export function OnboardingTheme({ state, updateState, onNext, onBack }: Props) {
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-between">
-        <Button variant="ghost" onClick={onBack} className="gap-1">
+      <div className="flex items-center justify-between gap-3">
+        <Button variant="ghost" onClick={onBack} className="gap-1 min-h-[44px]">
           <ChevronLeft className="h-4 w-4" />
           Back
         </Button>
-        <Button onClick={onNext} size="lg" className="gap-2">
+        <Button onClick={onNext} size="lg" className="flex-1 sm:flex-initial gap-2 min-h-[48px]">
           Continue
           <ChevronRight className="h-4 w-4" />
         </Button>

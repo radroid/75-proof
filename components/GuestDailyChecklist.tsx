@@ -147,7 +147,11 @@ export function GuestDailyChecklist({ dayNumber, isEditable = true, log, onCompl
                 <DoneIndicator done={waterOz >= 128} />
               </div>
               {waterOz < 128 && (
-                <div className="flex gap-2 mt-3">
+                <div
+                  className="grid grid-cols-4 gap-2 mt-3 sm:grid-cols-8"
+                  role="group"
+                  aria-label="Water intake — 16 oz per glass"
+                >
                   {Array.from({ length: GLASSES }).map((_, i) => {
                     const checked = i < glassesCompleted;
                     return (
@@ -155,14 +159,16 @@ export function GuestDailyChecklist({ dayNumber, isEditable = true, log, onCompl
                         key={i}
                         onClick={() => handleGlassTap(i)}
                         disabled={!isEditable}
+                        aria-label={`Glass ${i + 1}${checked ? " (filled)" : ""}`}
+                        aria-pressed={checked}
                         className={cn(
-                          "w-8 h-8 rounded-md border text-xs font-medium transition-all",
-                          isEditable && "hover:scale-105 active:scale-95",
+                          "h-11 min-w-11 rounded-md border text-sm font-medium transition-all touch-manipulation",
+                          isEditable && "active:scale-95 hover:border-primary/50",
                           !isEditable && "cursor-not-allowed opacity-50",
-                          checked ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
+                          checked ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border"
                         )}
                       >
-                        {checked ? <Check className="h-3.5 w-3.5 mx-auto" /> : i + 1}
+                        {checked ? <Check className="h-4 w-4 mx-auto" /> : i + 1}
                       </button>
                     );
                   })}
@@ -189,7 +195,11 @@ export function GuestDailyChecklist({ dayNumber, isEditable = true, log, onCompl
                 <DoneIndicator done={readingMinutes >= 20} />
               </div>
               {readingMinutes < 20 && (
-                <div className="flex gap-2 mt-3">
+                <div
+                  className="grid grid-cols-4 gap-2 mt-3"
+                  role="group"
+                  aria-label="Reading minutes — 5 min per block"
+                >
                   {Array.from({ length: READING_BLOCKS }).map((_, i) => {
                     const checked = i < blocksCompleted;
                     return (
@@ -197,14 +207,16 @@ export function GuestDailyChecklist({ dayNumber, isEditable = true, log, onCompl
                         key={i}
                         onClick={() => handleBlockTap(i)}
                         disabled={!isEditable}
+                        aria-label={`${(i + 1) * MIN_PER_BLOCK} minutes${checked ? " (done)" : ""}`}
+                        aria-pressed={checked}
                         className={cn(
-                          "h-8 rounded-md border text-xs font-medium transition-all px-3",
-                          isEditable && "hover:scale-105 active:scale-95",
+                          "h-11 rounded-md border text-sm font-medium transition-all px-3 touch-manipulation",
+                          isEditable && "active:scale-95 hover:border-primary/50",
                           !isEditable && "cursor-not-allowed opacity-50",
-                          checked ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:border-primary/50"
+                          checked ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border"
                         )}
                       >
-                        {checked ? <Check className="h-3.5 w-3.5 mx-auto" /> : `${(i + 1) * MIN_PER_BLOCK}m`}
+                        {checked ? <Check className="h-4 w-4 mx-auto" /> : `${(i + 1) * MIN_PER_BLOCK}m`}
                       </button>
                     );
                   })}
@@ -226,10 +238,11 @@ export function GuestDailyChecklist({ dayNumber, isEditable = true, log, onCompl
               <button
                 onClick={() => isEditable && setHasPhoto(true)}
                 disabled={!isEditable}
+                aria-label="Add today's progress photo"
                 className={cn(
-                  "shrink-0 inline-flex items-center gap-2",
+                  "shrink-0 inline-flex items-center gap-2 min-h-11",
                   "rounded-lg border border-dashed border-primary/40 bg-primary/5",
-                  "px-3 py-2 text-xs font-medium text-primary",
+                  "px-4 py-2.5 text-sm font-medium text-primary touch-manipulation",
                   isEditable && "hover:bg-primary/10 hover:border-primary/60 active:scale-95",
                   !isEditable && "cursor-not-allowed opacity-50",
                   "transition-all"
@@ -278,13 +291,13 @@ export function GuestDailyChecklist({ dayNumber, isEditable = true, log, onCompl
               Imagine doing this for real — 75 days, a completely different you. Start tracking your actual progress.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-3 mt-2">
-            <Button onClick={() => { setShowSignupDialog(false); promptSignup(); }} size="lg">
+          <div className="flex flex-col gap-2 mt-2">
+            <Button onClick={() => { setShowSignupDialog(false); promptSignup(); }} size="lg" className="min-h-12">
               Start My Challenge — Free
             </Button>
             <button
               onClick={() => setShowSignupDialog(false)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="min-h-11 text-sm text-muted-foreground hover:text-foreground active:text-foreground transition-colors rounded-md touch-manipulation"
             >
               Keep exploring
             </button>
@@ -322,7 +335,7 @@ function TodoItem({ label, detail, done, onTap, isLast, disabled = false }: { la
         "flex items-start gap-3 py-4 transition-colors -mx-2 px-2 rounded-lg",
         !isLast && "border-b border-border/50",
         done && "opacity-60",
-        disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-muted/30"
+        disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-muted/30 active:bg-muted/60"
       )}
       onClick={disabled ? undefined : onTap}
       role="button"

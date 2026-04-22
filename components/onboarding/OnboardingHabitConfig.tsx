@@ -190,13 +190,13 @@ export function OnboardingHabitConfig({
                 <Button
                   onClick={addHabit}
                   disabled={!newName.trim()}
-                  size="sm"
+                  className="min-h-[44px]"
                 >
                   Add Habit
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  className="min-h-[44px]"
                   onClick={() => setShowAddForm(false)}
                 >
                   Cancel
@@ -206,7 +206,7 @@ export function OnboardingHabitConfig({
           ) : (
             <Button
               variant="outline"
-              className="w-full border-dashed gap-2"
+              className="w-full border-dashed gap-2 min-h-[48px]"
               onClick={() => setShowAddForm(true)}
             >
               <Plus className="h-4 w-4" />
@@ -228,8 +228,8 @@ export function OnboardingHabitConfig({
       </p>
 
       {/* Navigation */}
-      <div className="flex justify-between">
-        <Button variant="ghost" onClick={onBack} className="gap-1">
+      <div className="flex items-center justify-between gap-3">
+        <Button variant="ghost" onClick={onBack} className="gap-1 min-h-[44px]">
           <ChevronLeft className="h-4 w-4" />
           Back
         </Button>
@@ -237,7 +237,7 @@ export function OnboardingHabitConfig({
           onClick={onNext}
           disabled={activeCount === 0}
           size="lg"
-          className="gap-2"
+          className="flex-1 sm:flex-initial gap-2 min-h-[48px]"
         >
           Continue
           <ChevronRight className="h-4 w-4" />

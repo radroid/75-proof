@@ -53,16 +53,17 @@ export function DayNavigator({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 shrink-0"
+          className="h-11 w-11 shrink-0 touch-manipulation active:scale-95 transition-transform disabled:active:scale-100"
           onClick={() => onDayChange(selectedDayNumber - 1)}
           disabled={!canGoBack}
+          aria-label={canGoBack ? `Go to Day ${selectedDayNumber - 1}` : "No previous day"}
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
         </Button>
 
-        <div className="flex flex-col items-center gap-0.5 min-w-0">
+        <div className="flex flex-col items-center gap-0.5 min-w-0 tabular-nums">
           <span className="text-sm font-semibold">
-            Day {selectedDayNumber}
+            Day <span className="tabular-nums">{selectedDayNumber}</span>
           </span>
           <span className="text-[11px] text-muted-foreground">{displayDate}</span>
         </div>
@@ -70,11 +71,12 @@ export function DayNavigator({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 shrink-0"
+          className="h-11 w-11 shrink-0 touch-manipulation active:scale-95 transition-transform disabled:active:scale-100"
           onClick={() => onDayChange(selectedDayNumber + 1)}
           disabled={!canGoForward}
+          aria-label={canGoForward ? `Go to Day ${selectedDayNumber + 1}` : "No next day"}
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-5 w-5" aria-hidden="true" />
         </Button>
       </div>
 
