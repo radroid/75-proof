@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 75-proof
 
-## Getting Started
+A modern, configurable **75 HARD** habit tracker.
 
-First, run the development server:
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-149eca?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Convex](https://img.shields.io/badge/Backend-Convex-ee342f)](https://convex.dev)
+[![Clerk](https://img.shields.io/badge/Auth-Clerk-6c47ff)](https://clerk.com)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06b6d4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Cloudflare](https://img.shields.io/badge/Deploy-Cloudflare_Pages-f38020?logo=cloudflare&logoColor=white)](https://pages.cloudflare.com)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](./CONTRIBUTING.md)
+
+Run the classic 75 HARD program or build a fully custom version. Track habits, streaks, and progress with push notifications, themes, and friends.
+
+## Stack
+
+Next.js 16 · React 19 · TypeScript · Convex · Clerk · Tailwind CSS v4 · shadcn/ui · Framer Motion · Web Push · OpenNext on Cloudflare Pages.
+
+## Quick start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+cp .env.example .env.local   # fill in values
+pnpm dev                     # Next.js
+npx convex dev               # Convex backend (separate terminal)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | What it does |
+| --- | --- |
+| `pnpm dev` | Next.js dev server |
+| `npx next build` | Production build — **must pass before committing** |
+| `pnpm lint` | ESLint |
+| `pnpm preview` | OpenNext Cloudflare preview |
+| `pnpm deploy` | OpenNext Cloudflare deploy |
 
-## Learn More
+## Contributing
 
-To learn more about Next.js, take a look at the following resources:
+See [CONTRIBUTING.md](./CONTRIBUTING.md). Direct pushes to `main` are blocked — open a PR.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Frontend**: Cloudflare Pages via OpenNext
+- **Backend**: Convex (prod deployment)
+- **Auth**: Clerk (dev + prod instances)
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Env vars live in Cloudflare Pages (frontend) and the Convex dashboard (backend secrets). See `.env.example` for the list.
