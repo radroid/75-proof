@@ -81,6 +81,65 @@ export const getUserChallenges = query({
   },
 });
 
+// Per-day completion map for a challenge. Hard habits are required; soft habits
+// are optional. Falls back to legacy `dailyLogs.allRequirementsMet` when the
+// challenge has no habit definitions.
+export const getDayCompletionMap = query({
+  args: { challengeId: v.id("challenges") },
+  handler: async (ctx, args) => {
+    const challenge = await ctx.db.get(args.challengeId);
+    if (!challenge) return {} as Record<number, boolean>;
+
+    const habitDefs = await ctx.db
+      .query("habitDefinitions")
+      .withIndex("by_challenge", (q) => q.eq("challengeId", args.challengeId))
+      .collect();
+
+    const result: Record<number, boolean> = {};
+
+    if (habitDefs.length > 0) {
+      const hardHabits = habitDefs.filter((h) => h.isActive && h.isHard);
+      const entries = await ctx.db
+        .query("habitEntries")
+        .withIndex("by_challenge_day", (q) => q.eq("challengeId", args.challengeId))
+        .collect();
+
+      const entriesByDay = new Map<number, Map<string, typeof entries[number]>>();
+      for (const e of entries) {
+        let byHabit = entriesByDay.get(e.dayNumber);
+        if (!byHabit) {
+          byHabit = new Map();
+          entriesByDay.set(e.dayNumber, byHabit);
+        }
+        byHabit.set(String(e.habitDefinitionId), e);
+      }
+
+      for (let day = 1; day <= challenge.currentDay; day++) {
+        if (hardHabits.length === 0) {
+          result[day] = false;
+          continue;
+        }
+        const byHabit = entriesByDay.get(day);
+        const complete = !!byHabit && hardHabits.every((h) => {
+          const entry = byHabit.get(String(h._id));
+          return !!entry?.completed;
+        });
+        result[day] = complete;
+      }
+      return result;
+    }
+
+    const logs = await ctx.db
+      .query("dailyLogs")
+      .withIndex("by_challenge_day", (q) => q.eq("challengeId", args.challengeId))
+      .collect();
+    for (const log of logs) {
+      result[log.dayNumber] = !!log.allRequirementsMet;
+    }
+    return result;
+  },
+});
+
 export const startChallenge = mutation({
   args: {
     userId: v.id("users"),

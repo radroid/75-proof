@@ -85,6 +85,24 @@ export default function ProgressPage() {
     api.challenges.getLifetimeStats,
     isGuest ? "skip" : (user ? { userId: user._id } : "skip")
   );
+  const activeCompletionMap = useQuery(
+    api.challenges.getDayCompletionMap,
+    isGuest ? "skip" : (user?.currentChallengeId
+      ? { challengeId: user.currentChallengeId }
+      : "skip")
+  );
+  const activeHabitDefs = useQuery(
+    api.habitDefinitions.getHabitDefinitions,
+    isGuest ? "skip" : (user?.currentChallengeId
+      ? { challengeId: user.currentChallengeId }
+      : "skip")
+  );
+  const activeHabitEntries = useQuery(
+    api.habitEntries.getAllEntriesForChallenge,
+    isGuest ? "skip" : (user?.currentChallengeId
+      ? { challengeId: user.currentChallengeId }
+      : "skip")
+  );
 
   // Effective data — use demo for guests
   const effectiveUser = isGuest ? demoUser : user;
@@ -106,6 +124,24 @@ export default function ProgressPage() {
       ? { challengeId: selectedChallengeId }
       : "skip")
   );
+  const historyCompletionMap = useQuery(
+    api.challenges.getDayCompletionMap,
+    isGuest ? "skip" : (selectedChallengeId && selectedChallengeId !== user?.currentChallengeId
+      ? { challengeId: selectedChallengeId }
+      : "skip")
+  );
+  const historyHabitDefs = useQuery(
+    api.habitDefinitions.getHabitDefinitions,
+    isGuest ? "skip" : (selectedChallengeId && selectedChallengeId !== user?.currentChallengeId
+      ? { challengeId: selectedChallengeId }
+      : "skip")
+  );
+  const historyHabitEntries = useQuery(
+    api.habitEntries.getAllEntriesForChallenge,
+    isGuest ? "skip" : (selectedChallengeId && selectedChallengeId !== user?.currentChallengeId
+      ? { challengeId: selectedChallengeId }
+      : "skip")
+  );
 
   // Auto-select active challenge for history
   const activeChallenge = challenges?.find((c) => c.status === "active");
@@ -120,15 +156,47 @@ export default function ProgressPage() {
     ? demoChallengeLogs
     : effectiveHistoryId === user?.currentChallengeId ? logs : historyLogs;
 
+  // Guest/demo mode uses the legacy `allRequirementsMet` field — derive a map.
+  const demoCompletionMap: Record<number, boolean> = isGuest
+    ? Object.fromEntries(demoChallengeLogs.map((l: any) => [l.dayNumber, !!l.allRequirementsMet]))
+    : {};
+
+  const effectiveHistoryCompletionMap: Record<number, boolean> = isGuest
+    ? demoCompletionMap
+    : (effectiveHistoryId === user?.currentChallengeId
+        ? (activeCompletionMap ?? {})
+        : (historyCompletionMap ?? {}));
+
+  const activeEffectiveCompletionMap: Record<number, boolean> = isGuest
+    ? demoCompletionMap
+    : (activeCompletionMap ?? {});
+
+  const effectiveHistoryHabitDefs = isGuest
+    ? []
+    : (effectiveHistoryId === user?.currentChallengeId ? activeHabitDefs : historyHabitDefs);
+  const effectiveHistoryHabitEntries = isGuest
+    ? []
+    : (effectiveHistoryId === user?.currentChallengeId ? activeHabitEntries : historyHabitEntries);
+  const isHistoryNewSystem = !!effectiveHistoryHabitDefs && effectiveHistoryHabitDefs.length > 0;
+
   // Filter and sort history
   const loggedDaysMap = new Map(effectiveHistoryLogs?.map((log) => [log.dayNumber, log]));
+  const historyEntriesByDay = new Map<number, any[]>();
+  for (const e of (effectiveHistoryHabitEntries ?? [])) {
+    const list = historyEntriesByDay.get(e.dayNumber) ?? [];
+    list.push(e);
+    historyEntriesByDay.set(e.dayNumber, list);
+  }
+  const sortedHabitDefs = effectiveHistoryHabitDefs
+    ? [...effectiveHistoryHabitDefs].sort((a: any, b: any) => a.sortOrder - b.sortOrder)
+    : [];
   const allDays = selectedHistoryChallenge
     ? Array.from({ length: selectedHistoryChallenge.currentDay }, (_, i) => i + 1).reverse()
     : [];
   const filteredDays = allDays.filter((day) => {
-    const log = loggedDaysMap.get(day);
-    if (filter === "complete") return log?.allRequirementsMet;
-    if (filter === "incomplete") return !log?.allRequirementsMet;
+    const isComplete = !!effectiveHistoryCompletionMap[day];
+    if (filter === "complete") return isComplete;
+    if (filter === "incomplete") return !isComplete;
     return true;
   });
 
@@ -243,7 +311,7 @@ export default function ProgressPage() {
     );
   }
 
-  const completedDays = effectiveLogs?.filter((log: any) => log.allRequirementsMet).length ?? 0;
+  const completedDays = Object.values(activeEffectiveCompletionMap).filter(Boolean).length;
   const totalWorkouts = effectiveLogs?.reduce((acc: number, log: any) => {
     let count = 0;
     if (log.workout1) count++;
@@ -456,8 +524,7 @@ export default function ProgressPage() {
           >
             {Array.from({ length: 75 }, (_, i) => {
               const dayNumber = i + 1;
-              const log = effectiveLogs?.find((l: any) => l.dayNumber === dayNumber);
-              const isComplete = log?.allRequirementsMet;
+              const isComplete = !!activeEffectiveCompletionMap[dayNumber];
               const isCurrent = dayNumber === effectiveChallenge.currentDay;
               const isPast = dayNumber < effectiveChallenge.currentDay;
 
@@ -631,7 +698,7 @@ export default function ProgressPage() {
                 {Math.round((selectedHistoryChallenge.currentDay / 75) * 100)}% complete
               </span>
               <span>
-                {effectiveHistoryLogs?.filter((l) => l.allRequirementsMet).length ?? 0} days fully completed
+                {Object.values(effectiveHistoryCompletionMap).filter(Boolean).length} days fully completed
               </span>
             </div>
           </div>
@@ -656,8 +723,10 @@ export default function ProgressPage() {
             <MotionList className="space-y-3">
               {filteredDays.map((day, index) => {
                 const log = loggedDaysMap.get(day);
+                const dayEntries = historyEntriesByDay.get(day) ?? [];
+                const hasData = isHistoryNewSystem ? dayEntries.length > 0 : !!log;
                 const isExpanded = expandedDays.has(day);
-                const isComplete = log?.allRequirementsMet ?? false;
+                const isComplete = !!effectiveHistoryCompletionMap[day];
 
                 return (
                   <MotionListItem key={day} className="relative pl-12">
@@ -672,12 +741,12 @@ export default function ProgressPage() {
                       }}
                       className={cn(
                         "absolute left-2 top-4 w-5 h-5 rounded-full flex items-center justify-center ring-4 ring-background",
-                        isComplete ? "bg-success" : log ? "bg-warning" : "bg-muted"
+                        isComplete ? "bg-success" : hasData ? "bg-warning" : "bg-muted"
                       )}
                     >
                       {isComplete ? (
                         <Check className="h-3 w-3 text-white" />
-                      ) : log ? (
+                      ) : hasData ? (
                         <span className="text-[10px] font-bold text-white">!</span>
                       ) : (
                         <span className="text-[10px] text-muted-foreground">-</span>
@@ -720,34 +789,36 @@ export default function ProgressPage() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <div className="hidden sm:flex items-center gap-1">
-                            <RequirementDot completed={!!log?.workout1 && log.workout1.durationMinutes >= 45} icon={<Dumbbell className="h-2.5 w-2.5" />} />
-                            <RequirementDot completed={!!log?.workout2 && log.workout2.durationMinutes >= 45} icon={<Dumbbell className="h-2.5 w-2.5" />} />
-                            <RequirementDot completed={log?.outdoorWorkoutCompleted ?? false} icon={<TreePine className="h-2.5 w-2.5" />} />
-                            <RequirementDot completed={(log?.waterIntakeOz ?? 0) >= 128} icon={<Droplets className="h-2.5 w-2.5" />} />
-                            <RequirementDot completed={(log?.readingMinutes ?? 0) >= 20} icon={<BookOpen className="h-2.5 w-2.5" />} />
-                            <RequirementDot completed={log?.dietFollowed ?? false} icon={<Utensils className="h-2.5 w-2.5" />} />
-                            <RequirementDot completed={log?.noAlcohol ?? false} icon={<Wine className="h-2.5 w-2.5" />} />
-                            <RequirementDot completed={!!log?.progressPhotoId} icon={<Camera className="h-2.5 w-2.5" />} />
-                          </div>
+                          {!isHistoryNewSystem && (
+                            <div className="hidden sm:flex items-center gap-1">
+                              <RequirementDot completed={!!log?.workout1 && log.workout1.durationMinutes >= 45} icon={<Dumbbell className="h-2.5 w-2.5" />} />
+                              <RequirementDot completed={!!log?.workout2 && log.workout2.durationMinutes >= 45} icon={<Dumbbell className="h-2.5 w-2.5" />} />
+                              <RequirementDot completed={log?.outdoorWorkoutCompleted ?? false} icon={<TreePine className="h-2.5 w-2.5" />} />
+                              <RequirementDot completed={(log?.waterIntakeOz ?? 0) >= 128} icon={<Droplets className="h-2.5 w-2.5" />} />
+                              <RequirementDot completed={(log?.readingMinutes ?? 0) >= 20} icon={<BookOpen className="h-2.5 w-2.5" />} />
+                              <RequirementDot completed={log?.dietFollowed ?? false} icon={<Utensils className="h-2.5 w-2.5" />} />
+                              <RequirementDot completed={log?.noAlcohol ?? false} icon={<Wine className="h-2.5 w-2.5" />} />
+                              <RequirementDot completed={!!log?.progressPhotoId} icon={<Camera className="h-2.5 w-2.5" />} />
+                            </div>
+                          )}
 
                           <Badge
                             variant="outline"
                             className={cn(
                               isComplete
                                 ? "border-success text-success"
-                                : log
+                                : hasData
                                 ? "border-warning text-warning"
                                 : "border-muted-foreground text-muted-foreground"
                             )}
                           >
-                            {isComplete ? "Complete" : log ? "Partial" : "No data"}
+                            {isComplete ? "Complete" : hasData ? "Partial" : "No data"}
                           </Badge>
                         </div>
                       </button>
 
                       <AnimatePresence>
-                        {isExpanded && log && (
+                        {isExpanded && (isHistoryNewSystem ? hasData : !!log) && (
                           <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
@@ -756,58 +827,83 @@ export default function ProgressPage() {
                             className="overflow-hidden"
                           >
                             <div className="px-3 pb-3 pt-0">
-                              <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                                <RequirementCard
-                                  label="Workout 1"
-                                  icon={<Dumbbell className="h-4 w-4" />}
-                                  completed={!!log.workout1 && log.workout1.durationMinutes >= 45}
-                                  value={log.workout1 ? `${log.workout1.name} (${log.workout1.durationMinutes}min)` : "Not logged"}
-                                />
-                                <RequirementCard
-                                  label="Workout 2"
-                                  icon={<Dumbbell className="h-4 w-4" />}
-                                  completed={!!log.workout2 && log.workout2.durationMinutes >= 45}
-                                  value={log.workout2 ? `${log.workout2.name} (${log.workout2.durationMinutes}min)` : "Not logged"}
-                                />
-                                <RequirementCard
-                                  label="Outdoor"
-                                  icon={<TreePine className="h-4 w-4" />}
-                                  completed={log.outdoorWorkoutCompleted}
-                                  value={log.outdoorWorkoutCompleted ? "Yes" : "No"}
-                                />
-                                <RequirementCard
-                                  label="Water"
-                                  icon={<Droplets className="h-4 w-4" />}
-                                  completed={log.waterIntakeOz >= 128}
-                                  value={`${log.waterIntakeOz} / 128 oz`}
-                                />
-                                <RequirementCard
-                                  label="Reading"
-                                  icon={<BookOpen className="h-4 w-4" />}
-                                  completed={log.readingMinutes >= 20}
-                                  value={`${log.readingMinutes} / 20 min`}
-                                />
-                                <RequirementCard
-                                  label="Diet"
-                                  icon={<Utensils className="h-4 w-4" />}
-                                  completed={log.dietFollowed}
-                                  value={log.dietFollowed ? "Followed" : "Not tracked"}
-                                />
-                                <RequirementCard
-                                  label="No Alcohol"
-                                  icon={<Wine className="h-4 w-4" />}
-                                  completed={log.noAlcohol}
-                                  value={log.noAlcohol ? "Yes" : "Not tracked"}
-                                />
-                                <RequirementCard
-                                  label="Photo"
-                                  icon={<Camera className="h-4 w-4" />}
-                                  completed={!!log.progressPhotoId}
-                                  value={log.progressPhotoId ? "Uploaded" : "Not taken"}
-                                />
-                              </div>
+                              {isHistoryNewSystem ? (
+                                <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                  {sortedHabitDefs
+                                    .filter((h: any) => h.isActive)
+                                    .map((h: any) => {
+                                      const entry = dayEntries.find((e: any) => e.habitDefinitionId === h._id);
+                                      const done = !!entry?.completed;
+                                      const valueText = h.blockType === "counter" && typeof entry?.value === "number"
+                                        ? `${entry.value}${h.target ? ` / ${h.target}` : ""}${h.unit ? ` ${h.unit}` : ""}`
+                                        : done
+                                        ? "Completed"
+                                        : "Not done";
+                                      return (
+                                        <HabitRequirementCard
+                                          key={h._id}
+                                          label={h.name}
+                                          completed={done}
+                                          value={valueText}
+                                          isHard={h.isHard}
+                                        />
+                                      );
+                                    })}
+                                </div>
+                              ) : (
+                                <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                                  <RequirementCard
+                                    label="Workout 1"
+                                    icon={<Dumbbell className="h-4 w-4" />}
+                                    completed={!!log!.workout1 && log!.workout1.durationMinutes >= 45}
+                                    value={log!.workout1 ? `${log!.workout1.name} (${log!.workout1.durationMinutes}min)` : "Not logged"}
+                                  />
+                                  <RequirementCard
+                                    label="Workout 2"
+                                    icon={<Dumbbell className="h-4 w-4" />}
+                                    completed={!!log!.workout2 && log!.workout2.durationMinutes >= 45}
+                                    value={log!.workout2 ? `${log!.workout2.name} (${log!.workout2.durationMinutes}min)` : "Not logged"}
+                                  />
+                                  <RequirementCard
+                                    label="Outdoor"
+                                    icon={<TreePine className="h-4 w-4" />}
+                                    completed={log!.outdoorWorkoutCompleted}
+                                    value={log!.outdoorWorkoutCompleted ? "Yes" : "No"}
+                                  />
+                                  <RequirementCard
+                                    label="Water"
+                                    icon={<Droplets className="h-4 w-4" />}
+                                    completed={log!.waterIntakeOz >= 128}
+                                    value={`${log!.waterIntakeOz} / 128 oz`}
+                                  />
+                                  <RequirementCard
+                                    label="Reading"
+                                    icon={<BookOpen className="h-4 w-4" />}
+                                    completed={log!.readingMinutes >= 20}
+                                    value={`${log!.readingMinutes} / 20 min`}
+                                  />
+                                  <RequirementCard
+                                    label="Diet"
+                                    icon={<Utensils className="h-4 w-4" />}
+                                    completed={log!.dietFollowed}
+                                    value={log!.dietFollowed ? "Followed" : "Not tracked"}
+                                  />
+                                  <RequirementCard
+                                    label="No Alcohol"
+                                    icon={<Wine className="h-4 w-4" />}
+                                    completed={log!.noAlcohol}
+                                    value={log!.noAlcohol ? "Yes" : "Not tracked"}
+                                  />
+                                  <RequirementCard
+                                    label="Photo"
+                                    icon={<Camera className="h-4 w-4" />}
+                                    completed={!!log!.progressPhotoId}
+                                    value={log!.progressPhotoId ? "Uploaded" : "Not taken"}
+                                  />
+                                </div>
+                              )}
 
-                              {log.completedAt && (
+                              {log?.completedAt && (
                                 <p className="text-xs text-muted-foreground mt-3">
                                   Completed at {new Date(log.completedAt).toLocaleTimeString("en-US", {
                                     hour: "numeric",
@@ -840,6 +936,44 @@ function RequirementDot({ completed, icon }: { completed: boolean; icon: React.R
       )}
     >
       {icon}
+    </div>
+  );
+}
+
+function HabitRequirementCard({
+  label,
+  completed,
+  value,
+  isHard,
+}: {
+  label: string;
+  completed: boolean;
+  value: string;
+  isHard: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "p-2 rounded-lg border",
+        completed
+          ? "bg-success/5 border-success/20"
+          : "bg-muted/50 border-border"
+      )}
+    >
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className="text-xs font-medium truncate">{label}</span>
+        <Badge
+          variant="outline"
+          className={cn(
+            "h-4 px-1 text-[9px] tracking-wider uppercase",
+            isHard ? "border-primary/40 text-primary" : "border-muted-foreground/40 text-muted-foreground"
+          )}
+        >
+          {isHard ? "Hard" : "Soft"}
+        </Badge>
+        {completed && <Check className="h-3 w-3 text-success ml-auto" />}
+      </div>
+      <p className="text-xs text-muted-foreground truncate">{value}</p>
     </div>
   );
 }
