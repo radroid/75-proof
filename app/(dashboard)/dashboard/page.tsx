@@ -56,6 +56,11 @@ function AuthenticatedDashboard() {
   const user = useQuery(api.users.getCurrentUser);
   const createOrGetUser = useMutation(api.users.createOrGetUser);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+  // Must be called unconditionally (before any early return) so the hook order
+  // is stable across loading/loaded renders — otherwise React throws
+  // "Rendered more hooks than during the previous render." and trips the root
+  // error boundary, which is what iOS users hit on first load (see PR #7).
+  const tourFlag = useFeatureFlagEnabled("show-onboarding-tour");
 
   useEffect(() => {
     if (user === null && !isCreatingUser) {
@@ -94,7 +99,6 @@ function AuthenticatedDashboard() {
     );
   }
 
-  const tourFlag = useFeatureFlagEnabled("show-onboarding-tour");
   const showTour = !!tourFlag && user.onboardingComplete === true && user.hasSeenTutorial !== true;
 
   return (
