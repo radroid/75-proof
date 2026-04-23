@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import {
@@ -10,10 +11,9 @@ import {
   getUserTimezone,
 } from "@/lib/day-utils";
 
-interface ChallengeStatusResult {
-  status: string;
-  failedOnDay?: number;
-}
+export type ChallengeStatusResult = FunctionReturnType<
+  typeof api.challenges.checkChallengeStatus
+>;
 
 /**
  * Hook that computes todayDayNumber and lazily checks challenge status on mount.

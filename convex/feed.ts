@@ -88,6 +88,7 @@ export const getFriendsFeed = query({
 
     const friendActivities = [];
     for (const activity of allActivities) {
+      if (activity.backfilled) continue;
       if (friendIdSet.has(String(activity.userId))) {
         const challenge = await ctx.db.get(activity.challengeId);
         if (
@@ -123,6 +124,7 @@ export const getPublicFeed = query({
 
     const publicActivities = [];
     for (const activity of allActivities) {
+      if (activity.backfilled) continue;
       const challenge = await ctx.db.get(activity.challengeId);
       if (challenge && challenge.visibility === "public") {
         const user = await ctx.db.get(activity.userId);

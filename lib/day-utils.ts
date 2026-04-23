@@ -22,9 +22,10 @@ export function computeDayNumber(startDate: string, todayDate: string): number {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
 }
 
-/** Is a given day still editable? Day N is editable through the end of day N+2. */
+/** Is a given day still editable via the normal checklist? Today only.
+ *  Past-day edits go through the reconciliation dialog instead. */
 export function isDayEditable(dayNumber: number, todayDayNumber: number): boolean {
-  return todayDayNumber <= dayNumber + 2;
+  return todayDayNumber === dayNumber;
 }
 
 /** Add days to a YYYY-MM-DD date string, returning a new YYYY-MM-DD string. */

@@ -172,6 +172,11 @@ export default defineSchema({
     dayNumber: v.optional(v.number()),
     message: v.string(),
     createdAt: v.string(),
+    // Set on rows produced by the reconciliation dialog's "mark complete"
+    // path. Friend and public feeds filter these out so self-attested
+    // backfills don't fan out socially; the user still sees them in their
+    // own personal feed.
+    backfilled: v.optional(v.boolean()),
   })
     .index("by_user", ["userId"])
     .index("by_created", ["createdAt"])

@@ -34,9 +34,9 @@ export function ChallengeFailedDialog({
         <DialogHeader>
           <DialogTitle>A fresh start</DialogTitle>
           <DialogDescription>
-            Day {failedOnDay} went incomplete past the 2-day grace window, so
-            per 75 HARD rules the counter goes back to Day 0. That&apos;s it —
-            no penalty, just a reset.
+            Day {failedOnDay} sat incomplete for more than 7 days, so per 75
+            HARD rules the counter goes back to Day 0. That&apos;s it — no
+            penalty, just a reset.
           </DialogDescription>
         </DialogHeader>
         {streakReached !== undefined && streakReached > 0 && (
