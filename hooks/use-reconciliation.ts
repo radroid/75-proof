@@ -9,18 +9,25 @@ import { getTodayInTimezone, getUserTimezone } from "@/lib/day-utils";
 interface UseReconciliationArgs {
   challengeId: Id<"challenges">;
   missedDays: number[];
+  /**
+   * Called after a successful backfill/reset to refresh derived state (e.g.
+   * re-run `checkChallengeStatus`). Reactive Convex queries will re-render
+   * on their own as the underlying data changes; this is specifically for
+   * the mutation-driven status result that won't otherwise recompute.
+   */
+  onResolved?: () => void | Promise<void>;
 }
 
 /**
  * Packages the three reconciliation-dialog actions (backfill HARD, backfill
  * HARD + soft, reset) behind a single `isSubmitting` flag, so every themed
  * dashboard can wire the dialog identically.
- *
- * On success, each handler triggers `window.location.reload()` to re-run
- * `checkChallengeStatus` from a clean slate — avoids any stale query state
- * from the optimistic Convex client.
  */
-export function useReconciliation({ challengeId, missedDays }: UseReconciliationArgs) {
+export function useReconciliation({
+  challengeId,
+  missedDays,
+  onResolved,
+}: UseReconciliationArgs) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const reconcile = useMutation(api.challenges.reconcileMissedDays);
   const resetKeepingSetup = useMutation(api.challenges.resetKeepingSetup);
@@ -38,10 +45,9 @@ export function useReconciliation({ challengeId, missedDays }: UseReconciliation
         mode,
         userTimezone,
       });
-      window.location.reload();
-    } catch (err) {
+      await onResolved?.();
+    } finally {
       setIsSubmitting(false);
-      throw err;
     }
   };
 
@@ -60,10 +66,9 @@ export function useReconciliation({ challengeId, missedDays }: UseReconciliation
         failedOnDay,
         startDate: todayStr,
       });
-      window.location.reload();
-    } catch (err) {
+      await onResolved?.();
+    } finally {
       setIsSubmitting(false);
-      throw err;
     }
   };
 

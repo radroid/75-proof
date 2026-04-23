@@ -7,7 +7,7 @@ import {
   getDateForDay,
   getEditableDays,
   getReconciliationWindow,
-  RECONCILIATION_WINDOW_DAYS,
+  getAutoFailUpperBound,
 } from "./lib/dayCalculation";
 
 /**
@@ -337,7 +337,7 @@ export const checkChallengeStatus = mutation({
     // Hard-cap auto-fail: any day that's gone >7 days without completion
     // fails the challenge. Normally the cron has already handled this; we
     // re-check here so a stale client doesn't render a stale state.
-    const hardCapUpperBound = Math.min(todayDayNumber - RECONCILIATION_WINDOW_DAYS - 1, 75);
+    const hardCapUpperBound = getAutoFailUpperBound(todayDayNumber);
     for (let day = 1; day <= hardCapUpperBound; day++) {
       const complete = await isDayCompleteForChallenge(ctx, args.challengeId, day);
       if (!complete) {
@@ -434,10 +434,7 @@ export const checkAllActiveChallenges = internalMutation({
       const todayStr = getTodayInTimezone(tz);
       const todayDayNumber = computeDayNumber(challenge.startDate, todayStr);
 
-      const hardCapUpperBound = Math.min(
-        todayDayNumber - RECONCILIATION_WINDOW_DAYS - 1,
-        75
-      );
+      const hardCapUpperBound = getAutoFailUpperBound(todayDayNumber);
       if (hardCapUpperBound < 1) {
         const syncDay = Math.min(Math.max(todayDayNumber, 1), 75);
         if (challenge.currentDay !== syncDay) {
@@ -486,8 +483,22 @@ export const reconcileMissedDays = mutation({
     userTimezone: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ code: "UNAUTHENTICATED", message: "Not authenticated" });
+    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) {
+      throw new ConvexError({ code: "NOT_FOUND", message: "User not found" });
+    }
+
     const challenge = await ctx.db.get(args.challengeId);
-    if (!challenge) throw new ConvexError({ code: "NOT_FOUND", message: "Challenge not found" });
+    if (!challenge || challenge.userId !== user._id) {
+      throw new ConvexError({ code: "NOT_FOUND", message: "Challenge not found" });
+    }
     if (challenge.status !== "active") {
       throw new ConvexError({
         code: "NOT_ACTIVE",
@@ -518,6 +529,16 @@ export const reconcileMissedDays = mutation({
     const backfilled: number[] = [];
 
     for (const dayNumber of args.missedDays) {
+      // Re-verify the day is actually incomplete. The client echoes back the
+      // missed-day list from `checkChallengeStatus`, but we don't want to
+      // fabricate feed rows or clobber real entries for already-complete days.
+      const alreadyComplete = await isDayCompleteForChallenge(
+        ctx,
+        args.challengeId,
+        dayNumber
+      );
+      if (alreadyComplete) continue;
+
       const dateStr = getDateForDay(challenge.startDate, dayNumber);
 
       if (usesNewSystem) {
@@ -553,6 +574,10 @@ export const reconcileMissedDays = mutation({
           }
         }
       } else {
+        // Legacy `dailyLogs`: flip only the completion markers and flag the
+        // row `backfilled: true`. We deliberately do NOT invent workout
+        // durations, water intake, or reading minutes — those would pollute
+        // lifetime stats with synthetic data the user never entered.
         const existing = await ctx.db
           .query("dailyLogs")
           .withIndex("by_challenge_day", (q) =>
@@ -560,30 +585,11 @@ export const reconcileMissedDays = mutation({
           )
           .unique();
 
-        const syntheticWorkout1 = {
-          type: "other" as const,
-          name: "Workout (backfilled)",
-          durationMinutes: 45,
-          isOutdoor: false,
-        };
-        const syntheticWorkout2 = {
-          type: "other" as const,
-          name: "Outdoor workout (backfilled)",
-          durationMinutes: 45,
-          isOutdoor: true,
-        };
-
         if (existing) {
           await ctx.db.patch(existing._id, {
-            workout1: existing.workout1 ?? syntheticWorkout1,
-            workout2: existing.workout2 ?? syntheticWorkout2,
-            outdoorWorkoutCompleted: true,
-            dietFollowed: true,
-            noAlcohol: true,
-            waterIntakeOz: Math.max(existing.waterIntakeOz ?? 0, 128),
-            readingMinutes: Math.max(existing.readingMinutes ?? 0, 20),
             allRequirementsMet: true,
             completedAt: existing.completedAt ?? nowIso,
+            backfilled: true,
           });
         } else {
           await ctx.db.insert("dailyLogs", {
@@ -591,15 +597,14 @@ export const reconcileMissedDays = mutation({
             userId: challenge.userId,
             dayNumber,
             date: dateStr,
-            workout1: syntheticWorkout1,
-            workout2: syntheticWorkout2,
-            outdoorWorkoutCompleted: true,
-            dietFollowed: true,
-            noAlcohol: true,
-            waterIntakeOz: 128,
-            readingMinutes: 20,
+            outdoorWorkoutCompleted: false,
+            dietFollowed: false,
+            noAlcohol: false,
+            waterIntakeOz: 0,
+            readingMinutes: 0,
             allRequirementsMet: true,
             completedAt: nowIso,
+            backfilled: true,
           });
         }
       }
@@ -627,9 +632,6 @@ export const reconcileMissedDays = mutation({
           createdAt: nowIso,
           backfilled: true,
         });
-      } else if (!existingFeed.backfilled) {
-        // Pre-existing feed row (shouldn't normally happen for an incomplete
-        // day, but leave it alone — don't mutate a non-backfilled entry).
       }
 
       backfilled.push(dayNumber);

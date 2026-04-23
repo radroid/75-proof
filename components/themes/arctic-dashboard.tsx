@@ -24,7 +24,7 @@ interface ThemedDashboardProps {
 export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
   const { isGuest, demoChallengeLogs, demoLifetimeStats } = useGuest();
 
-  const { todayDayNumber: authTodayDay, userTimezone, statusResult } = useChallengeStatus(
+  const { todayDayNumber: authTodayDay, userTimezone, statusResult, recheck } = useChallengeStatus(
     isGuest ? undefined : challenge._id,
     isGuest ? undefined : challenge.startDate
   );
@@ -47,6 +47,7 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
       statusResult?.status === "needs_reconciliation"
         ? statusResult.missedDays ?? []
         : [],
+    onResolved: recheck,
   });
 
   const lifetimeStats = useQuery(

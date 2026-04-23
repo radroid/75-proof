@@ -36,6 +36,15 @@ export function isDayAutoFailExpired(dayNumber: number, todayDayNumber: number):
   return todayDayNumber > dayNumber + RECONCILIATION_WINDOW_DAYS;
 }
 
+/**
+ * Highest day number that's eligible for auto-fail (i.e. outside the 7-day
+ * reconciliation window). Returns 0 when nothing is past the window yet.
+ * Capped at 75 so we never scan beyond the challenge length.
+ */
+export function getAutoFailUpperBound(todayDayNumber: number): number {
+  return Math.min(todayDayNumber - RECONCILIATION_WINDOW_DAYS - 1, 75);
+}
+
 /** Add days to a YYYY-MM-DD date string, returning a new YYYY-MM-DD string. */
 export function addDays(dateStr: string, days: number): string {
   const d = parseDate(dateStr);

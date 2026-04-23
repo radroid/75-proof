@@ -135,6 +135,12 @@ export default defineSchema({
     // Computed
     allRequirementsMet: v.boolean(),
     completedAt: v.optional(v.string()), // ISO timestamp
+
+    // Set on rows produced by the reconciliation dialog's self-attest path.
+    // Consumers that aggregate real activity (lifetime stats, social feeds)
+    // should ignore backfilled rows; the fields below are synthetic markers,
+    // not logged workouts.
+    backfilled: v.optional(v.boolean()),
   })
     .index("by_challenge", ["challengeId"])
     .index("by_user", ["userId"])
