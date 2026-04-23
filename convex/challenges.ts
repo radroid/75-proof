@@ -13,17 +13,20 @@ import {
 /**
  * Shared helper: check if a day is complete for a challenge.
  * Detects which system the challenge uses (legacy dailyLogs vs new habitEntries).
+ *
+ * Callers that already hold the challenge's habit definitions can pass them
+ * in to skip the redundant read — useful when this is called inside a loop.
  */
 async function isDayCompleteForChallenge(
   ctx: MutationCtx,
   challengeId: Id<"challenges">,
-  dayNumber: number
+  dayNumber: number,
+  preloadedHabitDefs?: Array<{ _id: Id<"habitDefinitions">; isActive: boolean; isHard: boolean }>
 ): Promise<boolean> {
-  // Check if challenge uses the new habit system
-  const habitDefs = await ctx.db
+  const habitDefs = preloadedHabitDefs ?? (await ctx.db
     .query("habitDefinitions")
     .withIndex("by_challenge", (q) => q.eq("challengeId", challengeId))
-    .collect();
+    .collect());
 
   if (habitDefs.length > 0) {
     // New system: check all active hard habits have completed entries
@@ -535,7 +538,8 @@ export const reconcileMissedDays = mutation({
       const alreadyComplete = await isDayCompleteForChallenge(
         ctx,
         args.challengeId,
-        dayNumber
+        dayNumber,
+        habitDefs
       );
       if (alreadyComplete) continue;
 

@@ -39,8 +39,10 @@ export function useChallengeStatus(
     try {
       const result = await checkStatus({ challengeId, userTimezone });
       setStatusResult(result);
-    } catch {
-      // Swallow — retained statusResult is still the best-available truth.
+    } catch (err) {
+      // Retained statusResult is the best-available truth; log so we notice
+      // if this path starts failing rather than silently going stale.
+      console.warn("useChallengeStatus.recheck failed", err);
     }
   }, [challengeId, userTimezone, checkStatus]);
 
