@@ -312,14 +312,18 @@ export default function ProgressPage() {
   }
 
   const completedDays = Object.values(activeEffectiveCompletionMap).filter(Boolean).length;
-  const totalWorkouts = effectiveLogs?.reduce((acc: number, log: any) => {
+  // Aggregate metrics are built from actually-logged activity, so we exclude
+  // backfilled rows — those only record "day completed" via self-attestation
+  // and would otherwise pull sums toward zero.
+  const metricLogs = effectiveLogs?.filter((log: any) => !log.backfilled) ?? [];
+  const totalWorkouts = metricLogs.reduce((acc: number, log: any) => {
     let count = 0;
     if (log.workout1) count++;
     if (log.workout2) count++;
     return acc + count;
-  }, 0) ?? 0;
-  const totalWater = effectiveLogs?.reduce((acc: number, log: any) => acc + log.waterIntakeOz, 0) ?? 0;
-  const totalReading = effectiveLogs?.reduce((acc: number, log: any) => acc + log.readingMinutes, 0) ?? 0;
+  }, 0);
+  const totalWater = metricLogs.reduce((acc: number, log: any) => acc + log.waterIntakeOz, 0);
+  const totalReading = metricLogs.reduce((acc: number, log: any) => acc + log.readingMinutes, 0);
 
   return (
     <PageContainer>
