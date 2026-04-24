@@ -53,3 +53,16 @@ export function getEditableDays(todayDayNumber: number): number[] {
   }
   return days;
 }
+
+/**
+ * Resolve the effective challenge length. Returns null for habit-tracker mode
+ * (no end date), the stored daysTotal when set, or 75 for legacy rows that
+ * predate the configurable-duration feature.
+ */
+export function effectiveDaysTotal(challenge: {
+  daysTotal?: number;
+  isHabitTracker?: boolean;
+}): number | null {
+  if (challenge.isHabitTracker) return null;
+  return challenge.daysTotal ?? 75;
+}

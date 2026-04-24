@@ -58,3 +58,24 @@ export function formatDateShort(dateStr: string): string {
     timeZone: "UTC",
   });
 }
+
+/** Resolve the effective challenge length. Returns null for habit-tracker mode. */
+export function effectiveDaysTotal(challenge: {
+  daysTotal?: number;
+  isHabitTracker?: boolean;
+}): number | null {
+  if (challenge.isHabitTracker) return null;
+  return challenge.daysTotal ?? 75;
+}
+
+/** Format the end date for a challenge as a long-form string (e.g. "Apr 15, 2026"). */
+export function formatEndDate(startDate: string, daysTotal: number): string {
+  const endIso = getDateForDay(startDate, daysTotal);
+  const d = parseDate(endIso);
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}

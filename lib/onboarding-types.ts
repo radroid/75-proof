@@ -26,7 +26,12 @@ export interface OnboardingState {
   habits: OnboardingHabit[];
   startDate: string;
   visibility: "private" | "friends" | "public";
+  daysTotal: number;
 }
+
+export const DURATION_PRESETS = [30, 60, 75, 90] as const;
+export const DURATION_MIN = 7;
+export const DURATION_MAX = 365;
 
 export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   ageRange: null,
@@ -40,6 +45,7 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   habits: [],
   startDate: new Date().toISOString().split("T")[0],
   visibility: "friends",
+  daysTotal: 75,
 };
 
 export const ONBOARDING_STEPS = [
@@ -47,6 +53,7 @@ export const ONBOARDING_STEPS = [
   "goals",
   "theme",
   "tier",
+  "duration",
   "habits",
   "review",
 ] as const;

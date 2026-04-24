@@ -30,6 +30,8 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   Bell,
+  CalendarDays,
+  Infinity as InfinityIcon,
   Palette,
   Play,
   Settings,
@@ -42,6 +44,7 @@ import { useGuest } from "@/components/guest-provider";
 import { sharedUserProfileProps, userButtonPopoverElements } from "@/lib/clerk-appearance";
 import { usePushSubscription } from "@/components/pwa/use-push-subscription";
 import { haptic, isHapticsEnabled, setHapticsEnabled } from "@/lib/haptics";
+import { formatEndDate } from "@/lib/day-utils";
 
 export default function SettingsPage() {
   const { isGuest, promptSignup } = useGuest();
@@ -69,6 +72,8 @@ export default function SettingsPage() {
   const updateUser = useMutation(api.users.updateUser);
   const resetAndReOnboard = useMutation(api.challenges.resetAndReOnboard);
   const resetKeepingSetup = useMutation(api.challenges.resetKeepingSetup);
+  const updateChallengeDuration = useMutation(api.challenges.updateChallengeDuration);
+  const convertToHabitTracker = useMutation(api.challenges.convertToHabitTracker);
   const resetTutorial = useMutation(api.users.resetTutorialSeen);
   const setNotificationPreferences = useMutation(
     api.pushSubscriptions.setNotificationPreferences
@@ -283,6 +288,55 @@ export default function SettingsPage() {
     }
   }, [resetTutorial, router]);
 
+  // Challenge duration controls — local state for the "extend" dialog input.
+  // Pre-fill with the current target so a small bump is the easiest action.
+  const currentDaysTotal = challenge?.daysTotal ?? 75;
+  const [extendValue, setExtendValue] = useState<string>("");
+  useEffect(() => {
+    if (challenge && !challenge.isHabitTracker) {
+      setExtendValue(String(currentDaysTotal));
+    }
+  }, [challenge, currentDaysTotal]);
+
+  const handleExtendDuration = async () => {
+    if (!user?.currentChallengeId) return;
+    const parsed = parseInt(extendValue, 10);
+    if (Number.isNaN(parsed)) {
+      toast.error("Enter a valid number of days");
+      return;
+    }
+    try {
+      await updateChallengeDuration({
+        challengeId: user.currentChallengeId,
+        newDaysTotal: parsed,
+      });
+      posthog.capture("challenge_duration_extended", {
+        from_days: currentDaysTotal,
+        to_days: parsed,
+      });
+      toast.success(`Challenge extended to ${parsed} days`);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Couldn't extend challenge"
+      );
+    }
+  };
+
+  const handleConvertToHabitTracker = async () => {
+    if (!user?.currentChallengeId) return;
+    try {
+      await convertToHabitTracker({ challengeId: user.currentChallengeId });
+      posthog.capture("challenge_converted_to_habit_tracker", {
+        from_days: currentDaysTotal,
+      });
+      toast.success("Now running as a habit tracker — no end date");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Couldn't convert challenge"
+      );
+    }
+  };
+
   if (user === undefined) {
     return (
       <div className="max-w-2xl space-y-6">
@@ -468,6 +522,163 @@ export default function SettingsPage() {
           </Card>
         </MotionItem>
       </Section>
+
+      {/* Challenge length section */}
+      {challenge && (
+        <Section title="Challenge length">
+          <MotionItem>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-lg">Duration</CardTitle>
+                </div>
+                <CardDescription>
+                  Extend your challenge or convert it into an open-ended habit
+                  tracker.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {/* Current state */}
+                <div className="rounded-lg border bg-muted/40 p-4">
+                  {challenge.isHabitTracker ? (
+                    <div className="flex items-center gap-3">
+                      <InfinityIcon className="h-5 w-5 text-primary" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">Habit tracker mode</p>
+                        <p className="text-xs text-muted-foreground">
+                          No end date — keep going as long as you like.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-sm font-medium">
+                        Day {challenge.currentDay} of {currentDaysTotal}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Ends on{" "}
+                        {formatEndDate(challenge.startDate, currentDaysTotal)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Extend */}
+                {!challenge.isHabitTracker && challenge.status !== "failed" && (
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 sm:pr-4">
+                      <p className="font-medium text-sm">Extend challenge</p>
+                      <p className="text-xs text-muted-foreground">
+                        Add more days. Length can only go up — never down.
+                      </p>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full sm:w-auto sm:shrink-0 min-h-11"
+                        >
+                          Extend
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Extend challenge</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Pick a new total length (must be greater than{" "}
+                            {currentDaysTotal} and at most 365 days).
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <div className="space-y-2 py-2">
+                          <Label htmlFor="extend-days">New length</Label>
+                          <div className="flex items-center gap-3">
+                            <Input
+                              id="extend-days"
+                              type="number"
+                              inputMode="numeric"
+                              min={currentDaysTotal + 1}
+                              max={365}
+                              value={extendValue}
+                              onChange={(e) => setExtendValue(e.target.value)}
+                              className="h-11 text-base"
+                            />
+                            <span className="text-sm text-muted-foreground whitespace-nowrap">
+                              days
+                            </span>
+                          </div>
+                        </div>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="min-h-11">
+                            Cancel
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleExtendDuration}
+                            className="min-h-11"
+                          >
+                            Extend
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                )}
+
+                {/* Convert to habit tracker */}
+                {!challenge.isHabitTracker && challenge.status !== "failed" && (
+                  <>
+                    <div className="border-t border-border" />
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 sm:pr-4">
+                        <p className="font-medium text-sm">Remove end date</p>
+                        <p className="text-xs text-muted-foreground">
+                          Convert to an open-ended habit tracker. This is
+                          permanent — there&apos;s no going back to a fixed
+                          length.
+                        </p>
+                      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full sm:w-auto sm:shrink-0 min-h-11"
+                          >
+                            Convert to tracker
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Remove the end date?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Your challenge will continue indefinitely as a
+                              habit tracker. You&apos;ll keep your day counter
+                              and habits, but completion will no longer fire.
+                              This cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="min-h-11">
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleConvertToHabitTracker}
+                              className="min-h-11"
+                            >
+                              Yes, convert
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </MotionItem>
+        </Section>
+      )}
 
       {/* Privacy & Sharing section */}
       <Section title="Privacy & Sharing">

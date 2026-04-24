@@ -5,6 +5,7 @@ import {
   getTodayInTimezone,
   computeDayNumber,
   getEditableDays,
+  effectiveDaysTotal,
 } from "./lib/dayCalculation";
 
 /**
@@ -149,6 +150,7 @@ export const startChallenge = mutation({
       v.literal("friends"),
       v.literal("public")
     ),
+    daysTotal: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Check if user already has an active challenge
@@ -162,6 +164,8 @@ export const startChallenge = mutation({
       throw new Error("User already has an active challenge");
     }
 
+    const daysTotal = args.daysTotal ?? 75;
+
     // Create new challenge
     const challengeId = await ctx.db.insert("challenges", {
       userId: args.userId,
@@ -170,6 +174,7 @@ export const startChallenge = mutation({
       status: "active",
       visibility: args.visibility,
       restartCount: 0,
+      daysTotal,
     });
 
     // Update user's current challenge
@@ -177,12 +182,15 @@ export const startChallenge = mutation({
       currentChallengeId: challengeId,
     });
 
-    // Create activity feed entry
+    const startMessage =
+      daysTotal === 75
+        ? "Started the 75 HARD challenge!"
+        : `Started a ${daysTotal}-day challenge!`;
     await ctx.db.insert("activityFeed", {
       userId: args.userId,
       type: "challenge_started",
       challengeId,
-      message: "Started the 75 HARD challenge!",
+      message: startMessage,
       createdAt: new Date().toISOString(),
     });
 
@@ -203,27 +211,32 @@ export const advanceDay = mutation({
     }
 
     const newDay = challenge.currentDay + 1;
+    const daysTotal = effectiveDaysTotal(challenge); // null = habit-tracker mode
 
-    if (newDay > 75) {
+    if (daysTotal !== null && newDay > daysTotal) {
       // Challenge completed!
       await ctx.db.patch(args.challengeId, {
-        currentDay: 75,
+        currentDay: daysTotal,
         status: "completed",
       });
 
       // Update longest streak on user record
       const user = await ctx.db.get(challenge.userId);
       const currentLongest = user?.longestStreak ?? 0;
-      if (75 > currentLongest) {
-        await ctx.db.patch(challenge.userId, { longestStreak: 75 });
+      if (daysTotal > currentLongest) {
+        await ctx.db.patch(challenge.userId, { longestStreak: daysTotal });
       }
 
+      const completionMessage =
+        daysTotal === 75
+          ? "Completed the 75 HARD challenge! 🎉"
+          : `Completed the ${daysTotal}-day challenge! 🎉`;
       await ctx.db.insert("activityFeed", {
         userId: challenge.userId,
         type: "challenge_completed",
         challengeId: args.challengeId,
-        dayNumber: 75,
-        message: "Completed the 75 HARD challenge! 🎉",
+        dayNumber: daysTotal,
+        message: completionMessage,
         createdAt: new Date().toISOString(),
       });
     } else {
@@ -234,12 +247,14 @@ export const advanceDay = mutation({
       // Check for milestones
       const milestones = [7, 14, 21, 30, 45, 60];
       if (milestones.includes(newDay - 1)) {
+        const milestoneSuffix =
+          daysTotal === 75 ? "of 75 HARD" : daysTotal !== null ? `of ${daysTotal}` : "";
         await ctx.db.insert("activityFeed", {
           userId: challenge.userId,
           type: "milestone",
           challengeId: args.challengeId,
           dayNumber: newDay - 1,
-          message: `Reached Day ${newDay - 1} of 75 HARD!`,
+          message: `Reached Day ${newDay - 1}${milestoneSuffix ? " " + milestoneSuffix : ""}!`,
           createdAt: new Date().toISOString(),
         });
       }
@@ -312,21 +327,26 @@ export const checkChallengeStatus = mutation({
 
     const todayStr = getTodayInTimezone(args.userTimezone);
     const todayDayNumber = computeDayNumber(challenge.startDate, todayStr);
+    const daysTotal = effectiveDaysTotal(challenge); // null = habit-tracker mode
+    // Cap currentDay at the configured total when bounded; let it grow
+    // unbounded in habit-tracker mode.
+    const cap = (n: number) => (daysTotal === null ? n : Math.min(n, daysTotal));
 
     // If challenge hasn't started yet or is day 1-3, no grace periods expired
     const lastExpiredDay = todayDayNumber - 3;
     if (lastExpiredDay < 1) {
       // Sync currentDay
-      const syncDay = Math.min(Math.max(todayDayNumber, 1), 75);
+      const syncDay = cap(Math.max(todayDayNumber, 1));
       if (challenge.currentDay !== syncDay) {
         await ctx.db.patch(args.challengeId, { currentDay: syncDay });
       }
       return { status: "active" };
     }
 
-    // Scan from day 1 to lastExpiredDay for incomplete days
-    const upperBound = Math.min(lastExpiredDay, 75);
-    for (let day = 1; day <= upperBound; day++) {
+    // Scan from day 1 to lastExpiredDay for incomplete days. In habit-tracker
+    // mode there is no upper limit; otherwise cap at daysTotal.
+    const scanCeiling = daysTotal === null ? lastExpiredDay : Math.min(lastExpiredDay, daysTotal);
+    for (let day = 1; day <= scanCeiling; day++) {
       const complete = await isDayCompleteForChallenge(ctx, args.challengeId, day);
       if (!complete) {
         // This day is incomplete and grace period has expired — fail
@@ -335,11 +355,12 @@ export const checkChallengeStatus = mutation({
       }
     }
 
-    // All expired days are complete — check for challenge completion
-    if (todayDayNumber > 75) {
-      // Verify all 75 days are complete
+    // All expired days are complete — check for challenge completion. In
+    // habit-tracker mode the challenge never completes; just sync forward.
+    if (daysTotal !== null && todayDayNumber > daysTotal) {
+      // Verify all daysTotal days are complete
       let allComplete = true;
-      for (let day = upperBound + 1; day <= 75; day++) {
+      for (let day = scanCeiling + 1; day <= daysTotal; day++) {
         const complete = await isDayCompleteForChallenge(ctx, args.challengeId, day);
         if (!complete) {
           allComplete = false;
@@ -349,23 +370,27 @@ export const checkChallengeStatus = mutation({
 
       if (allComplete) {
         await ctx.db.patch(args.challengeId, {
-          currentDay: 75,
+          currentDay: daysTotal,
           status: "completed",
         });
 
         // Update longest streak on user record
         const user = await ctx.db.get(challenge.userId);
         const currentLongest = user?.longestStreak ?? 0;
-        if (75 > currentLongest) {
-          await ctx.db.patch(challenge.userId, { longestStreak: 75 });
+        if (daysTotal > currentLongest) {
+          await ctx.db.patch(challenge.userId, { longestStreak: daysTotal });
         }
 
+        const completionMessage =
+          daysTotal === 75
+            ? "Completed the 75 HARD challenge!"
+            : `Completed the ${daysTotal}-day challenge!`;
         await ctx.db.insert("activityFeed", {
           userId: challenge.userId,
           type: "challenge_completed",
           challengeId: args.challengeId,
-          dayNumber: 75,
-          message: "Completed the 75 HARD challenge!",
+          dayNumber: daysTotal,
+          message: completionMessage,
           createdAt: new Date().toISOString(),
         });
         return { status: "completed" };
@@ -373,7 +398,7 @@ export const checkChallengeStatus = mutation({
     }
 
     // Sync currentDay
-    const syncDay = Math.min(Math.max(todayDayNumber, 1), 75);
+    const syncDay = cap(Math.max(todayDayNumber, 1));
     if (challenge.currentDay !== syncDay) {
       await ctx.db.patch(args.challengeId, { currentDay: syncDay });
     }
@@ -398,18 +423,21 @@ export const checkAllActiveChallenges = internalMutation({
 
       const todayStr = getTodayInTimezone(tz);
       const todayDayNumber = computeDayNumber(challenge.startDate, todayStr);
+      const daysTotal = effectiveDaysTotal(challenge);
+      const cap = (n: number) => (daysTotal === null ? n : Math.min(n, daysTotal));
 
       const lastExpiredDay = todayDayNumber - 3;
       if (lastExpiredDay < 1) {
         // Sync currentDay
-        const syncDay = Math.min(Math.max(todayDayNumber, 1), 75);
+        const syncDay = cap(Math.max(todayDayNumber, 1));
         if (challenge.currentDay !== syncDay) {
           await ctx.db.patch(challenge._id, { currentDay: syncDay });
         }
         continue;
       }
 
-      const upperBound = Math.min(lastExpiredDay, 75);
+      const upperBound =
+        daysTotal === null ? lastExpiredDay : Math.min(lastExpiredDay, daysTotal);
       let failed = false;
       for (let day = 1; day <= upperBound; day++) {
         const complete = await isDayCompleteForChallenge(ctx, challenge._id, day);
@@ -421,7 +449,7 @@ export const checkAllActiveChallenges = internalMutation({
       }
 
       if (!failed) {
-        const syncDay = Math.min(Math.max(todayDayNumber, 1), 75);
+        const syncDay = cap(Math.max(todayDayNumber, 1));
         if (challenge.currentDay !== syncDay) {
           await ctx.db.patch(challenge._id, { currentDay: syncDay });
         }
@@ -559,6 +587,9 @@ export const resetKeepingSetup = mutation({
 
     await failChallengeInternal(ctx, args.challengeId, args.failedOnDay);
 
+    const carriedDaysTotal = oldChallenge.daysTotal ?? 75;
+    const carriedIsHabitTracker = oldChallenge.isHabitTracker;
+
     const newChallengeId = await ctx.db.insert("challenges", {
       userId: oldChallenge.userId,
       startDate: args.startDate,
@@ -567,6 +598,8 @@ export const resetKeepingSetup = mutation({
       visibility: oldChallenge.visibility,
       restartCount: 0,
       setupTier: oldChallenge.setupTier,
+      daysTotal: carriedDaysTotal,
+      isHabitTracker: carriedIsHabitTracker,
     });
 
     for (const h of oldHabits) {
@@ -589,11 +622,16 @@ export const resetKeepingSetup = mutation({
       currentChallengeId: newChallengeId,
     });
 
+    const startMessage = carriedIsHabitTracker
+      ? "Started a fresh habit tracker!"
+      : carriedDaysTotal === 75
+        ? "Started the 75 HARD challenge!"
+        : `Started a ${carriedDaysTotal}-day challenge!`;
     await ctx.db.insert("activityFeed", {
       userId: oldChallenge.userId,
       type: "challenge_started",
       challengeId: newChallengeId,
-      message: "Started the 75 HARD challenge!",
+      message: startMessage,
       createdAt: new Date().toISOString(),
     });
 
@@ -613,6 +651,141 @@ export const updateVisibility = mutation({
   handler: async (ctx, args) => {
     await ctx.db.patch(args.challengeId, {
       visibility: args.visibility,
+    });
+  },
+});
+
+/**
+ * Extend the active challenge length. Length can only increase — shrinking
+ * past completed days would invalidate already-finished work, so we reject it.
+ */
+export const updateChallengeDuration = mutation({
+  args: {
+    challengeId: v.id("challenges"),
+    newDaysTotal: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const challenge = await ctx.db.get(args.challengeId);
+    if (!challenge) throw new Error("Challenge not found");
+
+    const user = await ctx.db.get(challenge.userId);
+    if (!user || user.clerkId !== identity.subject) {
+      throw new Error("Not authorized");
+    }
+
+    if (challenge.isHabitTracker) {
+      throw new Error("Habit-tracker mode has no duration to extend");
+    }
+    if (args.newDaysTotal > 365) {
+      throw new Error("Challenge length cannot exceed 365 days");
+    }
+    const currentTotal = challenge.daysTotal ?? 75;
+    if (args.newDaysTotal <= currentTotal) {
+      throw new Error("Challenge length can only be increased");
+    }
+    if (args.newDaysTotal < challenge.currentDay) {
+      throw new Error("New length must be at least the current day");
+    }
+
+    await ctx.db.patch(args.challengeId, { daysTotal: args.newDaysTotal });
+
+    // If the challenge was previously completed (e.g. user finished the
+    // original target and now wants more days), reactivate it.
+    if (challenge.status === "completed") {
+      await ctx.db.patch(args.challengeId, { status: "active" });
+      await ctx.db.patch(challenge.userId, { currentChallengeId: args.challengeId });
+    }
+
+    await ctx.db.insert("activityFeed", {
+      userId: challenge.userId,
+      type: "milestone",
+      challengeId: args.challengeId,
+      dayNumber: challenge.currentDay,
+      message: `Extended challenge to ${args.newDaysTotal} days`,
+      createdAt: new Date().toISOString(),
+    });
+  },
+});
+
+/**
+ * Begin re-onboarding after a completed challenge. Unlike resetAndReOnboard
+ * (which is for failures and marks the challenge as "failed"), this preserves
+ * the "completed" status — the user actually finished — and only clears the
+ * onboarding flag so the page lets them through.
+ */
+export const startNewChallengeAfterCompletion = mutation({
+  args: { challengeId: v.id("challenges") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const challenge = await ctx.db.get(args.challengeId);
+    if (!challenge) throw new Error("Challenge not found");
+
+    const user = await ctx.db.get(challenge.userId);
+    if (!user || user.clerkId !== identity.subject) {
+      throw new Error("Not authorized");
+    }
+    if (challenge.status !== "completed") {
+      throw new Error("Challenge is not completed");
+    }
+
+    await ctx.db.patch(challenge.userId, {
+      onboardingComplete: false,
+      currentChallengeId: undefined,
+    });
+  },
+});
+
+/**
+ * Convert the active (or just-completed) challenge into an endless habit
+ * tracker. The challenge keeps its existing currentDay and habit definitions
+ * but no longer has an end date — completion logic stops firing entirely.
+ * One-way: there's no UI to convert back in v1.
+ */
+export const convertToHabitTracker = mutation({
+  args: {
+    challengeId: v.id("challenges"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const challenge = await ctx.db.get(args.challengeId);
+    if (!challenge) throw new Error("Challenge not found");
+
+    const user = await ctx.db.get(challenge.userId);
+    if (!user || user.clerkId !== identity.subject) {
+      throw new Error("Not authorized");
+    }
+
+    if (challenge.isHabitTracker) {
+      // Already a habit tracker — no-op.
+      return;
+    }
+
+    await ctx.db.patch(args.challengeId, {
+      isHabitTracker: true,
+      status: "active",
+    });
+
+    // Make sure the user's pointer reflects this challenge as the active one
+    // (it might have been cleared when the challenge previously failed or
+    // completed).
+    if (user.currentChallengeId !== args.challengeId) {
+      await ctx.db.patch(challenge.userId, { currentChallengeId: args.challengeId });
+    }
+
+    await ctx.db.insert("activityFeed", {
+      userId: challenge.userId,
+      type: "milestone",
+      challengeId: args.challengeId,
+      dayNumber: challenge.currentDay,
+      message: "Converted to habit tracker — no end date",
+      createdAt: new Date().toISOString(),
     });
   },
 });

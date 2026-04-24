@@ -51,6 +51,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useGuest } from "@/components/guest-provider";
 import { useSwipe } from "@/hooks/use-swipe";
 import { useRouter } from "next/navigation";
+import { effectiveDaysTotal, formatEndDate } from "@/lib/day-utils";
 
 type FilterType = "all" | "complete" | "incomplete";
 
@@ -312,6 +313,14 @@ export default function ProgressPage() {
   }
 
   const completedDays = Object.values(activeEffectiveCompletionMap).filter(Boolean).length;
+  // Effective challenge length for the active challenge. null = habit-tracker mode.
+  const activeDaysTotal = effectiveDaysTotal(effectiveChallenge);
+  const isActiveHabitTracker = activeDaysTotal === null;
+  // Calendar grid sizing: bounded challenges show daysTotal cells; habit
+  // trackers grow rolling — show currentDay + 7 to give a small forward window.
+  const gridLength = isActiveHabitTracker
+    ? Math.max(effectiveChallenge.currentDay + 7, 14)
+    : (activeDaysTotal ?? 75);
   const totalWorkouts = effectiveLogs?.reduce((acc: number, log: any) => {
     let count = 0;
     if (log.workout1) count++;
@@ -328,7 +337,9 @@ export default function ProgressPage() {
           Progress
         </h1>
         <p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground mt-2">
-          Your 75 Hard Journey
+          {isActiveHabitTracker
+            ? "Habit tracker — no end date"
+            : `Ends on ${formatEndDate(effectiveChallenge.startDate, activeDaysTotal ?? 75)}`}
         </p>
       </div>
 
@@ -341,7 +352,9 @@ export default function ProgressPage() {
           </div>
           <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
             {completedDays}
-            <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">/ 75</span>
+            <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">
+              {isActiveHabitTracker ? "" : `/ ${activeDaysTotal}`}
+            </span>
           </p>
         </motion.div>
         <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
@@ -514,7 +527,11 @@ export default function ProgressPage() {
       {/* Calendar view */}
       <div className="h-px bg-border my-8 md:my-16" />
       <div>
-        <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 md:mb-8">75-Day Calendar</p>
+        <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 md:mb-8">
+          {isActiveHabitTracker
+            ? "Habit Tracker"
+            : `${activeDaysTotal}-Day Calendar`}
+        </p>
         <MotionItem>
           <motion.div
             initial="hidden"
@@ -522,7 +539,7 @@ export default function ProgressPage() {
             variants={staggerContainerFast}
             className="grid grid-cols-15 gap-1 sm:gap-1.5 min-w-0"
           >
-            {Array.from({ length: 75 }, (_, i) => {
+            {Array.from({ length: gridLength }, (_, i) => {
               const dayNumber = i + 1;
               const isComplete = !!activeEffectiveCompletionMap[dayNumber];
               const isCurrent = dayNumber === effectiveChallenge.currentDay;
@@ -676,7 +693,11 @@ export default function ProgressPage() {
               <div className="text-right">
                 <p className="text-3xl font-bold tabular-nums">
                   Day {selectedHistoryChallenge.currentDay}
-                  <span className="text-sm font-normal text-muted-foreground"> / 75</span>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    {selectedHistoryChallenge.isHabitTracker
+                      ? ""
+                      : ` / ${selectedHistoryChallenge.daysTotal ?? 75}`}
+                  </span>
                 </p>
                 {(selectedHistoryChallenge as any).failedOnDay && (
                   <p className="text-sm text-destructive mt-1">
@@ -686,7 +707,13 @@ export default function ProgressPage() {
               </div>
             </div>
             <Progress
-              value={(selectedHistoryChallenge.currentDay / 75) * 100}
+              value={
+                selectedHistoryChallenge.isHabitTracker
+                  ? 100
+                  : (selectedHistoryChallenge.currentDay /
+                      (selectedHistoryChallenge.daysTotal ?? 75)) *
+                    100
+              }
               variant={selectedHistoryChallenge.status === "completed" ? "success" : "default"}
               className={cn(
                 "h-2",
@@ -695,7 +722,9 @@ export default function ProgressPage() {
             />
             <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
               <span>
-                {Math.round((selectedHistoryChallenge.currentDay / 75) * 100)}% complete
+                {selectedHistoryChallenge.isHabitTracker
+                  ? "Habit tracker"
+                  : `${Math.round((selectedHistoryChallenge.currentDay / (selectedHistoryChallenge.daysTotal ?? 75)) * 100)}% complete`}
               </span>
               <span>
                 {Object.values(effectiveHistoryCompletionMap).filter(Boolean).length} days fully completed

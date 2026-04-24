@@ -43,6 +43,8 @@ export const DEMO_CHALLENGE = {
   status: "active" as const,
   visibility: "private" as const,
   attemptNumber: 1,
+  daysTotal: 75 as number | undefined,
+  isHabitTracker: false as boolean | undefined,
 };
 
 /** Today's partial log — workout 1 done, 64oz water, diet+alcohol done, 10 min reading, no photo */

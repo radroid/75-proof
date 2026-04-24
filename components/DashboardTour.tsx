@@ -19,7 +19,7 @@ const STEPS: TourStep[] = [
     id: "welcome",
     icon: Flame,
     title: "Welcome to your dashboard",
-    body: "This is where you track every task, every day, for 75 days straight. Tap any item to mark it complete.",
+    body: "This is where you track every task, every day of your challenge. Tap any item to mark it complete.",
   },
   {
     id: "checklist",
@@ -31,7 +31,7 @@ const STEPS: TourStep[] = [
     id: "photo",
     icon: ImageIcon,
     title: "Progress photo",
-    body: "One photo a day. The Progress page stitches them into a 75-day timeline so you can see the change.",
+    body: "One photo a day. The Progress page stitches them into a timeline so you can see the change.",
   },
   {
     id: "water",

@@ -8,11 +8,12 @@ import { GuestDailyChecklist } from "@/components/GuestDailyChecklist";
 import { DayNavigator } from "@/components/DayNavigator";
 import { SwipeableDayView } from "@/components/swipeable-day-view";
 import { ChallengeFailedDialog } from "@/components/ChallengeFailedDialog";
+import { ChallengeCompletedDialog } from "@/components/ChallengeCompletedDialog";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useChallengeStatus } from "@/hooks/use-challenge-status";
 import { useGuest } from "@/components/guest-provider";
-import { isDayEditable, getDateForDay, computeDayNumber, getTodayInTimezone, getUserTimezone } from "@/lib/day-utils";
+import { isDayEditable, getDateForDay, computeDayNumber, getTodayInTimezone, getUserTimezone, effectiveDaysTotal } from "@/lib/day-utils";
 
 interface ThemedDashboardProps {
   user: any;
@@ -34,10 +35,19 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
   const displayDay = selectedDayNumber ?? todayDayNumber;
   const dateStr = getDateForDay(challenge.startDate, displayDay);
   const isEditable = isDayEditable(displayDay, todayDayNumber);
-  const completion = Math.round((todayDayNumber / 75) * 100);
+  const daysTotal = effectiveDaysTotal(challenge);
+  const isHabitTracker = daysTotal === null;
+  const completion = isHabitTracker
+    ? 100
+    : Math.round((todayDayNumber / daysTotal) * 100);
+  const segmentTotal = isHabitTracker
+    ? Math.max(todayDayNumber + 7, 14)
+    : (daysTotal ?? 75);
 
   const [showFailedDialog, setShowFailedDialog] = useState(true);
+  const [showCompletedDialog, setShowCompletedDialog] = useState(true);
   const hasFailed = !isGuest && statusResult?.status === "failed";
+  const hasCompleted = !isGuest && statusResult?.status === "completed";
 
   const lifetimeStats = useQuery(
     api.challenges.getLifetimeStats,
@@ -105,6 +115,15 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
         />
       )}
 
+      {hasCompleted && (
+        <ChallengeCompletedDialog
+          open={showCompletedDialog}
+          challengeId={challenge._id}
+          daysTotal={challenge.daysTotal ?? 75}
+          onDismiss={() => setShowCompletedDialog(false)}
+        />
+      )}
+
       {/* Grid overlay */}
       <div
         className="fixed inset-0 pointer-events-none opacity-[0.04]"
@@ -158,20 +177,26 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
             >
               {String(displayDay).padStart(2, "0")}
             </h1>
-            <span className="text-2xl md:text-3xl font-light text-border tabular-nums">/75</span>
+            <span className="text-2xl md:text-3xl font-light text-border tabular-nums">
+              {isHabitTracker ? "/∞" : `/${daysTotal}`}
+            </span>
           </div>
 
-          {/* 75-segment tactical progress bar */}
+          {/* Tactical progress bar */}
           <div
             className="mt-4 md:mt-6 max-w-xl"
             role="progressbar"
             aria-valuenow={todayDayNumber}
             aria-valuemin={0}
-            aria-valuemax={75}
-            aria-label={`Operation day ${todayDayNumber} of 75`}
+            aria-valuemax={isHabitTracker ? todayDayNumber : (daysTotal ?? 75)}
+            aria-label={
+              isHabitTracker
+                ? `Operation day ${todayDayNumber} (open-ended)`
+                : `Operation day ${todayDayNumber} of ${daysTotal}`
+            }
           >
             <div className="flex items-center gap-px min-w-0">
-              {Array.from({ length: 75 }).map((_, i) => (
+              {Array.from({ length: segmentTotal }).map((_, i) => (
                 <div
                   key={i}
                   className="flex-1 min-w-0 h-2"
@@ -183,7 +208,9 @@ export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {
             </div>
             <div className="flex justify-between mt-3 text-[10px] md:text-[11px] tracking-wider text-muted-foreground tabular-nums">
               <span>DAY 01</span>
-              <span>OBJECTIVE: DAY 75</span>
+              <span>
+                {isHabitTracker ? "OPEN-ENDED" : `OBJECTIVE: DAY ${daysTotal}`}
+              </span>
             </div>
           </div>
 

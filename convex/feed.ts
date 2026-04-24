@@ -251,6 +251,8 @@ export const getFriendProgress = query({
             challenge: {
               currentDay: showDayNumber ? activeChallenge.currentDay : null,
               startDate: activeChallenge.startDate,
+              daysTotal: activeChallenge.daysTotal ?? 75,
+              isHabitTracker: activeChallenge.isHabitTracker === true,
             },
             todayComplete: showCompletionStatus ? todayComplete : null,
             coStreak,
@@ -323,7 +325,9 @@ function computeCoStreak(
 ): number {
   if (mine.size === 0 || theirs.size === 0) return 0;
 
-  const MAX_LOOKBACK = 75;
+  // Cap how far back we'll walk to compute a co-streak. 365 covers the longest
+  // configurable challenge length (and is forgiving for habit-tracker mode).
+  const MAX_LOOKBACK = 365;
   let streak = 0;
   const cursor = new Date();
   cursor.setHours(0, 0, 0, 0);

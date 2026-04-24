@@ -40,6 +40,8 @@ interface FriendProgressCardProps {
     challenge: {
       currentDay: number | null;
       startDate: string;
+      daysTotal?: number;
+      isHabitTracker?: boolean;
     };
     todayComplete: boolean | null;
     coStreak?: number;
@@ -112,7 +114,9 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
               <p className="font-medium truncate">{friend.user.displayName}</p>
               <p className="text-sm text-muted-foreground truncate">
                 {friend.challenge.currentDay != null
-                  ? `Day ${friend.challenge.currentDay} / 75`
+                  ? friend.challenge.isHabitTracker
+                    ? `Day ${friend.challenge.currentDay} · habit tracker`
+                    : `Day ${friend.challenge.currentDay} / ${friend.challenge.daysTotal ?? 75}`
                   : "Challenge in progress"}
               </p>
             </div>
@@ -184,7 +188,13 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
           </div>
           {friend.challenge.currentDay != null && (
             <Progress
-              value={(friend.challenge.currentDay / 75) * 100}
+              value={
+                friend.challenge.isHabitTracker
+                  ? 100
+                  : (friend.challenge.currentDay /
+                      (friend.challenge.daysTotal ?? 75)) *
+                    100
+              }
               className="mt-3 h-2"
             />
           )}

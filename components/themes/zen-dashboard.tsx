@@ -8,11 +8,12 @@ import { GuestDailyChecklist } from "@/components/GuestDailyChecklist";
 import { DayNavigator } from "@/components/DayNavigator";
 import { SwipeableDayView } from "@/components/swipeable-day-view";
 import { ChallengeFailedDialog } from "@/components/ChallengeFailedDialog";
+import { ChallengeCompletedDialog } from "@/components/ChallengeCompletedDialog";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useChallengeStatus } from "@/hooks/use-challenge-status";
 import { useGuest } from "@/components/guest-provider";
-import { isDayEditable, getDateForDay, computeDayNumber, getTodayInTimezone, getUserTimezone } from "@/lib/day-utils";
+import { isDayEditable, getDateForDay, computeDayNumber, getTodayInTimezone, getUserTimezone, effectiveDaysTotal } from "@/lib/day-utils";
 
 interface ThemedDashboardProps {
   user: any;
@@ -34,10 +35,16 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
   const displayDay = selectedDayNumber ?? todayDayNumber;
   const dateStr = getDateForDay(challenge.startDate, displayDay);
   const isEditable = isDayEditable(displayDay, todayDayNumber);
-  const completion = Math.round((todayDayNumber / 75) * 100);
+  const daysTotal = effectiveDaysTotal(challenge);
+  const isHabitTracker = daysTotal === null;
+  const completion = isHabitTracker
+    ? 100
+    : Math.round((todayDayNumber / daysTotal) * 100);
 
   const [showFailedDialog, setShowFailedDialog] = useState(true);
+  const [showCompletedDialog, setShowCompletedDialog] = useState(true);
   const hasFailed = !isGuest && statusResult?.status === "failed";
+  const hasCompleted = !isGuest && statusResult?.status === "completed";
 
   const lifetimeStats = useQuery(
     api.challenges.getLifetimeStats,
@@ -102,6 +109,15 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
         />
       )}
 
+      {hasCompleted && (
+        <ChallengeCompletedDialog
+          open={showCompletedDialog}
+          challengeId={challenge._id}
+          daysTotal={challenge.daysTotal ?? 75}
+          onDismiss={() => setShowCompletedDialog(false)}
+        />
+      )}
+
       {/* Subtle washi paper texture */}
       <div
         aria-hidden="true"
@@ -119,7 +135,11 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
           className="flex items-center justify-between mb-8 md:mb-20"
         >
           <p className="text-[11px] sm:text-xs tracking-[0.25em] sm:tracking-[0.3em] uppercase text-muted-foreground">
-            Seventy-Five Hard
+            {isHabitTracker
+              ? "Habit Tracker"
+              : daysTotal === 75
+                ? "Seventy-Five Hard"
+                : `${daysTotal}-Day Challenge`}
           </p>
           <p className="text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">
             Day {displayDay}
@@ -166,7 +186,11 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
                 {displayDay}
               </span>
               <span className="text-[11px] tracking-[0.25em] md:tracking-[0.3em] uppercase mt-2 text-muted-foreground">
-                of seventy-five
+                {isHabitTracker
+                  ? "habit tracker"
+                  : daysTotal === 75
+                    ? "of seventy-five"
+                    : `of ${daysTotal}`}
               </span>
             </div>
           </div>
