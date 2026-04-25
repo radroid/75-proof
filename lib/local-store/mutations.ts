@@ -398,6 +398,236 @@ export function markTutorialSeen(): void {
   });
 }
 
+export function updateDisplayName(displayName: string): void {
+  const trimmed = displayName.trim();
+  if (!trimmed) return;
+  localStore.write((draft) => {
+    if (!draft.user) return;
+    draft.user = { ...draft.user, displayName: trimmed };
+  });
+}
+
+export function updateWaterUnit(unit: "oz" | "ml"): void {
+  localStore.write((draft) => {
+    if (!draft.user) return;
+    draft.user = {
+      ...draft.user,
+      preferences: { ...draft.user.preferences, waterUnit: unit },
+    };
+  });
+}
+
+/**
+ * Extend the active challenge length. Same rules as the Convex mutation:
+ * length can only go up, max 365 days, must be ≥ currentDay, no-op on
+ * habit-tracker mode or failed challenges.
+ */
+export function extendChallengeDuration(args: {
+  challengeId: string;
+  newDaysTotal: number;
+}): void {
+  localStore.write((draft) => {
+    const idx = draft.challenges.findIndex((c) => c._id === args.challengeId);
+    if (idx === -1) return;
+    const challenge = draft.challenges[idx];
+    if (challenge.isHabitTracker) {
+      throw new Error("Habit-tracker mode has no duration to extend");
+    }
+    if (challenge.status === "failed") {
+      throw new Error("Cannot extend a failed challenge");
+    }
+    if (args.newDaysTotal > 365) {
+      throw new Error("Challenge length cannot exceed 365 days");
+    }
+    const currentTotal = challenge.daysTotal ?? 75;
+    if (args.newDaysTotal <= currentTotal) {
+      throw new Error("Challenge length can only be increased");
+    }
+    if (args.newDaysTotal < challenge.currentDay) {
+      throw new Error("New length must be at least the current day");
+    }
+    draft.challenges[idx] = {
+      ...challenge,
+      daysTotal: args.newDaysTotal,
+      // If the challenge had auto-completed at the old target, reactivate.
+      ...(challenge.status === "completed" ? { status: "active" as const } : {}),
+    };
+    if (challenge.status === "completed" && draft.user) {
+      draft.user = { ...draft.user, currentChallengeId: args.challengeId };
+    }
+    draft.activityFeed.push({
+      _id: genId("feed"),
+      _creationTime: Date.now(),
+      userId: challenge.userId,
+      type: "milestone",
+      challengeId: args.challengeId,
+      dayNumber: challenge.currentDay,
+      message: `Extended challenge to ${args.newDaysTotal} days`,
+      createdAt: new Date().toISOString(),
+    });
+  });
+}
+
+/**
+ * Convert the active or completed challenge into an open-ended habit
+ * tracker. One-way (no UI to convert back). Refuses to act on failed
+ * challenges.
+ */
+export function convertToHabitTracker(challengeId: string): void {
+  localStore.write((draft) => {
+    const idx = draft.challenges.findIndex((c) => c._id === challengeId);
+    if (idx === -1) return;
+    const challenge = draft.challenges[idx];
+    if (challenge.isHabitTracker) return;
+    if (challenge.status === "failed") {
+      throw new Error("Cannot convert a failed challenge to a habit tracker");
+    }
+    draft.challenges[idx] = {
+      ...challenge,
+      isHabitTracker: true,
+      status: "active",
+    };
+    if (draft.user && draft.user.currentChallengeId !== challengeId) {
+      draft.user = { ...draft.user, currentChallengeId: challengeId };
+    }
+    draft.activityFeed.push({
+      _id: genId("feed"),
+      _creationTime: Date.now(),
+      userId: challenge.userId,
+      type: "milestone",
+      challengeId,
+      dayNumber: challenge.currentDay,
+      message: "Converted to habit tracker — no end date",
+      createdAt: new Date().toISOString(),
+    });
+  });
+}
+
+/**
+ * Mark the active challenge as failed and clear the user's pointer.
+ * Used by both reset paths below; not exported on its own to keep the
+ * module surface tight.
+ */
+function failChallengeLocal(draft: LocalDB, challengeId: string, failedOnDay: number) {
+  const idx = draft.challenges.findIndex((c) => c._id === challengeId);
+  if (idx === -1) return;
+  const challenge = draft.challenges[idx];
+  draft.challenges[idx] = {
+    ...challenge,
+    status: "failed",
+    failedOnDay,
+    restartCount: (challenge.restartCount ?? 0) + 1,
+  };
+  if (draft.user) {
+    const streakFromAttempt = Math.max(failedOnDay - 1, 0);
+    const longest = draft.user.longestStreak ?? 0;
+    draft.user = {
+      ...draft.user,
+      currentChallengeId: undefined,
+      lifetimeRestartCount: (draft.user.lifetimeRestartCount ?? 0) + 1,
+      longestStreak: Math.max(longest, streakFromAttempt),
+    };
+  }
+  draft.activityFeed.push({
+    _id: genId("feed"),
+    _creationTime: Date.now(),
+    userId: challenge.userId,
+    type: "challenge_failed",
+    challengeId,
+    dayNumber: failedOnDay,
+    message: `Challenge ended on Day ${failedOnDay}. Ready to start again!`,
+    createdAt: new Date().toISOString(),
+  });
+}
+
+/**
+ * "Reset progress" path — fail the current challenge, then start a fresh
+ * one with the same habits / setup tier / visibility. The user lands on
+ * the dashboard with day 1.
+ */
+export function resetKeepingSetup(args: {
+  challengeId: string;
+  failedOnDay: number;
+  startDate: string;
+}): string {
+  let newId = "";
+  localStore.write((draft) => {
+    const old = draft.challenges.find((c) => c._id === args.challengeId);
+    if (!old) return;
+    const oldHabits = draft.habitDefinitions.filter(
+      (h) => h.challengeId === args.challengeId,
+    );
+    failChallengeLocal(draft, args.challengeId, args.failedOnDay);
+
+    newId = genId("challenge");
+    const carriedDaysTotal = old.daysTotal ?? 75;
+    draft.challenges.push({
+      _id: newId,
+      _creationTime: Date.now(),
+      userId: old.userId,
+      startDate: args.startDate,
+      currentDay: 1,
+      status: "active",
+      visibility: old.visibility,
+      restartCount: 0,
+      setupTier: old.setupTier,
+      daysTotal: carriedDaysTotal,
+      isHabitTracker: old.isHabitTracker,
+    });
+    for (const h of oldHabits) {
+      draft.habitDefinitions.push({
+        _id: genId("habitDef"),
+        _creationTime: Date.now(),
+        challengeId: newId,
+        userId: h.userId,
+        name: h.name,
+        blockType: h.blockType,
+        target: h.target,
+        unit: h.unit,
+        isHard: h.isHard,
+        isActive: h.isActive,
+        sortOrder: h.sortOrder,
+        category: h.category,
+        icon: h.icon,
+      });
+    }
+    if (draft.user) {
+      draft.user = { ...draft.user, currentChallengeId: newId };
+    }
+    const startMessage = old.isHabitTracker
+      ? "Started a fresh habit tracker!"
+      : carriedDaysTotal === 75
+        ? "Started the 75 HARD challenge!"
+        : `Started a ${carriedDaysTotal}-day challenge!`;
+    draft.activityFeed.push({
+      _id: genId("feed"),
+      _creationTime: Date.now(),
+      userId: old.userId,
+      type: "challenge_started",
+      challengeId: newId,
+      message: startMessage,
+      createdAt: new Date().toISOString(),
+    });
+  });
+  return newId;
+}
+
+/**
+ * "Reset & reconfigure" path — fail the current challenge and clear
+ * `onboardingComplete` so the user gets routed back through onboarding.
+ */
+export function resetAndReOnboard(args: {
+  challengeId: string;
+  failedOnDay: number;
+}): void {
+  localStore.write((draft) => {
+    failChallengeLocal(draft, args.challengeId, args.failedOnDay);
+    if (draft.user) {
+      draft.user = { ...draft.user, onboardingComplete: false };
+    }
+  });
+}
+
 /**
  * Used by `getDateForDay` callers — kept here for consistency, even though
  * it's a pure helper. Re-exported for component imports.

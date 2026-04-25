@@ -64,7 +64,17 @@ const staticNavItems = [
   },
 ];
 
-const guestNavItems = staticNavItems;
+// Local-mode users get their own Settings link (different page surface
+// than the signed-in version — no friend prefs, no device list — see
+// components/local-settings.tsx).
+const guestNavItems = [
+  ...staticNavItems,
+  {
+    label: "Settings",
+    href: "/dashboard/settings",
+    icon: <Settings className="h-5 w-5 flex-shrink-0" />,
+  },
+];
 
 // Mobile nav items for guests — built inside component to include signup action
 
@@ -246,6 +256,7 @@ export default function DashboardLayout({
   const guestMobileItems = [
     { label: "Today", href: "/dashboard", icon: LayoutDashboard },
     { label: "Progress", href: "/dashboard/progress", icon: TrendingUp },
+    { label: "Settings", href: "/dashboard/settings", icon: Settings },
     { label: "Sign Up", href: "#", icon: LogIn, action: promptSignup },
   ];
 

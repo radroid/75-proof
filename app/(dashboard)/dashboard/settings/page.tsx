@@ -41,6 +41,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useGuest } from "@/components/guest-provider";
+import { LocalSettingsPage } from "@/components/local-settings";
 import { sharedUserProfileProps, userButtonPopoverElements } from "@/lib/clerk-appearance";
 import { usePushSubscription } from "@/components/pwa/use-push-subscription";
 import { haptic, isHapticsEnabled, setHapticsEnabled } from "@/lib/haptics";
@@ -323,22 +324,7 @@ export default function SettingsPage() {
   };
 
   if (isGuest) {
-    return (
-      <PageContainer>
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-            <Settings className="h-8 w-8 text-primary" />
-          </div>
-          <h2 className="text-2xl font-bold">Personalize Your Experience</h2>
-          <p className="mt-3 text-muted-foreground max-w-md">
-            Sign up to access settings, customize your theme, and manage your profile.
-          </p>
-          <Button onClick={promptSignup} size="lg" className="mt-8">
-            Sign Up Free
-          </Button>
-        </div>
-      </PageContainer>
-    );
+    return <LocalSettingsPage />;
   }
 
   if (user === undefined) {
