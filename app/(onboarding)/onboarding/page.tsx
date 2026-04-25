@@ -13,6 +13,9 @@ import {
   INITIAL_ONBOARDING_STATE,
   ONBOARDING_STEPS,
 } from "@/lib/onboarding-types";
+import { useGuest } from "@/components/guest-provider";
+import { completeOnboarding as localCompleteOnboarding } from "@/lib/local-store/mutations";
+import { useLocalUser } from "@/lib/local-store/hooks";
 import { StepIndicator } from "@/components/onboarding/StepIndicator";
 import { OnboardingWelcome } from "@/components/onboarding/OnboardingWelcome";
 import { OnboardingGoals } from "@/components/onboarding/OnboardingGoals";
@@ -47,9 +50,18 @@ function loadStep(): number {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const user = useQuery(api.users.getCurrentUser);
-  const previousState = useQuery(api.onboarding.getPreviousOnboardingState);
-  const completeOnboarding = useMutation(api.onboarding.completeOnboarding);
+  const { isGuest, isLocalOptedIn } = useGuest();
+  const convexUser = useQuery(
+    api.users.getCurrentUser,
+    isGuest ? "skip" : undefined,
+  );
+  const localUser = useLocalUser();
+  const user = isGuest ? localUser : convexUser;
+  const previousState = useQuery(
+    api.onboarding.getPreviousOnboardingState,
+    isGuest ? "skip" : undefined,
+  );
+  const completeOnboardingConvex = useMutation(api.onboarding.completeOnboarding);
   const { setPersonality } = useThemePersonality();
 
   const [state, setState] = useState<OnboardingState>(loadState);
@@ -166,7 +178,8 @@ export default function OnboardingPage() {
   }, []);
 
   const handleComplete = useCallback(async () => {
-    if (!user || isSubmitting) return;
+    if (isSubmitting) return;
+    if (!isGuest && !user) return;
     setIsSubmitting(true);
     try {
       // Apply theme
@@ -177,12 +190,12 @@ export default function OnboardingPage() {
       // user picked before flipping back to the original setup.
       const finalDaysTotal = state.setupTier === "original" ? 75 : state.daysTotal;
 
-      // Submit to backend
-      await completeOnboarding({
+      const args = {
         displayName: state.displayName,
         timezone: state.timezone,
         ageRange: state.ageRange ?? undefined,
-        healthConditions: state.healthConditions.length > 0 ? state.healthConditions : undefined,
+        healthConditions:
+          state.healthConditions.length > 0 ? state.healthConditions : undefined,
         healthAdvisoryAcknowledged: state.healthAdvisoryAcknowledged,
         goals: state.goals.length > 0 ? state.goals : undefined,
         setupTier: state.setupTier,
@@ -190,7 +203,13 @@ export default function OnboardingPage() {
         startDate: state.startDate,
         visibility: state.visibility,
         daysTotal: finalDaysTotal,
-      });
+      } as const;
+
+      if (isGuest) {
+        localCompleteOnboarding(args);
+      } else {
+        await completeOnboardingConvex(args);
+      }
 
       posthog.capture("onboarding_completed", {
         setup_tier: state.setupTier,
@@ -198,7 +217,8 @@ export default function OnboardingPage() {
         active_habit_count: state.habits.filter((h) => h.isActive).length,
         visibility: state.visibility,
         days_total: finalDaysTotal,
-        is_re_onboarding: user.hasSeenTutorial,
+        is_re_onboarding: user?.hasSeenTutorial ?? false,
+        local_mode: isGuest,
       });
 
       sessionStorage.removeItem(STEP_KEY);
@@ -208,9 +228,26 @@ export default function OnboardingPage() {
       console.error("Onboarding failed:", err);
       setIsSubmitting(false);
     }
-  }, [user, isSubmitting, state, completeOnboarding, setPersonality, router]);
+  }, [
+    user,
+    isSubmitting,
+    state,
+    completeOnboardingConvex,
+    setPersonality,
+    router,
+    isGuest,
+  ]);
 
-  if (user === undefined) {
+  // Kick anonymous-and-not-local-mode users to sign-in. Side-effect goes
+  // in an effect, not the render path, to avoid the "router.replace
+  // during render" warning and the "redirect didn't commit" race.
+  useEffect(() => {
+    if (!isGuest && !isLocalOptedIn && user === null) {
+      router.replace("/sign-in");
+    }
+  }, [isGuest, isLocalOptedIn, user, router]);
+
+  if (!isGuest && user === undefined) {
     return (
       <div className="space-y-6">
         <HeroSkeleton />
@@ -218,9 +255,8 @@ export default function OnboardingPage() {
     );
   }
 
-  if (user === null) {
-    // Not authenticated — redirect to sign in
-    router.replace("/sign-in");
+  if (!isGuest && !isLocalOptedIn && user === null) {
+    // While the redirect is in flight, render nothing.
     return null;
   }
 

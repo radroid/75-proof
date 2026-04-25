@@ -36,11 +36,33 @@ const dashboardComponents: Record<ThemePersonality, React.ComponentType<{ user: 
 export default function DashboardPage() {
   const { isGuest, demoUser, demoChallenge } = useGuest();
   const { personality } = useThemePersonality();
+  const router = useRouter();
 
-  // Guest experience — render themed dashboard with demo data
+  // Local mode: render themed dashboard against the live local store.
+  // If the user opted in but hasn't completed onboarding yet, bounce them
+  // to the onboarding flow rather than rendering a broken empty state.
+  useEffect(() => {
+    if (isGuest && !demoChallenge) {
+      router.replace("/onboarding");
+    }
+  }, [isGuest, demoChallenge, router]);
+
   if (isGuest) {
+    if (!demoChallenge || !demoUser) {
+      return (
+        <div className="max-w-4xl space-y-6">
+          <HeroSkeleton />
+          <ChecklistSkeleton />
+        </div>
+      );
+    }
     const ThemedDashboard = dashboardComponents[personality];
-    return <ThemedDashboard user={demoUser} challenge={demoChallenge} />;
+    return (
+      <>
+        <NotificationPromptGate />
+        <ThemedDashboard user={demoUser} challenge={demoChallenge} />
+      </>
+    );
   }
 
   return (

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { DailyChecklist } from "@/components/DailyChecklist";
 import { DynamicDailyChecklist } from "@/components/DynamicDailyChecklist";
-import { GuestDailyChecklist } from "@/components/GuestDailyChecklist";
 import { DayNavigator } from "@/components/DayNavigator";
 import { SwipeableDayView } from "@/components/swipeable-day-view";
 import { ChallengeFailedDialog } from "@/components/ChallengeFailedDialog";
@@ -14,8 +13,12 @@ import { api } from "@/convex/_generated/api";
 import { useChallengeStatus } from "@/hooks/use-challenge-status";
 import { useReconciliation } from "@/hooks/use-reconciliation";
 import { useGuest } from "@/components/guest-provider";
-import { isDayEditable, getDateForDay, computeDayNumber, getTodayInTimezone, getUserTimezone, effectiveDaysTotal } from "@/lib/day-utils";
+import { isDayEditable, getDateForDay, effectiveDaysTotal } from "@/lib/day-utils";
 import { ChallengeCompletedDialog } from "@/components/ChallengeCompletedDialog";
+import {
+  useLocalActiveHabitDefinitions,
+  useLocalEntriesForDay,
+} from "@/lib/local-store/hooks";
 
 interface ThemedDashboardProps {
   user: any;
@@ -23,20 +26,21 @@ interface ThemedDashboardProps {
 }
 
 export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
-  const { isGuest, demoChallengeLogs, demoLifetimeStats } = useGuest();
+  const { isGuest, demoLifetimeStats } = useGuest();
 
-  const { todayDayNumber: authTodayDay, userTimezone, statusResult, recheck } = useChallengeStatus(
-    isGuest ? undefined : challenge._id,
-    isGuest ? undefined : challenge.startDate
+  const { todayDayNumber, userTimezone, statusResult, recheck } = useChallengeStatus(
+    challenge._id,
+    challenge.startDate,
   );
-
-  const guestTodayDay = isGuest ? computeDayNumber(challenge.startDate, getTodayInTimezone(getUserTimezone())) : 1;
-  const todayDayNumber = isGuest ? guestTodayDay : authTodayDay;
 
   const [selectedDayNumber, setSelectedDayNumber] = useState<number | null>(null);
   const displayDay = selectedDayNumber ?? todayDayNumber;
   const dateStr = getDateForDay(challenge.startDate, displayDay);
-  const isEditable = isDayEditable(displayDay, todayDayNumber);
+  // Local mode allows editing any day up to today (no reconciliation flow).
+  // Convex mode keeps the strict today-only edit window.
+  const isEditable = isGuest
+    ? displayDay <= todayDayNumber
+    : isDayEditable(displayDay, todayDayNumber);
   const daysTotal = effectiveDaysTotal(challenge); // null = habit-tracker mode
   const isHabitTracker = daysTotal === null;
   const completion = isHabitTracker
@@ -50,7 +54,7 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
 
   const [showFailedDialog, setShowFailedDialog] = useState(true);
   const [showCompletedDialog, setShowCompletedDialog] = useState(true);
-  const hasCompleted = !isGuest && statusResult?.status === "completed";
+  const hasCompleted = statusResult?.status === "completed";
   const needsReconciliation =
     !isGuest && statusResult?.status === "needs_reconciliation";
   const reconciliation = useReconciliation({
@@ -62,30 +66,41 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
     onResolved: recheck,
   });
 
-  const lifetimeStats = useQuery(
+  const convexLifetimeStats = useQuery(
     api.challenges.getLifetimeStats,
     isGuest ? "skip" : { userId: user._id }
   );
-  const effectiveLifetimeStats = isGuest ? demoLifetimeStats : lifetimeStats;
+  const effectiveLifetimeStats = isGuest ? demoLifetimeStats : convexLifetimeStats;
 
+  // Legacy `dailyLogs` are Convex-only; local mode never produces them.
   const logs = useQuery(
     api.dailyLogs.getChallengeLogs,
     isGuest ? "skip" : { challengeId: challenge._id }
   );
-  const effectiveLogs = isGuest ? demoChallengeLogs : logs;
+  const effectiveLogs = logs;
 
-  const [guestTotalDone, setGuestTotalDone] = useState<number | null>(null);
-
-  // Detect new habit system
-  const habitDefs = useQuery(
+  // Detect new habit system. Convex source for signed-in; local store for
+  // local-mode users (which always use the new system).
+  const convexHabitDefs = useQuery(
     api.habitDefinitions.getActiveHabitDefinitions,
     isGuest ? "skip" : { challengeId: challenge._id }
   );
-  const habitEntries = useQuery(
-    api.habitEntries.getEntriesForDay,
-    isGuest || !habitDefs || habitDefs.length === 0 ? "skip" : { challengeId: challenge._id, dayNumber: displayDay }
+  const localHabitDefs = useLocalActiveHabitDefinitions(
+    isGuest ? (challenge._id as string) : undefined,
   );
-  const isNewSystem = !isGuest && (habitDefs?.length ?? 0) > 0;
+  const habitDefs = isGuest ? localHabitDefs : convexHabitDefs;
+  const convexHabitEntries = useQuery(
+    api.habitEntries.getEntriesForDay,
+    isGuest || !habitDefs || habitDefs.length === 0
+      ? "skip"
+      : { challengeId: challenge._id, dayNumber: displayDay }
+  );
+  const localHabitEntries = useLocalEntriesForDay(
+    isGuest ? (challenge._id as string) : undefined,
+    displayDay,
+  );
+  const habitEntries = isGuest ? localHabitEntries : convexHabitEntries;
+  const isNewSystem = isGuest || (habitDefs?.length ?? 0) > 0;
 
   const selectedLog = effectiveLogs?.find((l: any) => l.dayNumber === displayDay);
   const legacyTotalDone = selectedLog ? [
@@ -104,7 +119,7 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
   const newTotalDone = isNewSystem ? (habitDefs?.filter((h: any) => newSystemEntryMap.get(h._id)?.completed).length ?? 0) : 0;
   const newTotalItems = isNewSystem ? (habitDefs?.length ?? 0) : 8;
 
-  const totalDone = isGuest && guestTotalDone !== null ? guestTotalDone : isNewSystem ? newTotalDone : legacyTotalDone;
+  const totalDone = isNewSystem ? newTotalDone : legacyTotalDone;
   const totalItems = isNewSystem ? newTotalItems : 8;
 
   const circumference = 2 * Math.PI * 54;
@@ -139,7 +154,7 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
         />
       )}
 
-      {hasCompleted && (
+      {hasCompleted && !isGuest && (
         <ChallengeCompletedDialog
           open={showCompletedDialog}
           challengeId={challenge._id}
@@ -319,9 +334,7 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
         todayDayNumber={todayDayNumber}
         onDayChange={setSelectedDayNumber}
       >
-        {isGuest ? (
-          <GuestDailyChecklist key={displayDay} dayNumber={displayDay} isEditable={isEditable} log={selectedLog} onCompletionChange={setGuestTotalDone} />
-        ) : isNewSystem ? (
+        {isNewSystem ? (
           <DynamicDailyChecklist
             challengeId={challenge._id}
             userId={user._id}

@@ -12,6 +12,8 @@ import { CounterBlock } from "@/components/habits/CounterBlock";
 import { useHabitEntries } from "@/hooks/use-habit-entries";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useGuest } from "@/components/guest-provider";
+import { markDayComplete as localMarkDayComplete } from "@/lib/local-store/mutations";
 
 interface DynamicDailyChecklistProps {
   challengeId: Id<"challenges">;
@@ -56,7 +58,8 @@ export function DynamicDailyChecklist({
   });
 
   const { isActive: confettiActive, trigger: triggerConfetti } = useConfetti();
-  const markDayComplete = useMutation(api.habitEntries.markDayComplete);
+  const { isGuest } = useGuest();
+  const markDayCompleteConvex = useMutation(api.habitEntries.markDayComplete);
   const prevAllDoneRef = useRef(false);
   const shouldReduceMotion = useReducedMotion();
 
@@ -65,12 +68,26 @@ export function DynamicDailyChecklist({
   useEffect(() => {
     if (allDone && !prevAllDoneRef.current) {
       triggerConfetti();
-      markDayComplete({ challengeId, dayNumber }).catch(() => {
-        // Silently ignore — deduplication in backend prevents duplicates
-      });
+      if (isGuest) {
+        localMarkDayComplete({
+          challengeId: challengeId as unknown as string,
+          dayNumber,
+        });
+      } else {
+        markDayCompleteConvex({ challengeId, dayNumber }).catch(() => {
+          // Silently ignore — deduplication in backend prevents duplicates
+        });
+      }
     }
     prevAllDoneRef.current = allDone;
-  }, [allDone, triggerConfetti, markDayComplete, challengeId, dayNumber]);
+  }, [
+    allDone,
+    triggerConfetti,
+    markDayCompleteConvex,
+    challengeId,
+    dayNumber,
+    isGuest,
+  ]);
 
   if (!habitDefs) return null;
 

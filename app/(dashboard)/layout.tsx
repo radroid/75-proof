@@ -3,6 +3,8 @@
 import { useAuth } from "@clerk/nextjs";
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarBody,
@@ -222,8 +224,23 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isLoaded } = useAuth();
-  const { isGuest, promptSignup } = useGuest();
+  const { isLoaded, isSignedIn } = useAuth();
+  const { isGuest, promptSignup, isLocalOptedIn } = useGuest();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Anonymous visitor with no local data → bounce off the dashboard so
+  // they don't see an empty themed dashboard. Anyone who hits dashboard
+  // signed-out without opting into local mode probably wandered here from
+  // marketing — send them to landing.
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (isSignedIn) return;
+    if (isLocalOptedIn) return;
+    if (pathname?.startsWith("/dashboard")) {
+      router.replace("/");
+    }
+  }, [isLoaded, isSignedIn, isLocalOptedIn, pathname, router]);
 
   const guestMobileItems = [
     { label: "Today", href: "/dashboard", icon: LayoutDashboard },
@@ -242,16 +259,19 @@ export default function DashboardLayout({
     );
   }
 
-  const allNavItems = [
-    ...staticNavItems,
-    {
-      label: "Friends",
-      href: "/dashboard/friends",
-      icon: <FriendsNavIcon />,
-    },
-  ];
-
-  const navItems = isGuest ? guestNavItems : allNavItems;
+  // Only build the Friends nav item — and thus mount FriendsNavIcon, which
+  // eagerly subscribes to Convex — when the user is signed in. Local-mode
+  // users have no friends surface, so the query must not fire.
+  const navItems = isGuest
+    ? guestNavItems
+    : [
+        ...staticNavItems,
+        {
+          label: "Friends",
+          href: "/dashboard/friends",
+          icon: <FriendsNavIcon />,
+        },
+      ];
 
   return (
     <SidebarProvider>

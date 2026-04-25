@@ -6,6 +6,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useGuest } from "@/components/guest-provider";
+import { useLocalUser } from "@/lib/local-store/hooks";
 import { InstallPrompt } from "./install-prompt";
 
 const VISITED_KEY = "75proof_dashboard_visited";
@@ -39,20 +40,25 @@ export function InstallPromptGate() {
   const { isLoaded, isSignedIn } = useAuth();
   const { isGuest } = useGuest();
 
-  // Only query Convex when we actually have a signed-in (non-guest) user —
-  // otherwise `getCurrentUser` returns null and we'd render nothing anyway.
-  const user = useQuery(
+  const convexUser = useQuery(
     api.users.getCurrentUser,
-    isLoaded && isSignedIn && !isGuest ? {} : "skip"
+    isLoaded && isSignedIn && !isGuest ? {} : "skip",
   );
+  const localUser = useLocalUser();
 
   const onDashboard = pathname === "/dashboard";
   const visitedBefore = useHasVisitedDashboardBefore(onDashboard);
 
-  if (!isLoaded || !isSignedIn || isGuest) return null;
+  if (!isLoaded) return null;
   if (!onDashboard) return null;
-  if (!user || !user.onboardingComplete) return null;
   if (!visitedBefore) return null;
 
+  if (isGuest) {
+    if (!localUser?.onboardingComplete) return null;
+    return <InstallPrompt />;
+  }
+
+  if (!isSignedIn) return null;
+  if (!convexUser || !convexUser.onboardingComplete) return null;
   return <InstallPrompt />;
 }
