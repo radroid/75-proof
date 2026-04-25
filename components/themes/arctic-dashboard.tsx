@@ -14,7 +14,8 @@ import { api } from "@/convex/_generated/api";
 import { useChallengeStatus } from "@/hooks/use-challenge-status";
 import { useReconciliation } from "@/hooks/use-reconciliation";
 import { useGuest } from "@/components/guest-provider";
-import { isDayEditable, getDateForDay, computeDayNumber, getTodayInTimezone, getUserTimezone } from "@/lib/day-utils";
+import { isDayEditable, getDateForDay, computeDayNumber, getTodayInTimezone, getUserTimezone, effectiveDaysTotal } from "@/lib/day-utils";
+import { ChallengeCompletedDialog } from "@/components/ChallengeCompletedDialog";
 
 interface ThemedDashboardProps {
   user: any;
@@ -36,9 +37,20 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
   const displayDay = selectedDayNumber ?? todayDayNumber;
   const dateStr = getDateForDay(challenge.startDate, displayDay);
   const isEditable = isDayEditable(displayDay, todayDayNumber);
-  const completion = Math.round((todayDayNumber / 75) * 100);
+  const daysTotal = effectiveDaysTotal(challenge); // null = habit-tracker mode
+  const isHabitTracker = daysTotal === null;
+  const completion = isHabitTracker
+    ? 100
+    : Math.round((todayDayNumber / daysTotal) * 100);
+  // For the segmented progress bar, bounded challenges are partitioned into
+  // 15 segments; habit trackers use a rolling 15-segment view based on day.
+  const segmentDays = isHabitTracker
+    ? Math.max(Math.ceil(Math.max(todayDayNumber + 7, 14) / 15), 1)
+    : Math.max(Math.ceil((daysTotal ?? 75) / 15), 1);
 
   const [showFailedDialog, setShowFailedDialog] = useState(true);
+  const [showCompletedDialog, setShowCompletedDialog] = useState(true);
+  const hasCompleted = !isGuest && statusResult?.status === "completed";
   const needsReconciliation =
     !isGuest && statusResult?.status === "needs_reconciliation";
   const reconciliation = useReconciliation({
@@ -127,6 +139,15 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
         />
       )}
 
+      {hasCompleted && (
+        <ChallengeCompletedDialog
+          open={showCompletedDialog}
+          challengeId={challenge._id}
+          daysTotal={challenge.daysTotal ?? 75}
+          onDismiss={() => setShowCompletedDialog(false)}
+        />
+      )}
+
       {/* Hero section — day number with blue backdrop */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -160,7 +181,15 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
               </h1>
               <div className="pb-3 md:pb-6">
                 <p className="select-none text-2xl sm:text-3xl md:text-4xl font-light text-muted-foreground/40">
-                  <span className="sr-only">of </span>/75
+                  {isHabitTracker ? (
+                    <>
+                      <span className="sr-only">habit tracker</span>∞
+                    </>
+                  ) : (
+                    <>
+                      <span className="sr-only">of </span>/{daysTotal}
+                    </>
+                  )}
                 </p>
               </div>
             </div>
@@ -170,9 +199,19 @@ export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {
 
             {/* Segmented progress bar */}
             <div className="mt-5 md:mt-8 max-w-md">
-              <div className="flex gap-[3px] sm:gap-1" role="progressbar" aria-valuenow={todayDayNumber} aria-valuemin={0} aria-valuemax={75} aria-label={`Day ${todayDayNumber} of 75`}>
+              <div
+                className="flex gap-[3px] sm:gap-1"
+                role="progressbar"
+                aria-valuenow={todayDayNumber}
+                aria-valuemin={0}
+                aria-valuemax={isHabitTracker ? todayDayNumber : (daysTotal ?? 75)}
+                aria-label={
+                  isHabitTracker
+                    ? `Day ${todayDayNumber} (habit tracker)`
+                    : `Day ${todayDayNumber} of ${daysTotal}`
+                }
+              >
                 {Array.from({ length: 15 }).map((_, i) => {
-                  const segmentDays = 5;
                   const filled = todayDayNumber >= (i + 1) * segmentDays;
                   const partial = !filled && todayDayNumber > i * segmentDays;
                   return (

@@ -195,13 +195,17 @@ export const markDayComplete = mutation({
       return existingFeedItems._id;
     }
 
-    // Insert activity feed item
+    // Insert activity feed item — phrasing depends on whether the user is
+    // running a fixed-length challenge or an endless habit tracker.
+    const message = challenge.isHabitTracker
+      ? `Completed Day ${args.dayNumber}!`
+      : `Completed Day ${args.dayNumber} of ${challenge.daysTotal ?? 75}!`;
     return await ctx.db.insert("activityFeed", {
       userId: user._id,
       type: "day_completed",
       challengeId: args.challengeId,
       dayNumber: args.dayNumber,
-      message: `Completed Day ${args.dayNumber} of 75!`,
+      message,
       createdAt: new Date().toISOString(),
     });
   },

@@ -90,7 +90,7 @@ function reminderCopy(slot: Slot): {
   if (slot === "morning") {
     return {
       title: "Good morning — time to start",
-      body: "Your 75 HARD day begins now.",
+      body: "Your day begins now — let's get those habits in.",
       openActionLabel: "Start checklist",
       dismissActionLabel: "Not now",
     };

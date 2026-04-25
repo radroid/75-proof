@@ -28,6 +28,7 @@ export const completeOnboarding = mutation({
     habits: v.array(habitValidator),
     startDate: v.string(),
     visibility: v.union(v.literal("private"), v.literal("friends"), v.literal("public")),
+    daysTotal: v.number(),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -47,6 +48,12 @@ export const completeOnboarding = mutation({
       }
     }
 
+    // Original tier is always 75 days; everything else honors the chosen length.
+    const daysTotal = args.setupTier === "original" ? 75 : args.daysTotal;
+    if (daysTotal < 7 || daysTotal > 365) {
+      throw new Error("Challenge length must be between 7 and 365 days");
+    }
+
     // Create challenge
     const challengeId = await ctx.db.insert("challenges", {
       userId: user._id,
@@ -56,6 +63,7 @@ export const completeOnboarding = mutation({
       visibility: args.visibility,
       restartCount: 0,
       setupTier: args.setupTier,
+      daysTotal,
     });
 
     // Insert all habit definitions
@@ -94,12 +102,18 @@ export const completeOnboarding = mutation({
       },
     });
 
-    // Create activity feed entry
+    // Create activity feed entry — keep the iconic "75 HARD" wording when
+    // the user picked the canonical 75-day program; otherwise describe the
+    // length they chose.
+    const startMessage =
+      daysTotal === 75
+        ? "Started the 75 HARD challenge!"
+        : `Started a ${daysTotal}-day challenge!`;
     await ctx.db.insert("activityFeed", {
       userId: user._id,
       type: "challenge_started",
       challengeId,
-      message: "Started the 75 HARD challenge!",
+      message: startMessage,
       createdAt: new Date().toISOString(),
     });
 
@@ -179,6 +193,7 @@ export const getPreviousOnboardingState = query({
       goals: user.onboarding.goals ?? [],
       setupTier,
       habits,
+      daysTotal: latestFailed?.daysTotal ?? 75,
     };
   },
 });

@@ -46,11 +46,11 @@ export default defineSchema({
     .index("by_clerk_id", ["clerkId"])
     .searchIndex("search_displayName", { searchField: "displayName" }),
 
-  // Challenge Instance (one per 75-day attempt)
+  // Challenge Instance (one per attempt)
   challenges: defineTable({
     userId: v.id("users"),
     startDate: v.string(), // ISO date
-    currentDay: v.number(), // 1-75
+    currentDay: v.number(), // 1..daysTotal (or unbounded in habit-tracker mode)
     status: v.union(
       v.literal("active"),
       v.literal("completed"),
@@ -64,6 +64,12 @@ export default defineSchema({
       v.literal("public")
     ),
     setupTier: v.optional(v.union(v.literal("original"), v.literal("customized"), v.literal("added"))),
+    // Target challenge length. Absent on legacy rows — read sites treat
+    // missing as the original 75-day default via effectiveDaysTotal().
+    daysTotal: v.optional(v.number()),
+    // When true the challenge has no end date (habit-tracker mode); the
+    // daysTotal field is ignored for completion logic.
+    isHabitTracker: v.optional(v.boolean()),
   })
     .index("by_user", ["userId"])
     .index("by_status", ["status"]),

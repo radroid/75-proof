@@ -18,6 +18,7 @@ import { OnboardingWelcome } from "@/components/onboarding/OnboardingWelcome";
 import { OnboardingGoals } from "@/components/onboarding/OnboardingGoals";
 import { OnboardingTheme } from "@/components/onboarding/OnboardingTheme";
 import { OnboardingTierSelect } from "@/components/onboarding/OnboardingTierSelect";
+import { OnboardingDuration } from "@/components/onboarding/OnboardingDuration";
 import { OnboardingHabitConfig } from "@/components/onboarding/OnboardingHabitConfig";
 import { OnboardingReview } from "@/components/onboarding/OnboardingReview";
 import { HeroSkeleton } from "@/components/ui/skeleton-enhanced";
@@ -75,6 +76,7 @@ export default function OnboardingPage() {
       goals: previousState.goals,
       setupTier: previousState.setupTier,
       habits: previousState.habits.length > 0 ? previousState.habits : INITIAL_ONBOARDING_STATE.habits,
+      daysTotal: previousState.daysTotal ?? INITIAL_ONBOARDING_STATE.daysTotal,
     };
     setState(seeded);
     setSeededFromPrevious(true);
@@ -127,13 +129,36 @@ export default function OnboardingPage() {
     setState((s) => ({ ...s, ...partial }));
   }, []);
 
+  // Original 75 HARD is a fixed 75-day commitment by definition, so the
+  // duration step is hidden for that tier. Both next/back skip past it.
   const next = useCallback(() => {
-    setStepIndex((i) => Math.min(i + 1, ONBOARDING_STEPS.length - 1));
-  }, []);
+    setStepIndex((i) => {
+      let nextIdx = Math.min(i + 1, ONBOARDING_STEPS.length - 1);
+      if (
+        ONBOARDING_STEPS[nextIdx] === "duration" &&
+        state.setupTier === "original"
+      ) {
+        nextIdx = Math.min(nextIdx + 1, ONBOARDING_STEPS.length - 1);
+      }
+      return nextIdx;
+    });
+    if (state.setupTier === "original" && state.daysTotal !== 75) {
+      setState((s) => ({ ...s, daysTotal: 75 }));
+    }
+  }, [state.setupTier, state.daysTotal]);
 
   const back = useCallback(() => {
-    setStepIndex((i) => Math.max(i - 1, 0));
-  }, []);
+    setStepIndex((i) => {
+      let prevIdx = Math.max(i - 1, 0);
+      if (
+        ONBOARDING_STEPS[prevIdx] === "duration" &&
+        state.setupTier === "original"
+      ) {
+        prevIdx = Math.max(prevIdx - 1, 0);
+      }
+      return prevIdx;
+    });
+  }, [state.setupTier]);
 
   const goToStep = useCallback((step: OnboardingStep) => {
     const idx = ONBOARDING_STEPS.indexOf(step);
@@ -148,6 +173,10 @@ export default function OnboardingPage() {
       setPersonality(state.theme);
       setStoredPersonality(state.theme);
 
+      // Original tier is always 75 days regardless of any custom value the
+      // user picked before flipping back to the original setup.
+      const finalDaysTotal = state.setupTier === "original" ? 75 : state.daysTotal;
+
       // Submit to backend
       await completeOnboarding({
         displayName: state.displayName,
@@ -160,6 +189,7 @@ export default function OnboardingPage() {
         habits: state.habits.filter((h) => h.isActive),
         startDate: state.startDate,
         visibility: state.visibility,
+        daysTotal: finalDaysTotal,
       });
 
       posthog.capture("onboarding_completed", {
@@ -167,6 +197,7 @@ export default function OnboardingPage() {
         theme: state.theme,
         active_habit_count: state.habits.filter((h) => h.isActive).length,
         visibility: state.visibility,
+        days_total: finalDaysTotal,
         is_re_onboarding: user.hasSeenTutorial,
       });
 
@@ -213,6 +244,9 @@ export default function OnboardingPage() {
       )}
       {currentStep === "tier" && (
         <OnboardingTierSelect state={state} updateState={updateState} onNext={next} onBack={back} />
+      )}
+      {currentStep === "duration" && (
+        <OnboardingDuration state={state} updateState={updateState} onNext={next} onBack={back} />
       )}
       {currentStep === "habits" && (
         <OnboardingHabitConfig state={state} updateState={updateState} onNext={next} onBack={back} />

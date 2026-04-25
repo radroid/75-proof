@@ -8,13 +8,14 @@ import { GuestDailyChecklist } from "@/components/GuestDailyChecklist";
 import { DayNavigator } from "@/components/DayNavigator";
 import { SwipeableDayView } from "@/components/swipeable-day-view";
 import { ChallengeFailedDialog } from "@/components/ChallengeFailedDialog";
+import { ChallengeCompletedDialog } from "@/components/ChallengeCompletedDialog";
 import { ReconciliationDialog } from "@/components/ReconciliationDialog";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useChallengeStatus } from "@/hooks/use-challenge-status";
 import { useReconciliation } from "@/hooks/use-reconciliation";
 import { useGuest } from "@/components/guest-provider";
-import { isDayEditable, getDateForDay, computeDayNumber, getTodayInTimezone, getUserTimezone } from "@/lib/day-utils";
+import { isDayEditable, getDateForDay, computeDayNumber, getTodayInTimezone, getUserTimezone, effectiveDaysTotal } from "@/lib/day-utils";
 
 interface ThemedDashboardProps {
   user: any;
@@ -36,9 +37,19 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
   const displayDay = selectedDayNumber ?? todayDayNumber;
   const dateStr = getDateForDay(challenge.startDate, displayDay);
   const isEditable = isDayEditable(displayDay, todayDayNumber);
-  const completion = Math.round((todayDayNumber / 75) * 100);
+  const daysTotal = effectiveDaysTotal(challenge);
+  const isHabitTracker = daysTotal === null;
+  const completion = isHabitTracker
+    ? 100
+    : Math.round((todayDayNumber / daysTotal) * 100);
+  // Bar chart: cap at daysTotal for bounded; rolling window for habit trackers.
+  const barLength = isHabitTracker
+    ? Math.max(todayDayNumber + 7, 14)
+    : (daysTotal ?? 75);
 
   const [showFailedDialog, setShowFailedDialog] = useState(true);
+  const [showCompletedDialog, setShowCompletedDialog] = useState(true);
+  const hasCompleted = !isGuest && statusResult?.status === "completed";
   const needsReconciliation =
     !isGuest && statusResult?.status === "needs_reconciliation";
   const reconciliation = useReconciliation({
@@ -139,6 +150,15 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           onReset={reconciliation.onReset}
           onBackfillHard={reconciliation.onBackfillHard}
           onBackfillAll={reconciliation.onBackfillAll}
+        />
+      )}
+
+      {hasCompleted && (
+        <ChallengeCompletedDialog
+          open={showCompletedDialog}
+          challengeId={challenge._id}
+          daysTotal={challenge.daysTotal ?? 75}
+          onDismiss={() => setShowCompletedDialog(false)}
         />
       )}
 
@@ -262,17 +282,19 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           </p>
         </motion.blockquote>
 
-        {/* 75-Day progress bar chart */}
+        {/* Campaign progress bar chart */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.55 }}
         >
           <p className="text-[11px] tracking-widest uppercase mb-4 font-medium text-muted-foreground">
-            75-Day Campaign Progress
+            {isHabitTracker
+              ? "Habit Tracker Progress"
+              : `${daysTotal}-Day Campaign Progress`}
           </p>
           <div className="flex items-end gap-[1px] sm:gap-[2px] h-12 md:h-16">
-            {Array.from({ length: 75 }).map((_, i) => (
+            {Array.from({ length: barLength }).map((_, i) => (
               <div
                 key={i}
                 className="flex-1"
@@ -286,7 +308,7 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           </div>
           <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
             <span>Day 1</span>
-            <span>Day 75</span>
+            <span>{isHabitTracker ? "Onward" : `Day ${daysTotal}`}</span>
           </div>
         </motion.div>
 

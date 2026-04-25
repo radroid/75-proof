@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { themeMetadata } from "@/lib/themes";
 import type { OnboardingState, OnboardingStep } from "@/lib/onboarding-types";
+import { formatEndDate } from "@/lib/day-utils";
 
 interface Props {
   state: OnboardingState;
@@ -83,6 +84,15 @@ export function OnboardingReview({
           label="Setup"
           value={tierLabels[state.setupTier] ?? state.setupTier}
           onEdit={() => onGoToStep("tier")}
+        />
+
+        {/* Challenge length + computed end date */}
+        <SummaryRow
+          label="Challenge length"
+          value={`${state.daysTotal} days · ends ${formatEndDate(state.startDate, state.daysTotal)}`}
+          onEdit={() =>
+            onGoToStep(state.setupTier === "original" ? "tier" : "duration")
+          }
         />
 
         {/* Habits */}
