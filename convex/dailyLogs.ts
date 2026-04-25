@@ -48,7 +48,7 @@ async function validateEditWindow(
   if (!isDayEditable(dayNumber, todayDayNumber)) {
     throw new ConvexError({
       code: "EDIT_WINDOW_CLOSED",
-      message: `Day ${dayNumber} is no longer editable. You can only edit days within 2 days of today.`,
+      message: `Day ${dayNumber} is no longer editable. Only today's entries can be edited — past days go through the reconciliation dialog.`,
     });
   }
 }

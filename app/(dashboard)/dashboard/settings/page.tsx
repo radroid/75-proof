@@ -47,26 +47,11 @@ import { haptic, isHapticsEnabled, setHapticsEnabled } from "@/lib/haptics";
 import { formatEndDate } from "@/lib/day-utils";
 
 export default function SettingsPage() {
+  // Hooks must run in a stable order on every render — branching before they
+  // execute crashes Strict Mode (and iOS WebKit) on the second mount. Compute
+  // `isGuest` up front, run all hooks unconditionally below, and switch the
+  // rendered UI at the end based on the flag.
   const { isGuest, promptSignup } = useGuest();
-
-  if (isGuest) {
-    return (
-      <PageContainer>
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-            <Settings className="h-8 w-8 text-primary" />
-          </div>
-          <h2 className="text-2xl font-bold">Personalize Your Experience</h2>
-          <p className="mt-3 text-muted-foreground max-w-md">
-            Sign up to access settings, customize your theme, and manage your profile.
-          </p>
-          <Button onClick={promptSignup} size="lg" className="mt-8">
-            Sign Up Free
-          </Button>
-        </div>
-      </PageContainer>
-    );
-  }
   const router = useRouter();
   const user = useQuery(api.users.getCurrentUser);
   const updateUser = useMutation(api.users.updateUser);
@@ -336,6 +321,25 @@ export default function SettingsPage() {
       );
     }
   };
+
+  if (isGuest) {
+    return (
+      <PageContainer>
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+            <Settings className="h-8 w-8 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold">Personalize Your Experience</h2>
+          <p className="mt-3 text-muted-foreground max-w-md">
+            Sign up to access settings, customize your theme, and manage your profile.
+          </p>
+          <Button onClick={promptSignup} size="lg" className="mt-8">
+            Sign Up Free
+          </Button>
+        </div>
+      </PageContainer>
+    );
+  }
 
   if (user === undefined) {
     return (

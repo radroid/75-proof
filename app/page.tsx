@@ -35,7 +35,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "What happens if I miss a day?",
-    a: "Per the official 75 HARD rules, missing any single task resets your challenge to Day 0. 75 Proof enforces this automatically — there's no way to skip or backfill. That's the whole point of the challenge.",
+    a: "Per the official 75 HARD rules, missing any task resets your challenge. When you reopen the app we'll show a prompt: confirm you completed the day or reset to Day 0. After 7 days with no action, the challenge resets automatically.",
   },
   {
     q: "Is my data private?",

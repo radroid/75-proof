@@ -23,14 +23,26 @@ export function computeDayNumber(startDate: string, todayDate: string): number {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
 }
 
-/** Is a given day still editable? Day N is editable through the end of day N+2. */
+/** How many days back a missed day remains reconcilable via the dialog. */
+export const RECONCILIATION_WINDOW_DAYS = 7;
+
+/** Is a given day still editable via the normal checklist? Today only. */
 export function isDayEditable(dayNumber: number, todayDayNumber: number): boolean {
-  return todayDayNumber <= dayNumber + 2;
+  return todayDayNumber === dayNumber;
 }
 
-/** Has the grace period expired for a given day? Expires when today > dayNumber + 2. */
-export function isGracePeriodExpired(dayNumber: number, todayDayNumber: number): boolean {
-  return todayDayNumber > dayNumber + 2;
+/**
+ * Highest day number that's eligible for auto-fail (i.e. outside the 7-day
+ * reconciliation window). Returns 0 or less when nothing is past the window
+ * yet. Capped at the challenge length so we never scan beyond it; pass null
+ * for habit-tracker mode (no upper cap).
+ */
+export function getAutoFailUpperBound(
+  todayDayNumber: number,
+  daysTotal: number | null = 75
+): number {
+  const beyondWindow = todayDayNumber - RECONCILIATION_WINDOW_DAYS - 1;
+  return daysTotal === null ? beyondWindow : Math.min(beyondWindow, daysTotal);
 }
 
 /** Add days to a YYYY-MM-DD date string, returning a new YYYY-MM-DD string. */
@@ -45,12 +57,27 @@ export function getDateForDay(startDate: string, dayNumber: number): string {
   return addDays(startDate, dayNumber - 1);
 }
 
-/** Get the list of editable day numbers for a given today. */
-export function getEditableDays(todayDayNumber: number): number[] {
+/** Get the list of editable day numbers for a given today. Pass null for habit-tracker mode (no upper bound). */
+export function getEditableDays(
+  todayDayNumber: number,
+  daysTotal: number | null = 75
+): number[] {
+  if (todayDayNumber < 1) return [];
+  if (daysTotal !== null && todayDayNumber > daysTotal) return [];
+  return [todayDayNumber];
+}
+
+/** Get the list of past day numbers eligible for reconciliation (within the 7-day window). Pass null for habit-tracker mode. */
+export function getReconciliationWindow(
+  todayDayNumber: number,
+  daysTotal: number | null = 75
+): number[] {
+  if (todayDayNumber <= 1) return [];
+  const start = Math.max(1, todayDayNumber - RECONCILIATION_WINDOW_DAYS);
+  const upper = todayDayNumber - 1;
+  const end = daysTotal === null ? upper : Math.min(daysTotal, upper);
   const days: number[] = [];
-  for (let d = Math.max(1, todayDayNumber - 2); d <= todayDayNumber; d++) {
-    days.push(d);
-  }
+  for (let d = start; d <= end; d++) days.push(d);
   return days;
 }
 

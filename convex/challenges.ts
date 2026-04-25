@@ -1,27 +1,33 @@
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { mutation, query, internalMutation, MutationCtx, QueryCtx } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import {
   getTodayInTimezone,
   computeDayNumber,
+  getDateForDay,
   getEditableDays,
   effectiveDaysTotal,
+  getReconciliationWindow,
+  getAutoFailUpperBound,
 } from "./lib/dayCalculation";
 
 /**
  * Shared helper: check if a day is complete for a challenge.
  * Detects which system the challenge uses (legacy dailyLogs vs new habitEntries).
+ *
+ * Callers that already hold the challenge's habit definitions can pass them
+ * in to skip the redundant read — useful when this is called inside a loop.
  */
 async function isDayCompleteForChallenge(
   ctx: MutationCtx,
   challengeId: Id<"challenges">,
-  dayNumber: number
+  dayNumber: number,
+  preloadedHabitDefs?: Array<{ _id: Id<"habitDefinitions">; isActive: boolean; isHard: boolean }>
 ): Promise<boolean> {
-  // Check if challenge uses the new habit system
-  const habitDefs = await ctx.db
+  const habitDefs = preloadedHabitDefs ?? (await ctx.db
     .query("habitDefinitions")
     .withIndex("by_challenge", (q) => q.eq("challengeId", challengeId))
-    .collect();
+    .collect());
 
   if (habitDefs.length > 0) {
     // New system: check all active hard habits have completed entries
@@ -311,8 +317,17 @@ async function failChallengeInternal(
 
 /**
  * Lazy-eval challenge status check. Called on client visit.
- * Scans expired-grace days, triggers auto-reset or syncs currentDay.
- * Returns { status, failedOnDay? } so the client can react.
+ *
+ * Returns one of:
+ *   - `{ status: "active" }`
+ *   - `{ status: "completed" }`
+ *   - `{ status: "failed", failedOnDay }` — only when a day went >7 days
+ *     without completion (cron usually beats us here, but this is a
+ *     belt-and-suspenders path for stale clients).
+ *   - `{ status: "needs_reconciliation", missedDays, usesNewSystem,
+ *     hasSoftHabits }` — any past day within the last 7 is incomplete and
+ *     must be reconciled via the dialog.
+ *   - `{ status: "not_found" }`
  */
 export const checkChallengeStatus = mutation({
   args: {
@@ -322,7 +337,7 @@ export const checkChallengeStatus = mutation({
   handler: async (ctx, args) => {
     const challenge = await ctx.db.get(args.challengeId);
     if (!challenge || challenge.status !== "active") {
-      return { status: challenge?.status ?? "not_found" };
+      return { status: challenge?.status ?? "not_found" } as const;
     }
 
     const todayStr = getTodayInTimezone(args.userTimezone);
@@ -332,35 +347,58 @@ export const checkChallengeStatus = mutation({
     // unbounded in habit-tracker mode.
     const cap = (n: number) => (daysTotal === null ? n : Math.min(n, daysTotal));
 
-    // If challenge hasn't started yet or is day 1-3, no grace periods expired
-    const lastExpiredDay = todayDayNumber - 3;
-    if (lastExpiredDay < 1) {
-      // Sync currentDay
-      const syncDay = cap(Math.max(todayDayNumber, 1));
+    // Pre-start (start date in the future): just sync and return active.
+    if (todayDayNumber < 1) {
+      const syncDay = 1;
       if (challenge.currentDay !== syncDay) {
         await ctx.db.patch(args.challengeId, { currentDay: syncDay });
       }
-      return { status: "active" };
+      return { status: "active" } as const;
     }
 
-    // Scan from day 1 to lastExpiredDay for incomplete days. In habit-tracker
-    // mode there is no upper limit; otherwise cap at daysTotal.
-    const scanCeiling = daysTotal === null ? lastExpiredDay : Math.min(lastExpiredDay, daysTotal);
-    for (let day = 1; day <= scanCeiling; day++) {
+    // Hard-cap auto-fail: any day that's gone >7 days without completion
+    // fails the challenge. Normally the cron has already handled this; we
+    // re-check here so a stale client doesn't render a stale state.
+    // Habit-tracker mode (daysTotal === null) has no upper cap.
+    const hardCapUpperBound = getAutoFailUpperBound(todayDayNumber, daysTotal);
+    for (let day = 1; day <= hardCapUpperBound; day++) {
       const complete = await isDayCompleteForChallenge(ctx, args.challengeId, day);
       if (!complete) {
-        // This day is incomplete and grace period has expired — fail
         await failChallengeInternal(ctx, args.challengeId, day);
-        return { status: "failed", failedOnDay: day };
+        return { status: "failed", failedOnDay: day } as const;
       }
     }
 
-    // All expired days are complete — check for challenge completion. In
-    // habit-tracker mode the challenge never completes; just sync forward.
+    // Reconciliation scan: check the last 7 days (excluding today) for
+    // incomplete days. If any, the client shows the dialog.
+    const reconWindow = getReconciliationWindow(todayDayNumber, daysTotal);
+    const missedDays: number[] = [];
+    for (const day of reconWindow) {
+      const complete = await isDayCompleteForChallenge(ctx, args.challengeId, day);
+      if (!complete) missedDays.push(day);
+    }
+
+    if (missedDays.length > 0) {
+      const habitDefs = await ctx.db
+        .query("habitDefinitions")
+        .withIndex("by_challenge", (q) => q.eq("challengeId", args.challengeId))
+        .collect();
+      const usesNewSystem = habitDefs.length > 0;
+      const hasSoftHabits = habitDefs.some((h) => h.isActive && !h.isHard);
+      return {
+        status: "needs_reconciliation",
+        missedDays,
+        usesNewSystem,
+        hasSoftHabits,
+      } as const;
+    }
+
+    // All past days within the window are complete — check for challenge
+    // completion if today is past the configured length. Habit-tracker mode
+    // (daysTotal === null) never completes; just sync forward.
     if (daysTotal !== null && todayDayNumber > daysTotal) {
-      // Verify all daysTotal days are complete
       let allComplete = true;
-      for (let day = scanCeiling + 1; day <= daysTotal; day++) {
+      for (let day = hardCapUpperBound + 1; day <= daysTotal; day++) {
         const complete = await isDayCompleteForChallenge(ctx, args.challengeId, day);
         if (!complete) {
           allComplete = false;
@@ -374,7 +412,6 @@ export const checkChallengeStatus = mutation({
           status: "completed",
         });
 
-        // Update longest streak on user record
         const user = await ctx.db.get(challenge.userId);
         const currentLongest = user?.longestStreak ?? 0;
         if (daysTotal > currentLongest) {
@@ -393,21 +430,23 @@ export const checkChallengeStatus = mutation({
           message: completionMessage,
           createdAt: new Date().toISOString(),
         });
-        return { status: "completed" };
+        return { status: "completed" } as const;
       }
     }
 
-    // Sync currentDay
+    // Sync currentDay.
     const syncDay = cap(Math.max(todayDayNumber, 1));
     if (challenge.currentDay !== syncDay) {
       await ctx.db.patch(args.challengeId, { currentDay: syncDay });
     }
 
-    return { status: "active" };
+    return { status: "active" } as const;
   },
 });
 
-/** Cron-callable: check all active challenges using UTC as fallback timezone. */
+/** Cron-callable: check all active challenges for days past the 7-day hard cap.
+ *  This is the only auto-fail path on the happy path — users inside the 7-day
+ *  window resolve via the reconciliation dialog on next visit. */
 export const checkAllActiveChallenges = internalMutation({
   args: {},
   handler: async (ctx) => {
@@ -417,7 +456,6 @@ export const checkAllActiveChallenges = internalMutation({
       .collect();
 
     for (const challenge of activeChallenges) {
-      // Look up user's timezone preference
       const user = await ctx.db.get(challenge.userId);
       const tz = user?.preferences?.timezone ?? "UTC";
 
@@ -426,9 +464,8 @@ export const checkAllActiveChallenges = internalMutation({
       const daysTotal = effectiveDaysTotal(challenge);
       const cap = (n: number) => (daysTotal === null ? n : Math.min(n, daysTotal));
 
-      const lastExpiredDay = todayDayNumber - 3;
-      if (lastExpiredDay < 1) {
-        // Sync currentDay
+      const hardCapUpperBound = getAutoFailUpperBound(todayDayNumber, daysTotal);
+      if (hardCapUpperBound < 1) {
         const syncDay = cap(Math.max(todayDayNumber, 1));
         if (challenge.currentDay !== syncDay) {
           await ctx.db.patch(challenge._id, { currentDay: syncDay });
@@ -436,10 +473,8 @@ export const checkAllActiveChallenges = internalMutation({
         continue;
       }
 
-      const upperBound =
-        daysTotal === null ? lastExpiredDay : Math.min(lastExpiredDay, daysTotal);
       let failed = false;
-      for (let day = 1; day <= upperBound; day++) {
+      for (let day = 1; day <= hardCapUpperBound; day++) {
         const complete = await isDayCompleteForChallenge(ctx, challenge._id, day);
         if (!complete) {
           await failChallengeInternal(ctx, challenge._id, day);
@@ -458,6 +493,195 @@ export const checkAllActiveChallenges = internalMutation({
   },
 });
 
+/**
+ * Self-attested backfill for missed days within the 7-day reconciliation
+ * window. Writes completion state per-day in whichever habit system the
+ * challenge uses, and emits `activityFeed` rows flagged `backfilled: true`
+ * so friend/public feeds can filter them out.
+ *
+ * `mode === "hard"`: marks hard tasks/habits complete.
+ * `mode === "all"`: also marks soft habits complete (new system only;
+ * legacy `dailyLogs` challenges have no soft concept).
+ *
+ * Idempotent — re-running with the same args is a no-op beyond syncing.
+ */
+export const reconcileMissedDays = mutation({
+  args: {
+    challengeId: v.id("challenges"),
+    missedDays: v.array(v.number()),
+    mode: v.union(v.literal("hard"), v.literal("all")),
+    userTimezone: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ code: "UNAUTHENTICATED", message: "Not authenticated" });
+    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) {
+      throw new ConvexError({ code: "NOT_FOUND", message: "User not found" });
+    }
+
+    const challenge = await ctx.db.get(args.challengeId);
+    if (!challenge || challenge.userId !== user._id) {
+      throw new ConvexError({ code: "NOT_FOUND", message: "Challenge not found" });
+    }
+    if (challenge.status !== "active") {
+      throw new ConvexError({
+        code: "NOT_ACTIVE",
+        message: "Challenge is not active",
+      });
+    }
+
+    const todayStr = getTodayInTimezone(args.userTimezone);
+    const todayDayNumber = computeDayNumber(challenge.startDate, todayStr);
+    const daysTotal = effectiveDaysTotal(challenge);
+    const validDays = new Set(getReconciliationWindow(todayDayNumber, daysTotal));
+
+    for (const day of args.missedDays) {
+      if (!validDays.has(day)) {
+        throw new ConvexError({
+          code: "OUT_OF_WINDOW",
+          message: `Day ${day} is outside the reconciliation window.`,
+        });
+      }
+    }
+
+    const habitDefs = await ctx.db
+      .query("habitDefinitions")
+      .withIndex("by_challenge", (q) => q.eq("challengeId", args.challengeId))
+      .collect();
+    const usesNewSystem = habitDefs.length > 0;
+
+    const nowIso = new Date().toISOString();
+    const backfilled: number[] = [];
+
+    for (const dayNumber of args.missedDays) {
+      // Re-verify the day is actually incomplete. The client echoes back the
+      // missed-day list from `checkChallengeStatus`, but we don't want to
+      // fabricate feed rows or clobber real entries for already-complete days.
+      const alreadyComplete = await isDayCompleteForChallenge(
+        ctx,
+        args.challengeId,
+        dayNumber,
+        habitDefs
+      );
+      if (alreadyComplete) continue;
+
+      const dateStr = getDateForDay(challenge.startDate, dayNumber);
+
+      if (usesNewSystem) {
+        for (const habit of habitDefs) {
+          if (!habit.isActive) continue;
+          if (!habit.isHard && args.mode !== "all") continue;
+
+          const existing = await ctx.db
+            .query("habitEntries")
+            .withIndex("by_habit_day", (q) =>
+              q.eq("habitDefinitionId", habit._id).eq("dayNumber", dayNumber)
+            )
+            .unique();
+
+          const completionValue =
+            habit.blockType === "counter" && habit.target ? habit.target : undefined;
+
+          if (existing) {
+            await ctx.db.patch(existing._id, {
+              completed: true,
+              ...(completionValue !== undefined ? { value: completionValue } : {}),
+            });
+          } else {
+            await ctx.db.insert("habitEntries", {
+              habitDefinitionId: habit._id,
+              challengeId: args.challengeId,
+              userId: challenge.userId,
+              dayNumber,
+              date: dateStr,
+              completed: true,
+              ...(completionValue !== undefined ? { value: completionValue } : {}),
+            });
+          }
+        }
+      } else {
+        // Legacy `dailyLogs`: flip only the completion markers and flag the
+        // row `backfilled: true`. We deliberately do NOT invent workout
+        // durations, water intake, or reading minutes — those would pollute
+        // lifetime stats with synthetic data the user never entered.
+        const existing = await ctx.db
+          .query("dailyLogs")
+          .withIndex("by_challenge_day", (q) =>
+            q.eq("challengeId", args.challengeId).eq("dayNumber", dayNumber)
+          )
+          .unique();
+
+        if (existing) {
+          await ctx.db.patch(existing._id, {
+            allRequirementsMet: true,
+            completedAt: existing.completedAt ?? nowIso,
+            backfilled: true,
+          });
+        } else {
+          await ctx.db.insert("dailyLogs", {
+            challengeId: args.challengeId,
+            userId: challenge.userId,
+            dayNumber,
+            date: dateStr,
+            outdoorWorkoutCompleted: false,
+            dietFollowed: false,
+            noAlcohol: false,
+            waterIntakeOz: 0,
+            readingMinutes: 0,
+            allRequirementsMet: true,
+            completedAt: nowIso,
+            backfilled: true,
+          });
+        }
+      }
+
+      // Emit a backfilled day_completed feed row, deduped per (user, challenge, day).
+      const existingFeed = await ctx.db
+        .query("activityFeed")
+        .withIndex("by_user", (q) => q.eq("userId", challenge.userId))
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("type"), "day_completed"),
+            q.eq(q.field("challengeId"), args.challengeId),
+            q.eq(q.field("dayNumber"), dayNumber)
+          )
+        )
+        .unique();
+
+      if (!existingFeed) {
+        await ctx.db.insert("activityFeed", {
+          userId: challenge.userId,
+          type: "day_completed",
+          challengeId: args.challengeId,
+          dayNumber,
+          message: `Backfilled Day ${dayNumber}.`,
+          createdAt: nowIso,
+          backfilled: true,
+        });
+      }
+
+      backfilled.push(dayNumber);
+    }
+
+    // Sync currentDay forward.
+    const syncDay =
+      daysTotal === null
+        ? Math.max(todayDayNumber, 1)
+        : Math.min(Math.max(todayDayNumber, 1), daysTotal);
+    if (challenge.currentDay !== syncDay) {
+      await ctx.db.patch(args.challengeId, { currentDay: syncDay });
+    }
+
+    return { backfilledDays: backfilled };
+  },
+});
+
 /** Query: return editable day numbers for the client's current day. */
 export const getEditableWindow = query({
   args: {
@@ -470,7 +694,7 @@ export const getEditableWindow = query({
 
     const todayStr = getTodayInTimezone(args.userTimezone);
     const todayDayNumber = computeDayNumber(challenge.startDate, todayStr);
-    return getEditableDays(todayDayNumber);
+    return getEditableDays(todayDayNumber, effectiveDaysTotal(challenge));
   },
 });
 
@@ -575,8 +799,22 @@ export const resetKeepingSetup = mutation({
     startDate: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ code: "UNAUTHENTICATED", message: "Not authenticated" });
+    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) {
+      throw new ConvexError({ code: "NOT_FOUND", message: "User not found" });
+    }
+
     const oldChallenge = await ctx.db.get(args.challengeId);
-    if (!oldChallenge) throw new Error("Challenge not found");
+    if (!oldChallenge || oldChallenge.userId !== user._id) {
+      throw new ConvexError({ code: "NOT_FOUND", message: "Challenge not found" });
+    }
 
     // Snapshot habit definitions before failing (fail doesn't touch them,
     // but doing the read first keeps the data flow linear and obvious).
@@ -679,6 +917,9 @@ export const updateChallengeDuration = mutation({
     if (challenge.isHabitTracker) {
       throw new Error("Habit-tracker mode has no duration to extend");
     }
+    if (challenge.status === "failed") {
+      throw new Error("Cannot extend a failed challenge");
+    }
     if (args.newDaysTotal > 365) {
       throw new Error("Challenge length cannot exceed 365 days");
     }
@@ -766,6 +1007,12 @@ export const convertToHabitTracker = mutation({
       // Already a habit tracker — no-op.
       return;
     }
+    // Allow converting active or completed challenges; reject failed ones —
+    // a failed challenge is a closed history record, not a candidate for
+    // resurrection via this path.
+    if (challenge.status !== "active" && challenge.status !== "completed") {
+      throw new Error("Cannot convert a failed challenge to a habit tracker");
+    }
 
     await ctx.db.patch(args.challengeId, {
       isHabitTracker: true,
@@ -773,8 +1020,7 @@ export const convertToHabitTracker = mutation({
     });
 
     // Make sure the user's pointer reflects this challenge as the active one
-    // (it might have been cleared when the challenge previously failed or
-    // completed).
+    // (it might have been cleared when the challenge previously completed).
     if (user.currentChallengeId !== args.challengeId) {
       await ctx.db.patch(challenge.userId, { currentChallengeId: args.challengeId });
     }
