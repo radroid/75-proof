@@ -60,13 +60,22 @@ export function DynamicDailyChecklist({
   const { isActive: confettiActive, trigger: triggerConfetti } = useConfetti();
   const { isGuest } = useGuest();
   const markDayCompleteConvex = useMutation(api.habitEntries.markDayComplete);
-  const prevAllDoneRef = useRef(false);
+  // Track the previous allDone state per (challengeId, dayNumber). Without
+  // keying on the day, navigating from an incomplete day to a past complete
+  // one would re-fire the celebration on every visit — annoying noise and
+  // a duplicate markDayComplete call (deduped server-side, but still a wasted
+  // round trip on Convex / a wasted feed lookup locally).
+  const prevAllDoneRef = useRef({ key: "", value: false });
   const shouldReduceMotion = useReducedMotion();
 
   const allDone = requiredItems > 0 && requiredDone === requiredItems;
 
   useEffect(() => {
-    if (allDone && !prevAllDoneRef.current) {
+    const key = `${challengeId}:${dayNumber}`;
+    const prev = prevAllDoneRef.current;
+    const isDayChange = prev.key !== key;
+    const flippedToDone = allDone && (isDayChange ? false : !prev.value);
+    if (flippedToDone) {
       triggerConfetti();
       if (isGuest) {
         localMarkDayComplete({
@@ -79,7 +88,7 @@ export function DynamicDailyChecklist({
         });
       }
     }
-    prevAllDoneRef.current = allDone;
+    prevAllDoneRef.current = { key, value: allDone };
   }, [
     allDone,
     triggerConfetti,

@@ -446,10 +446,25 @@ export function extendChallengeDuration(args: {
     if (args.newDaysTotal < challenge.currentDay) {
       throw new Error("New length must be at least the current day");
     }
+    // Reactivating a completed challenge would silently orphan a different
+    // active one. Refuse — same guard as the Convex `updateChallengeDuration`
+    // mutation. In practice local mode allows only one active challenge at a
+    // time, but matching the rule keeps behavior identical if we ever loosen
+    // that elsewhere.
+    if (challenge.status === "completed" && draft.user) {
+      const otherActiveId = draft.user.currentChallengeId;
+      if (otherActiveId && otherActiveId !== args.challengeId) {
+        const other = draft.challenges.find((c) => c._id === otherActiveId);
+        if (other && other.status === "active") {
+          throw new Error(
+            "Another active challenge is already in progress; finish it first",
+          );
+        }
+      }
+    }
     draft.challenges[idx] = {
       ...challenge,
       daysTotal: args.newDaysTotal,
-      // If the challenge had auto-completed at the old target, reactivate.
       ...(challenge.status === "completed" ? { status: "active" as const } : {}),
     };
     if (challenge.status === "completed" && draft.user) {

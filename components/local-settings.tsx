@@ -116,6 +116,10 @@ export function LocalSettingsPage() {
   }
 
   const handleSave = () => {
+    if (!displayName.trim()) {
+      toast.error("Display name can't be empty");
+      return;
+    }
     setBusy(true);
     try {
       updateDisplayName(displayName);
