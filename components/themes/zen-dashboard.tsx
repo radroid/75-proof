@@ -8,9 +8,11 @@ import { GuestDailyChecklist } from "@/components/GuestDailyChecklist";
 import { DayNavigator } from "@/components/DayNavigator";
 import { SwipeableDayView } from "@/components/swipeable-day-view";
 import { ChallengeFailedDialog } from "@/components/ChallengeFailedDialog";
+import { ReconciliationDialog } from "@/components/ReconciliationDialog";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useChallengeStatus } from "@/hooks/use-challenge-status";
+import { useReconciliation } from "@/hooks/use-reconciliation";
 import { useGuest } from "@/components/guest-provider";
 import { isDayEditable, getDateForDay, computeDayNumber, getTodayInTimezone, getUserTimezone } from "@/lib/day-utils";
 
@@ -22,7 +24,7 @@ interface ThemedDashboardProps {
 export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
   const { isGuest, demoChallengeLogs, demoLifetimeStats } = useGuest();
 
-  const { todayDayNumber: authTodayDay, userTimezone, statusResult } = useChallengeStatus(
+  const { todayDayNumber: authTodayDay, userTimezone, statusResult, recheck } = useChallengeStatus(
     isGuest ? undefined : challenge._id,
     isGuest ? undefined : challenge.startDate
   );
@@ -37,7 +39,16 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
   const completion = Math.round((todayDayNumber / 75) * 100);
 
   const [showFailedDialog, setShowFailedDialog] = useState(true);
-  const hasFailed = !isGuest && statusResult?.status === "failed";
+  const needsReconciliation =
+    !isGuest && statusResult?.status === "needs_reconciliation";
+  const reconciliation = useReconciliation({
+    challengeId: challenge._id,
+    missedDays:
+      statusResult?.status === "needs_reconciliation"
+        ? statusResult.missedDays ?? []
+        : [],
+    onResolved: recheck,
+  });
 
   const lifetimeStats = useQuery(
     api.challenges.getLifetimeStats,
@@ -88,7 +99,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
 
   return (
     <div className="max-w-3xl mx-auto px-5 sm:px-6 md:px-0">
-      {hasFailed && (
+      {!isGuest && statusResult?.status === "failed" && (
         <ChallengeFailedDialog
           open={showFailedDialog}
           failedOnDay={statusResult.failedOnDay!}
@@ -99,6 +110,19 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
             window.location.reload();
           }}
           onDismiss={() => setShowFailedDialog(false)}
+        />
+      )}
+
+      {needsReconciliation && statusResult?.status === "needs_reconciliation" && (
+        <ReconciliationDialog
+          open
+          missedDays={statusResult.missedDays ?? []}
+          usesNewSystem={statusResult.usesNewSystem ?? false}
+          hasSoftHabits={statusResult.hasSoftHabits ?? false}
+          isSubmitting={reconciliation.isSubmitting}
+          onReset={reconciliation.onReset}
+          onBackfillHard={reconciliation.onBackfillHard}
+          onBackfillAll={reconciliation.onBackfillAll}
         />
       )}
 

@@ -50,7 +50,7 @@ export const toggleTaskEntry = mutation({
       if (!isDayEditable(args.dayNumber, todayDay)) {
         throw new ConvexError({
           code: "EDIT_WINDOW_CLOSED",
-          message: `Day ${args.dayNumber} is no longer editable.`,
+          message: `Day ${args.dayNumber} is no longer editable — past days go through the reconciliation dialog.`,
         });
       }
     }
@@ -99,7 +99,7 @@ export const updateCounterEntry = mutation({
       if (!isDayEditable(args.dayNumber, todayDay)) {
         throw new ConvexError({
           code: "EDIT_WINDOW_CLOSED",
-          message: `Day ${args.dayNumber} is no longer editable.`,
+          message: `Day ${args.dayNumber} is no longer editable — past days go through the reconciliation dialog.`,
         });
       }
     }

@@ -3,8 +3,10 @@ import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
-// Every 4 hours, scan active challenges for missed days past their grace period.
-// This is a safety net — the primary check happens lazily on client visit.
+// Every 4 hours, scan active challenges for missed days past the 7-day
+// reconciliation window. Primary reconciliation happens via the dialog on
+// client visit; this cron only auto-fails challenges that have sat idle
+// past the hard cap.
 crons.interval(
   "check active challenges",
   { hours: 4 },

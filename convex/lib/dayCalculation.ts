@@ -23,14 +23,21 @@ export function computeDayNumber(startDate: string, todayDate: string): number {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
 }
 
-/** Is a given day still editable? Day N is editable through the end of day N+2. */
+/** How many days back a missed day remains reconcilable via the dialog. */
+export const RECONCILIATION_WINDOW_DAYS = 7;
+
+/** Is a given day still editable via the normal checklist? Today only. */
 export function isDayEditable(dayNumber: number, todayDayNumber: number): boolean {
-  return todayDayNumber <= dayNumber + 2;
+  return todayDayNumber === dayNumber;
 }
 
-/** Has the grace period expired for a given day? Expires when today > dayNumber + 2. */
-export function isGracePeriodExpired(dayNumber: number, todayDayNumber: number): boolean {
-  return todayDayNumber > dayNumber + 2;
+/**
+ * Highest day number that's eligible for auto-fail (i.e. outside the 7-day
+ * reconciliation window). Returns 0 or less when nothing is past the window
+ * yet. Capped at 75 so we never scan beyond the challenge length.
+ */
+export function getAutoFailUpperBound(todayDayNumber: number): number {
+  return Math.min(todayDayNumber - RECONCILIATION_WINDOW_DAYS - 1, 75);
 }
 
 /** Add days to a YYYY-MM-DD date string, returning a new YYYY-MM-DD string. */
@@ -47,9 +54,17 @@ export function getDateForDay(startDate: string, dayNumber: number): string {
 
 /** Get the list of editable day numbers for a given today. */
 export function getEditableDays(todayDayNumber: number): number[] {
+  if (todayDayNumber < 1) return [];
+  if (todayDayNumber > 75) return [];
+  return [todayDayNumber];
+}
+
+/** Get the list of past day numbers eligible for reconciliation (within the 7-day window). */
+export function getReconciliationWindow(todayDayNumber: number): number[] {
+  if (todayDayNumber <= 1) return [];
+  const start = Math.max(1, todayDayNumber - RECONCILIATION_WINDOW_DAYS);
+  const end = Math.min(75, todayDayNumber - 1);
   const days: number[] = [];
-  for (let d = Math.max(1, todayDayNumber - 2); d <= todayDayNumber; d++) {
-    days.push(d);
-  }
+  for (let d = start; d <= end; d++) days.push(d);
   return days;
 }

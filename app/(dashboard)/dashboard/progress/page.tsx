@@ -312,14 +312,18 @@ export default function ProgressPage() {
   }
 
   const completedDays = Object.values(activeEffectiveCompletionMap).filter(Boolean).length;
-  const totalWorkouts = effectiveLogs?.reduce((acc: number, log: any) => {
+  // Aggregate metrics are built from actually-logged activity, so we exclude
+  // backfilled rows — those only record "day completed" via self-attestation
+  // and would otherwise pull sums toward zero.
+  const metricLogs = effectiveLogs?.filter((log: any) => !log.backfilled) ?? [];
+  const totalWorkouts = metricLogs.reduce((acc: number, log: any) => {
     let count = 0;
     if (log.workout1) count++;
     if (log.workout2) count++;
     return acc + count;
-  }, 0) ?? 0;
-  const totalWater = effectiveLogs?.reduce((acc: number, log: any) => acc + log.waterIntakeOz, 0) ?? 0;
-  const totalReading = effectiveLogs?.reduce((acc: number, log: any) => acc + log.readingMinutes, 0) ?? 0;
+  }, 0);
+  const totalWater = metricLogs.reduce((acc: number, log: any) => acc + log.waterIntakeOz, 0);
+  const totalReading = metricLogs.reduce((acc: number, log: any) => acc + log.readingMinutes, 0);
 
   return (
     <PageContainer>
@@ -789,7 +793,7 @@ export default function ProgressPage() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          {!isHistoryNewSystem && (
+                          {!isHistoryNewSystem && !(log as { backfilled?: boolean } | undefined)?.backfilled && (
                             <div className="hidden sm:flex items-center gap-1">
                               <RequirementDot completed={!!log?.workout1 && log.workout1.durationMinutes >= 45} icon={<Dumbbell className="h-2.5 w-2.5" />} />
                               <RequirementDot completed={!!log?.workout2 && log.workout2.durationMinutes >= 45} icon={<Dumbbell className="h-2.5 w-2.5" />} />
@@ -812,7 +816,13 @@ export default function ProgressPage() {
                                 : "border-muted-foreground text-muted-foreground"
                             )}
                           >
-                            {isComplete ? "Complete" : hasData ? "Partial" : "No data"}
+                            {isComplete
+                              ? (log as { backfilled?: boolean } | undefined)?.backfilled
+                                ? "Backfilled"
+                                : "Complete"
+                              : hasData
+                              ? "Partial"
+                              : "No data"}
                           </Badge>
                         </div>
                       </button>
@@ -849,6 +859,13 @@ export default function ProgressPage() {
                                         />
                                       );
                                     })}
+                                </div>
+                              ) : (log as { backfilled?: boolean } | undefined)?.backfilled ? (
+                                <div className="pt-3 border-t">
+                                  <p className="text-sm text-muted-foreground">
+                                    Self-attested via the reconciliation dialog. Per-task
+                                    details weren&apos;t logged at the time.
+                                  </p>
                                 </div>
                               ) : (
                                 <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
