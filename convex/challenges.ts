@@ -934,8 +934,21 @@ export const updateChallengeDuration = mutation({
     await ctx.db.patch(args.challengeId, { daysTotal: args.newDaysTotal });
 
     // If the challenge was previously completed (e.g. user finished the
-    // original target and now wants more days), reactivate it.
+    // original target and now wants more days), reactivate it. Refuse when
+    // the user has already started a different active challenge — silently
+    // pointing currentChallengeId at this one would orphan the other.
     if (challenge.status === "completed") {
+      if (
+        user.currentChallengeId &&
+        user.currentChallengeId !== args.challengeId
+      ) {
+        const other = await ctx.db.get(user.currentChallengeId);
+        if (other && other.status === "active") {
+          throw new Error(
+            "Another active challenge is already in progress; finish it first"
+          );
+        }
+      }
       await ctx.db.patch(args.challengeId, { status: "active" });
       await ctx.db.patch(challenge.userId, { currentChallengeId: args.challengeId });
     }
@@ -1012,6 +1025,20 @@ export const convertToHabitTracker = mutation({
     // resurrection via this path.
     if (challenge.status !== "active" && challenge.status !== "completed") {
       throw new Error("Cannot convert a failed challenge to a habit tracker");
+    }
+
+    // Refuse if reactivating would orphan a different active challenge.
+    if (
+      challenge.status === "completed" &&
+      user.currentChallengeId &&
+      user.currentChallengeId !== args.challengeId
+    ) {
+      const other = await ctx.db.get(user.currentChallengeId);
+      if (other && other.status === "active") {
+        throw new Error(
+          "Another active challenge is already in progress; finish it first"
+        );
+      }
     }
 
     await ctx.db.patch(args.challengeId, {
