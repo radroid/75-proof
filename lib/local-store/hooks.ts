@@ -5,6 +5,8 @@ import { localStore } from "./store";
 import type { LocalDB } from "./db";
 import * as q from "./queries";
 
+export { localStore };
+
 function subscribe(fn: () => void): () => void {
   return localStore.subscribe(fn);
 }
@@ -79,6 +81,19 @@ export function useLocalLifetimeStats() {
 export function useHasLocalData(): boolean {
   const user = useLocalUser();
   return !!user;
+}
+
+/**
+ * True once the local store has finished its first read from
+ * `localStorage`. Use to gate "redirect to onboarding if no data"
+ * effects — without this, a returning user races the dashboard's
+ * empty-state effect and gets bounced to /onboarding before their
+ * data hydrates.
+ */
+export function useLocalHydrationComplete(): boolean {
+  // Re-read on every notify so the bool flips with the rest of the cache.
+  useLocalDB();
+  return localStore.hydrationComplete;
 }
 
 /**

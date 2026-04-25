@@ -225,22 +225,23 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { isLoaded, isSignedIn } = useAuth();
-  const { isGuest, promptSignup, isLocalOptedIn } = useGuest();
+  const { isGuest, promptSignup, isLocalOptedIn, isResolved } = useGuest();
   const router = useRouter();
   const pathname = usePathname();
 
   // Anonymous visitor with no local data → bounce off the dashboard so
-  // they don't see an empty themed dashboard. Anyone who hits dashboard
-  // signed-out without opting into local mode probably wandered here from
-  // marketing — send them to landing.
+  // they don't see an empty themed dashboard. We wait for `isResolved`
+  // before deciding — without that, a returning local user would race
+  // the effect (optInPersisted is `false` for the first render) and get
+  // redirected to landing before their opt-in flag is read.
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isResolved) return;
     if (isSignedIn) return;
     if (isLocalOptedIn) return;
     if (pathname?.startsWith("/dashboard")) {
       router.replace("/");
     }
-  }, [isLoaded, isSignedIn, isLocalOptedIn, pathname, router]);
+  }, [isResolved, isSignedIn, isLocalOptedIn, pathname, router]);
 
   const guestMobileItems = [
     { label: "Today", href: "/dashboard", icon: LayoutDashboard },

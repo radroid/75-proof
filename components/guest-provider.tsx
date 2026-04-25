@@ -31,6 +31,14 @@ interface GuestContextValue {
   isGuest: boolean;
   /** True when the user has explicitly opted in to local mode. */
   isLocalOptedIn: boolean;
+  /**
+   * False during the brief window between mount and the first effect
+   * cycle while we determine whether this browser has a persisted
+   * opt-in flag and/or hydrated local data. Layout/dashboard redirect
+   * effects must wait for this to be true — otherwise a returning
+   * local user races the empty-state branch and gets bounced.
+   */
+  isResolved: boolean;
   /** Resolve a sign-up flow. Used by the Banner CTA. */
   promptSignup: () => void;
   /** Switch this browser into local mode and route to onboarding. */
@@ -97,12 +105,18 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
   // every consumer re-renders without depending on a non-reactive
   // localStorage read inside render.
   const [optInPersisted, setOptInPersisted] = useState(false);
+  const [optInResolved, setOptInResolved] = useState(false);
   useEffect(() => {
     setOptInPersisted(readLocalOptIn());
+    setOptInResolved(true);
   }, []);
 
   const isLocalOptedIn = optInPersisted || hasLocalData;
   const isGuest = isLoaded && !isSignedIn && isLocalOptedIn;
+  // "Resolved" is true once we have authoritative answers for both
+  // Clerk's auth state and our local opt-in state. Gates that decide
+  // "redirect this user away" should wait for it.
+  const isResolved = isLoaded && optInResolved;
 
   const enterLocalMode = useCallback(() => {
     writeLocalOptIn();
@@ -131,6 +145,7 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
     () => ({
       isGuest,
       isLocalOptedIn,
+      isResolved,
       promptSignup: () => clerk.openSignUp(),
       enterLocalMode,
       resetLocal,
@@ -142,6 +157,7 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
     [
       isGuest,
       isLocalOptedIn,
+      isResolved,
       clerk,
       enterLocalMode,
       resetLocal,

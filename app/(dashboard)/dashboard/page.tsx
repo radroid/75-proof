@@ -14,6 +14,7 @@ import { MotionItem } from "@/components/ui/motion";
 import { Rocket } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
 import { useGuest } from "@/components/guest-provider";
+import { useLocalHydrationComplete } from "@/lib/local-store/hooks";
 import { NotificationPromptGate } from "@/components/pwa/notification-prompt-gate";
 import { DashboardTour } from "@/components/DashboardTour";
 import { useFeatureFlagEnabled } from "posthog-js/react";
@@ -37,18 +38,21 @@ export default function DashboardPage() {
   const { isGuest, demoUser, demoChallenge } = useGuest();
   const { personality } = useThemePersonality();
   const router = useRouter();
+  const localHydrated = useLocalHydrationComplete();
 
   // Local mode: render themed dashboard against the live local store.
-  // If the user opted in but hasn't completed onboarding yet, bounce them
-  // to the onboarding flow rather than rendering a broken empty state.
+  // Wait for hydration to complete before deciding the local store is
+  // "empty" — without this guard, a returning user with persisted data
+  // races us and gets bounced to /onboarding before their challenge
+  // hydrates.
   useEffect(() => {
-    if (isGuest && !demoChallenge) {
+    if (isGuest && localHydrated && !demoChallenge) {
       router.replace("/onboarding");
     }
-  }, [isGuest, demoChallenge, router]);
+  }, [isGuest, localHydrated, demoChallenge, router]);
 
   if (isGuest) {
-    if (!demoChallenge || !demoUser) {
+    if (!localHydrated || !demoChallenge || !demoUser) {
       return (
         <div className="max-w-4xl space-y-6">
           <HeroSkeleton />

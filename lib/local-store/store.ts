@@ -18,6 +18,11 @@ class LocalStore {
   private cache: LocalDB = emptyDB();
   private listeners = new Set<Listener>();
   private hydrated = false;
+  /** Public-readable flag — flips to true once the first hydrate from
+   *  localStorage has completed. Code that branches on "user has data
+   *  vs not yet loaded" needs this signal because both states present
+   *  as `user: null` on the snapshot. */
+  hydrationComplete = false;
 
   /**
    * Lazy hydration. Called from useSyncExternalStore subscribe so SSR
@@ -37,12 +42,13 @@ class LocalStore {
         const parsed = JSON.parse(raw) as LocalDB;
         if (parsed && parsed.version === 1) {
           this.cache = parsed;
-          this.notify();
         }
       }
     } catch {
       // Corrupt or quota-restricted; keep empty DB.
     }
+    this.hydrationComplete = true;
+    this.notify();
     window.addEventListener("storage", (ev) => {
       if (ev.key !== LOCAL_DB_KEY) return;
       if (ev.newValue === null) {
