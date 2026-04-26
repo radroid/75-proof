@@ -94,6 +94,8 @@ export async function POST(req: NextRequest) {
   };
 
   let retrieved: Retrieved[] = [];
+  let retrievalFailed = false;
+  let retrievalError: string | undefined;
 
   if (queryText) {
     const convex = new ConvexHttpClient(convexUrl);
@@ -107,6 +109,8 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       console.error("[coach/chat] vector search failed", err);
       retrieved = [];
+      retrievalFailed = true;
+      retrievalError = err instanceof Error ? err.message : "vector search failed";
     }
   }
 
@@ -115,6 +119,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       assistantText: stubResponse(queryText, retrieved),
       retrieved,
+      retrievalFailed,
+      retrievalError,
     });
   }
 
@@ -135,14 +141,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       assistantText: result.text ?? "",
       retrieved,
+      retrievalFailed,
+      retrievalError,
     });
   } catch (err) {
     console.error("[coach/chat] LLM call failed", err);
-    return NextResponse.json({
-      assistantText:
-        "Sorry — the coach is having trouble reaching the model right now. Try again in a moment.",
-      retrieved,
-    });
+    return NextResponse.json(
+      {
+        assistantText:
+          "Sorry — the coach is having trouble reaching the model right now. Try again in a moment.",
+        retrieved,
+        retrievalFailed,
+        retrievalError,
+        llmFailed: true,
+      },
+      { status: 503 },
+    );
   }
 }
 

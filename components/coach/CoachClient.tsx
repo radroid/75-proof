@@ -103,6 +103,7 @@ export function CoachClient() {
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const requestControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -110,10 +111,20 @@ export function CoachClient() {
     }
   }, [turns]);
 
+  useEffect(() => {
+    return () => {
+      requestControllerRef.current?.abort();
+    };
+  }, []);
+
   const send = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || pending) return;
+
+      requestControllerRef.current?.abort();
+      const controller = new AbortController();
+      requestControllerRef.current = controller;
 
       const newTurn: ChatTurn = { user: trimmed, pending: true };
       const nextTurns = [...turns, newTurn];
@@ -135,6 +146,7 @@ export function CoachClient() {
             messages,
             category: category ?? undefined,
           }),
+          signal: controller.signal,
         });
         if (!res.ok) {
           const body = await res.text();
@@ -156,6 +168,9 @@ export function CoachClient() {
           return copy;
         });
       } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return;
+        }
         const message = err instanceof Error ? err.message : "Unknown error";
         setTurns((prev) => {
           const copy = [...prev];
@@ -164,7 +179,10 @@ export function CoachClient() {
           return copy;
         });
       } finally {
-        setPending(false);
+        if (requestControllerRef.current === controller) {
+          requestControllerRef.current = null;
+          setPending(false);
+        }
       }
     },
     [turns, pending, category],
@@ -383,7 +401,11 @@ function RetrievedRoutinesList({ routines }: { routines: RetrievedRoutine[] }) {
                 </p>
               </div>
               <Badge variant="secondary" className="shrink-0 text-[10px]">
-                {Math.round(r.score * 100)}%
+                {Math.max(
+                  0,
+                  Math.min(100, Math.round(((r.score + 1) / 2) * 100)),
+                )}
+                %
               </Badge>
             </summary>
             <div className="mt-2 space-y-2 text-xs text-muted-foreground">

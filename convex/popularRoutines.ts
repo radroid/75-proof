@@ -272,8 +272,12 @@ export const _clearAllEmbeddings = internalMutation({
   args: {},
   handler: async (ctx) => {
     const all = await ctx.db.query("popularRoutines").collect();
-    for (const row of all) {
-      await ctx.db.patch(row._id, { embedding: undefined });
+    const CHUNK = 32;
+    for (let i = 0; i < all.length; i += CHUNK) {
+      const chunk = all.slice(i, i + CHUNK);
+      await Promise.all(
+        chunk.map((row) => ctx.db.patch(row._id, { embedding: undefined })),
+      );
     }
     return { cleared: all.length };
   },
