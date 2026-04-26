@@ -121,13 +121,17 @@ export function LocalSettingsPage() {
       toast.error("Display name can't be empty");
       return;
     }
-    setBusy(true);
+    // The local mutations are synchronous (`localStore.write` writes to
+    // localStorage in-process), so there's no useful "busy" window to
+    // show — flipping `busy` true/false in a try/finally would never
+    // render. If a mutation throws we still want to surface that to the
+    // user instead of swallowing it inside the toast.success path.
     try {
       updateDisplayName(displayName);
       updateWaterUnit(waterUnit);
       toast.success("Settings saved");
-    } finally {
-      setBusy(false);
+    } catch {
+      toast.error("Failed to save settings");
     }
   };
 
@@ -552,7 +556,6 @@ export function LocalSettingsPage() {
         <MotionItem>
           <Button
             onClick={handleSave}
-            loading={busy}
             size="lg"
             className="w-full"
           >
@@ -572,7 +575,9 @@ export function LocalSettingsPage() {
                   <p className="font-medium text-sm">Sign up for cloud sync</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Back up your data, sync across devices, and connect with
-                    friends. Your existing local data stays on this device.
+                    friends. Heads up: local progress can&apos;t be imported
+                    yet — you&apos;ll start fresh on the cloud, and your
+                    existing data stays on this device.
                   </p>
                 </div>
               </div>

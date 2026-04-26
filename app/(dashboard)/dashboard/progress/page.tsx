@@ -905,7 +905,26 @@ export default function ProgressPage() {
                             <div className="px-3 pb-3 pt-0">
                               {isHistoryNewSystem ? (
                                 (() => {
-                                  const activeHabits = sortedHabitDefs.filter((h: any) => h.isActive);
+                                  // Structural type: covers both Convex `Doc<"habitDefinitions">`
+                                  // and `LocalHabitDefinition`. Avoids a hard import-time
+                                  // dependency on either origin since this view is polymorphic.
+                                  type HabitDefView = {
+                                    _id: string;
+                                    name: string;
+                                    isActive: boolean;
+                                    isHard: boolean;
+                                    blockType: "task" | "counter";
+                                    target?: number;
+                                    unit?: string;
+                                  };
+                                  type HabitEntryView = {
+                                    habitDefinitionId: string;
+                                    completed?: boolean;
+                                    value?: number;
+                                  };
+                                  const activeHabits = (sortedHabitDefs as HabitDefView[]).filter(
+                                    (h) => h.isActive,
+                                  );
                                   if (activeHabits.length === 0) {
                                     return (
                                       <div className="pt-3 border-t">
@@ -915,16 +934,20 @@ export default function ProgressPage() {
                                       </div>
                                     );
                                   }
+                                  const typedEntries = dayEntries as HabitEntryView[];
                                   return (
                                     <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                      {activeHabits.map((h: any) => {
-                                        const entry = dayEntries.find((e: any) => e.habitDefinitionId === h._id);
+                                      {activeHabits.map((h) => {
+                                        const entry = typedEntries.find(
+                                          (e) => e.habitDefinitionId === h._id,
+                                        );
                                         const done = !!entry?.completed;
-                                        const valueText = h.blockType === "counter" && typeof entry?.value === "number"
-                                          ? `${entry.value}${h.target ? ` / ${h.target}` : ""}${h.unit ? ` ${h.unit}` : ""}`
-                                          : done
-                                          ? "Completed"
-                                          : "Not done";
+                                        const valueText =
+                                          h.blockType === "counter" && typeof entry?.value === "number"
+                                            ? `${entry.value}${h.target ? ` / ${h.target}` : ""}${h.unit ? ` ${h.unit}` : ""}`
+                                            : done
+                                              ? "Completed"
+                                              : "Not done";
                                         return (
                                           <HabitRequirementCard
                                             key={h._id}
