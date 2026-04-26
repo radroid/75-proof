@@ -68,6 +68,12 @@ export function useChallengeStatus(
     if (!challengeId) return;
     if (lastCheckedRef.current === (challengeId as string)) return;
     lastCheckedRef.current = challengeId as string;
+    // Clear the previous challenge's result before re-checking so a
+    // restarted challenge doesn't briefly inherit the prior `"failed"` /
+    // `"completed"` modal state. `isCheckComplete` is also reset so any
+    // "is the check still pending?" gate doesn't render stale dashboards.
+    setStatusResult(null);
+    setIsCheckComplete(false);
 
     if (isGuest) {
       localSync({ challengeId: challengeId as string, userTimezone });

@@ -30,7 +30,11 @@ type InstallEventStore = {
   event: BeforeInstallPromptEvent | null;
   installed: boolean;
 };
-const installEventStore: InstallEventStore = { event: null, installed: false };
+// Replaced wholesale (never mutated in place) so `useSyncExternalStore`'s
+// Object.is check sees a new snapshot identity on every change. Mutating
+// the same object reference would silently skip re-renders and leave
+// `canInstall` stuck even after Chrome fired `beforeinstallprompt`.
+let installEventStore: InstallEventStore = { event: null, installed: false };
 const installEventListeners = new Set<() => void>();
 let installEventListenerAttached = false;
 
@@ -44,12 +48,14 @@ function attachInstallEventListener() {
   installEventListenerAttached = true;
   window.addEventListener("beforeinstallprompt", (event: Event) => {
     event.preventDefault();
-    installEventStore.event = event as BeforeInstallPromptEvent;
+    installEventStore = {
+      ...installEventStore,
+      event: event as BeforeInstallPromptEvent,
+    };
     notifyInstallEventChange();
   });
   window.addEventListener("appinstalled", () => {
-    installEventStore.event = null;
-    installEventStore.installed = true;
+    installEventStore = { event: null, installed: true };
     notifyInstallEventChange();
   });
 }
@@ -207,7 +213,7 @@ export function useInstallPrompt(): UseInstallPromptResult {
       // event this session, and we don't want to nag on next load either.
       writeDismissedAt();
       setDismissed(true);
-      installEventStore.event = null;
+      installEventStore = { ...installEventStore, event: null };
       notifyInstallEventChange();
       if (choice.outcome === "accepted") {
         setIsStandalone(true);

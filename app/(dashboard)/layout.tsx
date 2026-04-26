@@ -260,7 +260,7 @@ export default function DashboardLayout({
     { label: "Sign Up", href: "#", icon: LogIn, action: promptSignup },
   ];
 
-  if (!isLoaded) {
+  if (!isLoaded || !isResolved) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -269,6 +269,14 @@ export default function DashboardLayout({
         </div>
       </div>
     );
+  }
+
+  // Returning visitor with no auth and no local opt-in: the redirect
+  // effect above will kick them off `/dashboard`, but we still need to
+  // avoid mounting the authenticated shell (and downstream Convex
+  // queries like `createOrGetUser`) during that single-frame gap.
+  if (!isSignedIn && !isLocalOptedIn) {
+    return null;
   }
 
   // Only build the Friends nav item — and thus mount FriendsNavIcon, which

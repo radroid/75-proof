@@ -71,10 +71,24 @@ export function DynamicDailyChecklist({
   const allDone = requiredItems > 0 && requiredDone === requiredItems;
 
   useEffect(() => {
+    // Wait for the checklist data to load before doing transition detection.
+    // Otherwise the effect fires once with `allDone === false` (no entries
+    // yet), then again once entries hydrate as `true` for an already-complete
+    // past day — re-firing confetti and a duplicate `markDayComplete`.
+    if (!habitDefs) return;
+
     const key = `${challengeId}:${dayNumber}`;
     const prev = prevAllDoneRef.current;
     const isDayChange = prev.key !== key;
-    const flippedToDone = allDone && (isDayChange ? false : !prev.value);
+
+    // First effect run for this day after data hydrates: just seed the ref
+    // with the current state so an already-done day doesn't read as a flip.
+    if (isDayChange) {
+      prevAllDoneRef.current = { key, value: allDone };
+      return;
+    }
+
+    const flippedToDone = allDone && !prev.value;
     if (flippedToDone) {
       triggerConfetti();
       if (isGuest) {
@@ -90,6 +104,7 @@ export function DynamicDailyChecklist({
     }
     prevAllDoneRef.current = { key, value: allDone };
   }, [
+    habitDefs,
     allDone,
     triggerConfetti,
     markDayCompleteConvex,

@@ -111,6 +111,19 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
     setOptInResolved(true);
   }, []);
 
+  // Mirror opt-in changes from other tabs. Without this, signing in or
+  // resetting local mode in tab A leaves tab B with a stale `isGuest`
+  // until a full reload — which then routes the wrong UI for that tab.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== LOCAL_OPT_IN_KEY) return;
+      setOptInPersisted(event.newValue === "1");
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const isLocalOptedIn = optInPersisted || hasLocalData;
   const isGuest = isLoaded && !isSignedIn && isLocalOptedIn;
   // "Resolved" is true once we have authoritative answers for both

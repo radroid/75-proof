@@ -52,7 +52,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "How is 75 Proof different from other 75 HARD apps?",
-    a: "Most alternatives charge money, run ads, or collect your data. 75 Proof is free, ad-free, and privacy-first. It's also a web app that works on any device — no app store download required — with a guest mode so you can try the full dashboard before signing up.",
+    a: "Most alternatives charge money, run ads, or collect your data. 75 Proof is free, ad-free, and privacy-first. It's also a web app that works on any device — no app store download required — with a Track Locally mode so you can try the full dashboard before signing up, with all your data staying on your device.",
   },
 ];
 

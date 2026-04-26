@@ -36,17 +36,23 @@ class LocalStore {
     if (this.hydrated) return;
     this.hydrated = true;
     if (typeof window === "undefined") return;
+    let parsed: LocalDB | null = null;
     try {
       const raw = window.localStorage.getItem(LOCAL_DB_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as LocalDB;
-        if (parsed && parsed.version === 1) {
-          this.cache = parsed;
+        const candidate = JSON.parse(raw) as LocalDB;
+        if (candidate && candidate.version === 1) {
+          parsed = candidate;
         }
       }
     } catch {
       // Corrupt or quota-restricted; keep empty DB.
     }
+    // Always swap to a new cache reference so `useSyncExternalStore` sees a
+    // changed snapshot identity. If we kept the field-init `emptyDB()` the
+    // notify() below would not trigger re-renders for subscribers reading
+    // `hydrationComplete` via `useLocalDB()` — Object.is would short-circuit.
+    this.cache = parsed ?? emptyDB();
     this.hydrationComplete = true;
     this.notify();
     window.addEventListener("storage", (ev) => {
@@ -68,13 +74,21 @@ class LocalStore {
     });
   }
 
-  private persist(): void {
-    if (typeof window === "undefined") return;
+  /**
+   * Returns true if the write reached localStorage (or we're in an SSR
+   * context where there is nothing to persist to). Returning false lets
+   * callers skip the cache swap so the in-memory state never drifts ahead
+   * of what survives a reload.
+   */
+  private persist(db: LocalDB): boolean {
+    if (typeof window === "undefined") return true;
     try {
-      window.localStorage.setItem(LOCAL_DB_KEY, JSON.stringify(this.cache));
+      window.localStorage.setItem(LOCAL_DB_KEY, JSON.stringify(db));
+      return true;
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("[local-store] persist failed", err);
+      return false;
     }
   }
 
@@ -109,8 +123,14 @@ class LocalStore {
    */
   write(mutator: (draft: LocalDB) => void): void {
     this.hydrate();
+    // Deep-clone the user record so a mutator that edits `draft.user` in
+    // place can't smear writes onto the live cache before notify fires.
+    // (Arrays are already cloned shallowly; nested user objects weren't.)
     const next: LocalDB = {
       ...this.cache,
+      user: this.cache.user
+        ? (JSON.parse(JSON.stringify(this.cache.user)) as LocalDB["user"])
+        : null,
       challenges: [...this.cache.challenges],
       habitDefinitions: [...this.cache.habitDefinitions],
       habitEntries: [...this.cache.habitEntries],
@@ -123,15 +143,16 @@ class LocalStore {
       console.error("[local-store] mutator threw, rolling back", err);
       return;
     }
+    if (!this.persist(next)) return;
     this.cache = next;
-    this.persist();
     this.notify();
   }
 
   /** Reset everything — used by "delete local data" affordance and tests. */
   reset(): void {
-    this.cache = emptyDB();
-    this.persist();
+    const next = emptyDB();
+    if (!this.persist(next)) return;
+    this.cache = next;
     this.notify();
   }
 

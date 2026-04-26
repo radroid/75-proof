@@ -419,35 +419,43 @@ export default function ProgressPage() {
             #{effectiveLifetimeStats?.attemptNumber ?? 1}
           </p>
         </motion.div>
-        <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
-          <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
-            <Dumbbell className="h-5 w-5 text-chart-1" />
-            <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Total Workouts</span>
-          </div>
-          <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
-            {totalWorkouts}
-          </p>
-        </motion.div>
-        <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
-          <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
-            <Droplets className="h-5 w-5 text-chart-2" />
-            <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Water Consumed</span>
-          </div>
-          <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
-            {Math.round(totalWater / 128)}
-            <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">gallons</span>
-          </p>
-        </motion.div>
-        <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
-          <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
-            <BookOpen className="h-5 w-5 text-chart-3" />
-            <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Reading Time</span>
-          </div>
-          <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
-            {totalReading}
-            <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">min</span>
-          </p>
-        </motion.div>
+        {/* Total Workouts / Water / Reading are sourced from the legacy
+            `dailyLogs` table, which local mode doesn't replicate (its
+            data lives in `habitEntries` and the metric mapping isn't 1:1).
+            Hiding for guests avoids showing a misleading "0" mid-streak. */}
+        {!isGuest && (
+          <>
+            <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
+              <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
+                <Dumbbell className="h-5 w-5 text-chart-1" />
+                <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Total Workouts</span>
+              </div>
+              <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
+                {totalWorkouts}
+              </p>
+            </motion.div>
+            <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
+              <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
+                <Droplets className="h-5 w-5 text-chart-2" />
+                <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Water Consumed</span>
+              </div>
+              <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
+                {Math.round(totalWater / 128)}
+                <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">gallons</span>
+              </p>
+            </motion.div>
+            <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
+              <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
+                <BookOpen className="h-5 w-5 text-chart-3" />
+                <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Reading Time</span>
+              </div>
+              <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
+                {totalReading}
+                <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">min</span>
+              </p>
+            </motion.div>
+          </>
+        )}
       </MotionGrid>
 
       {/* Progress Photos Gallery */}

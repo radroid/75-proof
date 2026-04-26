@@ -15,9 +15,9 @@ Allow privacy-conscious users to track their habits without signing in. Data liv
 **Trade-off:** Re-serializes everything on every mutation. Negligible at this scale; revisit if a user reaches 1000+ days.
 
 ### 2. String IDs prefixed `local_*`
-**Decision:** Local IDs are `local_<table>_<counter>` strings, never the Convex branded `Id<...>` type.
+**Decision:** Local IDs are `local_<table>_<base36-timestamp>_<base36-random>` strings, never the Convex branded `Id<...>` type. (We considered a per-table counter and dropped it — a timestamp + random suffix avoids carrying counter state across reloads and makes IDs unique even after a reset/re-onboard within the same millisecond.)
 **Why:** Eliminates risk of accidentally sending a local ID to Convex. Components consume `_id` as `string`/`any` everywhere already.
-**Trade-off:** TypeScript can't statically prove "this branch never calls Convex" — relies on runtime `isLocal` gate.
+**Trade-off:** TypeScript can't statically prove "this branch never calls Convex" — relies on runtime `isLocal` gate (a `local_` prefix check).
 
 ### 3. Reactive store via `useSyncExternalStore`
 **Decision:** Single in-memory cache + listener set; React subscribes via `useSyncExternalStore`.
@@ -39,9 +39,9 @@ Allow privacy-conscious users to track their habits without signing in. Data liv
 **Why:** Web push without a backend = self-defeating. Anything we'd schedule needs the page open. The user explicitly asked for "ask for notification permissions" — granting permission and storing the preference is achievable; remote delivery isn't, and it would require sending data to a server (defeating privacy).
 **Trade-off:** Local users don't get morning/evening reminders pushed when the app is closed. Acknowledged in the prompt copy.
 
-### 7. No friends, no settings page, no reconciliation/auto-fail in local mode
-**Decision:** Friends nav + settings link omitted from sidebar/mobile nav for local users. Reconciliation dialog (which fails challenges after 7 days of missed completions) does not run in local mode for v1.
-**Why:** Friends + settings are out of scope per the user. Reconciliation is a heavy auto-failure path; running it in local mode without an obvious "recover" UI feels punishing for a privacy mode that has no support channel. v1 advances `currentDay` based on calendar but doesn't auto-fail.
+### 7. No friends and no reconciliation/auto-fail in local mode; settings page is local-only
+**Decision:** Friends nav is omitted from sidebar/mobile nav for local users. A dedicated **local settings page** is included (`components/local-settings.tsx`) — it exposes only the controls that are meaningful without an account or server: theme, display name, water unit, haptics toggle, browser-notification permission, challenge-length controls (extend / convert to habit tracker), reset paths, and an "erase all local data" affordance. Friend-sharing prefs and the Web Push device list are intentionally absent. Reconciliation (which fails challenges after 7 days of missed completions) does not run in local mode for v1.
+**Why:** Friends remain out of scope per the user. The settings surface ended up necessary because basic affordances like "rename me", "reset progress", and "wipe my data" had nowhere else to live. Reconciliation is a heavy auto-failure path; running it in local mode without an obvious "recover" UI feels punishing for a privacy mode that has no support channel. v1 advances `currentDay` based on calendar but doesn't auto-fail.
 **Trade-off:** A local user who walks away for 30 days returns to a high `currentDay` with many empty days behind them. They can still mark complete via the day navigator on past days (via the "isDayEditable" relaxation for local mode — see #8).
 
 ### 8. Editing past days is allowed in local mode

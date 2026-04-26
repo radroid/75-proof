@@ -53,16 +53,20 @@ function loadStep(): number {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { isGuest, isLocalOptedIn } = useGuest();
+  const { isGuest, isLocalOptedIn, isResolved } = useGuest();
+  // Wait for guest resolution before kicking off Convex queries — otherwise a
+  // returning local-mode user (who reads `isGuest === false` for the first
+  // render until `optInResolved` flips) would briefly trigger the signed-in
+  // path and could be bounced to /sign-in before their local data hydrates.
   const convexUser = useQuery(
     api.users.getCurrentUser,
-    isGuest ? "skip" : undefined,
+    !isResolved || isGuest ? "skip" : undefined,
   );
   const localUser = useLocalUser();
   const user = isGuest ? localUser : convexUser;
   const convexPreviousState = useQuery(
     api.onboarding.getPreviousOnboardingState,
-    isGuest ? "skip" : undefined,
+    !isResolved || isGuest ? "skip" : undefined,
   );
   const localPreviousState = useLocalPreviousOnboardingState();
   // For local re-onboarding, surface the user's previous habit setup so they
@@ -256,13 +260,15 @@ export default function OnboardingPage() {
   // Kick anonymous-and-not-local-mode users to sign-in. Side-effect goes
   // in an effect, not the render path, to avoid the "router.replace
   // during render" warning and the "redirect didn't commit" race.
+  // Wait for `isResolved` so a returning local user isn't bounced before
+  // their persisted opt-in flag has been read.
   useEffect(() => {
-    if (!isGuest && !isLocalOptedIn && user === null) {
+    if (isResolved && !isGuest && !isLocalOptedIn && user === null) {
       router.replace("/sign-in");
     }
-  }, [isGuest, isLocalOptedIn, user, router]);
+  }, [isResolved, isGuest, isLocalOptedIn, user, router]);
 
-  if (!isGuest && user === undefined) {
+  if (!isResolved || (!isGuest && user === undefined)) {
     return (
       <div className="space-y-6">
         <HeroSkeleton />

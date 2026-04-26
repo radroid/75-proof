@@ -9,7 +9,6 @@ import {
   requestLocalNotificationPermission,
   type LocalPermissionStatus,
 } from "@/lib/local-store/notifications";
-import { useLocalUser } from "@/lib/local-store/hooks";
 
 const DISMISS_KEY = "75proof_local_notif_prompt_dismissed_at";
 const DISMISS_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
@@ -53,7 +52,6 @@ interface LocalNotificationPromptProps {
  * is recorded so the user can grant/deny once and the prompt stays away.
  */
 export function LocalNotificationPrompt({ enabled }: LocalNotificationPromptProps) {
-  const localUser = useLocalUser();
   const [status, setStatus] = useState<LocalPermissionStatus>("default");
   const [dismissed, setDismissed] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -82,13 +80,15 @@ export function LocalNotificationPrompt({ enabled }: LocalNotificationPromptProp
     setDismissed(true);
   }, []);
 
-  const alreadyGranted = !!localUser?.preferences?.notifications?.permissionGrantedAt;
-
   if (!enabled) return null;
   if (dismissed) return null;
   if (status === "unsupported") return null;
   if (status === "denied") return null;
-  if (status === "granted" || alreadyGranted) return null;
+  // Suppress only when the *browser* still says granted. We used to also
+  // honor `permissionGrantedAt` from the local store, but that flag is
+  // sticky — if the user later resets the site permission to "default"
+  // the prompt would never re-appear. Trust the live browser state.
+  if (status === "granted") return null;
 
   return (
     <Card

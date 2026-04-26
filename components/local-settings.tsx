@@ -149,9 +149,11 @@ export function LocalSettingsPage() {
 
   const handleExtend = () => {
     if (!challenge) return;
-    const parsed = parseInt(extendValue, 10);
-    if (Number.isNaN(parsed)) {
-      toast.error("Enter a valid number of days");
+    // `parseInt` would silently accept "90.5" as 90 and "120days" as 120;
+    // require the entire value to be a clean integer instead.
+    const parsed = Number(extendValue);
+    if (!Number.isInteger(parsed)) {
+      toast.error("Enter a whole number of days");
       return;
     }
     try {
@@ -458,6 +460,7 @@ export function LocalSettingsPage() {
                               id="extend-days"
                               type="number"
                               inputMode="numeric"
+                              step={1}
                               min={currentDaysTotal + 1}
                               max={365}
                               value={extendValue}
