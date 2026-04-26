@@ -49,7 +49,25 @@ const ALLOWED_ROLES = new Set<ChatMessage["role"]>(["user", "assistant"]);
 // throttle, not a global one. Move to KV/Redis if abuse becomes real.
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 20;
-const rateLimitBuckets = new Map<string, number[]>();
+// Eviction threshold — once a bucket hasn't been touched for this long it's
+// dropped. 2× the window leaves a small grace period for clock skew.
+const RATE_LIMIT_TTL_MS = RATE_LIMIT_WINDOW_MS * 2;
+// Probabilistic sweep: ~1 in 100 requests triggers a full pass. Keeps the
+// map bounded under unique-IP pressure without paying GC cost on every call.
+const RATE_LIMIT_GC_PROBABILITY = 0.01;
+const RATE_LIMIT_GC_HARD_THRESHOLD = 5000;
+
+type RateLimitBucket = { times: number[]; lastSeen: number };
+const rateLimitBuckets = new Map<string, RateLimitBucket>();
+
+function sweepRateLimitBuckets(now: number) {
+  const evictBefore = now - RATE_LIMIT_TTL_MS;
+  for (const [key, bucket] of rateLimitBuckets) {
+    if (bucket.lastSeen < evictBefore) {
+      rateLimitBuckets.delete(key);
+    }
+  }
+}
 
 function rateLimit(req: NextRequest): { ok: true } | { ok: false; retryAfter: number } {
   const ip =
@@ -59,22 +77,23 @@ function rateLimit(req: NextRequest): { ok: true } | { ok: false; retryAfter: nu
     "unknown";
   const now = Date.now();
   const cutoff = now - RATE_LIMIT_WINDOW_MS;
-  const bucket = (rateLimitBuckets.get(ip) ?? []).filter((t) => t > cutoff);
-  if (bucket.length >= RATE_LIMIT_MAX) {
-    rateLimitBuckets.set(ip, bucket);
-    const retryAfter = Math.ceil((bucket[0] + RATE_LIMIT_WINDOW_MS - now) / 1000);
+  const existing = rateLimitBuckets.get(ip);
+  const times = (existing?.times ?? []).filter((t) => t > cutoff);
+
+  if (
+    Math.random() < RATE_LIMIT_GC_PROBABILITY ||
+    rateLimitBuckets.size > RATE_LIMIT_GC_HARD_THRESHOLD
+  ) {
+    sweepRateLimitBuckets(now);
+  }
+
+  if (times.length >= RATE_LIMIT_MAX) {
+    rateLimitBuckets.set(ip, { times, lastSeen: now });
+    const retryAfter = Math.ceil((times[0] + RATE_LIMIT_WINDOW_MS - now) / 1000);
     return { ok: false, retryAfter: Math.max(1, retryAfter) };
   }
-  bucket.push(now);
-  rateLimitBuckets.set(ip, bucket);
-  // Lightweight GC to keep the map bounded.
-  if (rateLimitBuckets.size > 5000) {
-    for (const [key, times] of rateLimitBuckets) {
-      const fresh = times.filter((t) => t > cutoff);
-      if (fresh.length === 0) rateLimitBuckets.delete(key);
-      else rateLimitBuckets.set(key, fresh);
-    }
-  }
+  times.push(now);
+  rateLimitBuckets.set(ip, { times, lastSeen: now });
   return { ok: true };
 }
 

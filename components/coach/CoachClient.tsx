@@ -409,11 +409,7 @@ function RetrievedRoutinesList({ routines }: { routines: RetrievedRoutine[] }) {
                 </p>
               </div>
               <Badge variant="secondary" className="shrink-0 text-[10px]">
-                {Math.max(
-                  0,
-                  Math.min(100, Math.round(((r.score + 1) / 2) * 100)),
-                )}
-                %
+                {formatSimilarityPercent(r.score)}%
               </Badge>
             </summary>
             <div className="mt-2 space-y-2 text-xs text-muted-foreground">
@@ -451,6 +447,15 @@ function RetrievedRoutinesList({ routines }: { routines: RetrievedRoutine[] }) {
       </div>
     </div>
   );
+}
+
+// Maps a Convex vector-search cosine similarity in the [-1, 1] range
+// to a 0–100% display number. If the upstream scoring ever changes
+// (e.g. dot-product on un-normalized vectors, a different distance
+// metric), update this transform.
+function formatSimilarityPercent(score: number): number {
+  const pct = Math.round(((score + 1) / 2) * 100);
+  return Math.max(0, Math.min(100, pct));
 }
 
 function humanizeCategory(c: CoachCategory | string): string {

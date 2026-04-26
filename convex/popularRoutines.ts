@@ -25,6 +25,13 @@ const categoryValidator = v.union(
 export const listAll = query({
   args: {},
   handler: async (ctx) => {
+    // Stored rows are the source of truth once seeded. We fall back to
+    // POPULAR_ROUTINES_SEED only when the table is fully empty (i.e. before
+    // seedAndEmbed has ever run) so the catalog shows up in dev. We
+    // intentionally do NOT merge stored + seed when partially populated:
+    // anything in the table reflects edits or removals an operator made
+    // on purpose, and silently re-introducing seed-only entries would
+    // undo those edits.
     const stored = await ctx.db.query("popularRoutines").collect();
     if (stored.length === 0) {
       return POPULAR_ROUTINES_SEED.map(toClientShape);
@@ -271,6 +278,11 @@ export const _setEmbedding = internalMutation({
   },
 });
 
+// Aligned with seedAndEmbed's default batchSize so a single call from the
+// seeder never exceeds this. Hard-bounded to keep parallel ctx.db.patch fan-out
+// well under Convex per-mutation write limits.
+const MAX_EMBEDDING_WRITES_PER_CALL = 64;
+
 export const _setEmbeddings = internalMutation({
   args: {
     items: v.array(
@@ -281,6 +293,11 @@ export const _setEmbeddings = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
+    if (args.items.length > MAX_EMBEDDING_WRITES_PER_CALL) {
+      throw new Error(
+        `_setEmbeddings: items.length=${args.items.length} exceeds max ${MAX_EMBEDDING_WRITES_PER_CALL}`,
+      );
+    }
     await Promise.all(
       args.items.map((item) =>
         ctx.db.patch(item.id, { embedding: item.embedding }),
