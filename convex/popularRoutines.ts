@@ -210,9 +210,9 @@ export const _upsertSeeds = internalMutation({
         existing.whyItMatters !== seed.whyItMatters ||
         existing.caveat !== seed.caveat ||
         existing.sourceUrl !== seed.sourceUrl ||
-        existing.trackingChecklist.join("\n") !==
-          seed.trackingChecklist.join("\n") ||
-        existing.tags.join("\n") !== seed.tags.join("\n");
+        JSON.stringify(existing.trackingChecklist) !==
+          JSON.stringify(seed.trackingChecklist) ||
+        JSON.stringify(existing.tags) !== JSON.stringify(seed.tags);
 
       if (textChanged) {
         await ctx.db.patch(existing._id, {
