@@ -39,7 +39,74 @@ const CATEGORIES = new Set([
 
 const ALLOWED_ROLES = new Set<ChatMessage["role"]>(["user", "assistant"]);
 
+// Best-effort per-IP rate limit. The coach endpoint must remain reachable
+// for unauthenticated guest-mode users (sidebar exposes /dashboard/coach
+// in `guestNavItems`), so a Clerk gate is not appropriate here. Instead
+// we cap each client IP to RATE_LIMIT_MAX requests per RATE_LIMIT_WINDOW_MS.
+//
+// Caveat: this is single-process state. On multi-instance deployments
+// (Cloudflare Workers, multi-region Node) it acts as a per-instance soft
+// throttle, not a global one. Move to KV/Redis if abuse becomes real.
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 20;
+const rateLimitBuckets = new Map<string, number[]>();
+
+function rateLimit(req: NextRequest): { ok: true } | { ok: false; retryAfter: number } {
+  const ip =
+    req.headers.get("cf-connecting-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+  const now = Date.now();
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+  const bucket = (rateLimitBuckets.get(ip) ?? []).filter((t) => t > cutoff);
+  if (bucket.length >= RATE_LIMIT_MAX) {
+    rateLimitBuckets.set(ip, bucket);
+    const retryAfter = Math.ceil((bucket[0] + RATE_LIMIT_WINDOW_MS - now) / 1000);
+    return { ok: false, retryAfter: Math.max(1, retryAfter) };
+  }
+  bucket.push(now);
+  rateLimitBuckets.set(ip, bucket);
+  // Lightweight GC to keep the map bounded.
+  if (rateLimitBuckets.size > 5000) {
+    for (const [key, times] of rateLimitBuckets) {
+      const fresh = times.filter((t) => t > cutoff);
+      if (fresh.length === 0) rateLimitBuckets.delete(key);
+      else rateLimitBuckets.set(key, fresh);
+    }
+  }
+  return { ok: true };
+}
+
+function isSameOrigin(req: NextRequest): boolean {
+  const origin = req.headers.get("origin");
+  if (!origin) {
+    // No Origin header (e.g. server-to-server, curl) — accept; Clerk-protected
+    // areas don't gate this and we don't want to break tooling.
+    return true;
+  }
+  const host = req.headers.get("host");
+  if (!host) return false;
+  try {
+    const url = new URL(origin);
+    return url.host === host;
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "Cross-origin request blocked" }, { status: 403 });
+  }
+  const limit = rateLimit(req);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } },
+    );
+  }
+
   let body: {
     messages?: ChatMessage[];
     category?: string;
