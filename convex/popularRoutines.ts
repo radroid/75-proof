@@ -578,22 +578,25 @@ export const runEvals = internalAction({
   }> => {
     const cases: EvalCase[] = args.cases ?? DEFAULT_EVAL_CASES;
     const topK = args.topK ?? 3;
-    const results: EvalRunResult[] = [];
 
-    for (const c of cases) {
-      const hits: RoutineSearchHit[] = await ctx.runAction(
-        internal.popularRoutines.vectorSearchInternal,
-        { query: c.query, limit: topK },
-      );
-      const topHits = hits.map((h) => ({ slug: h.slug, score: h.score }));
-      const passed = topHits.some((h) => c.expectedAnyOf.includes(h.slug));
-      results.push({
-        query: c.query,
-        expectedAnyOf: c.expectedAnyOf,
-        topHits,
-        passed,
-      });
-    }
+    // Eval cases are independent — fire them in parallel so a 20-case
+    // run doesn't pay 20× the network/embedding latency serially.
+    const results: EvalRunResult[] = await Promise.all(
+      cases.map(async (c) => {
+        const hits: RoutineSearchHit[] = await ctx.runAction(
+          internal.popularRoutines.vectorSearchInternal,
+          { query: c.query, limit: topK },
+        );
+        const topHits = hits.map((h) => ({ slug: h.slug, score: h.score }));
+        const passed = topHits.some((h) => c.expectedAnyOf.includes(h.slug));
+        return {
+          query: c.query,
+          expectedAnyOf: c.expectedAnyOf,
+          topHits,
+          passed,
+        };
+      }),
+    );
 
     const passed = results.filter((r) => r.passed).length;
     const failed = results.length - passed;
