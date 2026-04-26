@@ -47,12 +47,20 @@ export const listByCategory = query({
       .query("popularRoutines")
       .withIndex("by_category", (q) => q.eq("category", args.category))
       .collect();
-    if (stored.length === 0) {
+    if (stored.length > 0) {
+      return stored.map(toClientShapeFromDoc);
+    }
+    // Mirror listAll's contract: only fall back to the seed when the
+    // table is fully empty (pre-seedAndEmbed). An empty per-category
+    // result with other rows present means the category was intentionally
+    // emptied, so don't silently re-introduce seed entries.
+    const anyRow = await ctx.db.query("popularRoutines").take(1);
+    if (anyRow.length === 0) {
       return POPULAR_ROUTINES_SEED.filter((r) => r.category === args.category).map(
         toClientShape,
       );
     }
-    return stored.map(toClientShapeFromDoc);
+    return [];
   },
 });
 

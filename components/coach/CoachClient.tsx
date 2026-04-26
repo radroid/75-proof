@@ -454,6 +454,14 @@ function RetrievedRoutinesList({ routines }: { routines: RetrievedRoutine[] }) {
 // (e.g. dot-product on un-normalized vectors, a different distance
 // metric), update this transform.
 function formatSimilarityPercent(score: number): number {
+  if (
+    process.env.NODE_ENV === "development" &&
+    (score < -1.01 || score > 1.01)
+  ) {
+    console.warn(
+      `[formatSimilarityPercent] Unexpected score ${score} — expected cosine similarity in [-1, 1]`,
+    );
+  }
   const pct = Math.round(((score + 1) / 2) * 100);
   return Math.max(0, Math.min(100, pct));
 }
