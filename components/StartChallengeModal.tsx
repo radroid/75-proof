@@ -18,13 +18,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
 import posthog from "posthog-js";
+import {
+  DEFAULT_TEMPLATE_SLUG,
+  getTemplateBySlug,
+} from "@/lib/routine-templates";
 
 interface StartChallengeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Routine catalog slug to label this dialog with. Defaults to 75 HARD. */
+  templateSlug?: string;
 }
 
-export function StartChallengeModal({ open, onOpenChange }: StartChallengeModalProps) {
+export function StartChallengeModal({
+  open,
+  onOpenChange,
+  templateSlug = DEFAULT_TEMPLATE_SLUG,
+}: StartChallengeModalProps) {
+  const template = getTemplateBySlug(templateSlug);
   const user = useQuery(api.users.getCurrentUser);
   const startChallenge = useMutation(api.challenges.startChallenge);
 
@@ -71,10 +82,10 @@ export function StartChallengeModal({ open, onOpenChange }: StartChallengeModalP
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-2xl">
-            Start <span className="text-emerald-500">75 HARD</span>
+            Start <span className="text-emerald-500">{template.title}</span>
           </DialogTitle>
           <DialogDescription>
-            Are you ready to commit to 75 days of mental toughness?
+            Ready to commit to {template.daysTotal} days?
           </DialogDescription>
         </DialogHeader>
 

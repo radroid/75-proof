@@ -6,7 +6,11 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useThemePersonality } from "@/components/theme-provider";
 import { setStoredPersonality } from "@/lib/themes";
-import { STANDARD_HABITS } from "@/convex/lib/standardHabits";
+import {
+  getTemplateBySlug,
+  isKnownTemplate,
+  DEFAULT_TEMPLATE_SLUG,
+} from "@/lib/routine-templates";
 import {
   type OnboardingState,
   type OnboardingStep,
@@ -23,7 +27,7 @@ import { StepIndicator } from "@/components/onboarding/StepIndicator";
 import { OnboardingWelcome } from "@/components/onboarding/OnboardingWelcome";
 import { OnboardingGoals } from "@/components/onboarding/OnboardingGoals";
 import { OnboardingTheme } from "@/components/onboarding/OnboardingTheme";
-import { OnboardingTierSelect } from "@/components/onboarding/OnboardingTierSelect";
+import { OnboardingTemplateSelect } from "@/components/onboarding/OnboardingTemplateSelect";
 import { OnboardingDuration } from "@/components/onboarding/OnboardingDuration";
 import { OnboardingHabitConfig } from "@/components/onboarding/OnboardingHabitConfig";
 import { OnboardingReview } from "@/components/onboarding/OnboardingReview";
@@ -89,6 +93,10 @@ export default function OnboardingPage() {
       setSeededFromPrevious(true);
       return;
     }
+    const previousSlug = previousState.templateSlug;
+    const seededTemplateSlug = isKnownTemplate(previousSlug)
+      ? (previousSlug as string)
+      : DEFAULT_TEMPLATE_SLUG;
     const seeded: OnboardingState = {
       ...INITIAL_ONBOARDING_STATE,
       displayName: previousState.displayName,
@@ -100,6 +108,7 @@ export default function OnboardingPage() {
       setupTier: previousState.setupTier,
       habits: previousState.habits.length > 0 ? previousState.habits : INITIAL_ONBOARDING_STATE.habits,
       daysTotal: previousState.daysTotal ?? INITIAL_ONBOARDING_STATE.daysTotal,
+      templateSlug: seededTemplateSlug,
     };
     setState(seeded);
     setSeededFromPrevious(true);
@@ -112,18 +121,21 @@ export default function OnboardingPage() {
     }
   }, [user, state.displayName, seededFromPrevious]);
 
-  // Populate default habits when no habits set
+  // Populate default habits from the selected routine template when none
+  // are set. Re-runs whenever the user picks a different template (which
+  // empties `habits` first), so each template seeds its own habit list.
   useEffect(() => {
     if (state.habits.length === 0) {
+      const template = getTemplateBySlug(state.templateSlug);
       setState((s) => ({
         ...s,
-        habits: STANDARD_HABITS.map((h) => ({
+        habits: template.habits.map((h) => ({
           ...h,
           isActive: true,
         })),
       }));
     }
-  }, [state.habits.length]);
+  }, [state.habits.length, state.templateSlug]);
 
   // Restore chosen theme on page load (e.g. after refresh mid-onboarding)
   useEffect(() => {
@@ -152,36 +164,42 @@ export default function OnboardingPage() {
     setState((s) => ({ ...s, ...partial }));
   }, []);
 
-  // Original 75 HARD is a fixed 75-day commitment by definition, so the
-  // duration step is hidden for that tier. Both next/back skip past it.
+  // Templates with a fixed program length (e.g. 75 HARD, 30-Day Yoga) hide
+  // the duration step. Both next/back skip past it, and we pin daysTotal
+  // to the template's value so the user can't carry a stale custom length
+  // across template swaps.
+  const selectedTemplate = getTemplateBySlug(state.templateSlug);
   const next = useCallback(() => {
     setStepIndex((i) => {
       let nextIdx = Math.min(i + 1, ONBOARDING_STEPS.length - 1);
       if (
         ONBOARDING_STEPS[nextIdx] === "duration" &&
-        state.setupTier === "original"
+        selectedTemplate.lockedDuration
       ) {
         nextIdx = Math.min(nextIdx + 1, ONBOARDING_STEPS.length - 1);
       }
       return nextIdx;
     });
-    if (state.setupTier === "original" && state.daysTotal !== 75) {
-      setState((s) => ({ ...s, daysTotal: 75 }));
+    if (
+      selectedTemplate.lockedDuration &&
+      state.daysTotal !== selectedTemplate.daysTotal
+    ) {
+      setState((s) => ({ ...s, daysTotal: selectedTemplate.daysTotal }));
     }
-  }, [state.setupTier, state.daysTotal]);
+  }, [selectedTemplate, state.daysTotal]);
 
   const back = useCallback(() => {
     setStepIndex((i) => {
       let prevIdx = Math.max(i - 1, 0);
       if (
         ONBOARDING_STEPS[prevIdx] === "duration" &&
-        state.setupTier === "original"
+        selectedTemplate.lockedDuration
       ) {
         prevIdx = Math.max(prevIdx - 1, 0);
       }
       return prevIdx;
     });
-  }, [state.setupTier]);
+  }, [selectedTemplate]);
 
   const goToStep = useCallback((step: OnboardingStep) => {
     const idx = ONBOARDING_STEPS.indexOf(step);
@@ -197,9 +215,19 @@ export default function OnboardingPage() {
       setPersonality(state.theme);
       setStoredPersonality(state.theme);
 
-      // Original tier is always 75 days regardless of any custom value the
-      // user picked before flipping back to the original setup.
-      const finalDaysTotal = state.setupTier === "original" ? 75 : state.daysTotal;
+      // Templates with locked duration always use the template's value
+      // regardless of any custom length the user toyed with before flipping
+      // back to a fixed-length template.
+      const template = getTemplateBySlug(state.templateSlug);
+      const finalDaysTotal = template.lockedDuration
+        ? template.daysTotal
+        : state.daysTotal;
+      // Persist setupTier as the legacy enum derived from the template's
+      // strictness, so back-compat code paths (re-onboarding, legacy
+      // dashboards) keep working.
+      const finalSetupTier: "original" | "added" = template.strictMode
+        ? "original"
+        : "added";
 
       // Local mode has no friend graph and nothing leaves the device, so
       // "friends"/"public" visibility is meaningless. Pin to "private" on
@@ -217,11 +245,12 @@ export default function OnboardingPage() {
           state.healthConditions.length > 0 ? state.healthConditions : undefined,
         healthAdvisoryAcknowledged: state.healthAdvisoryAcknowledged,
         goals: state.goals.length > 0 ? state.goals : undefined,
-        setupTier: state.setupTier,
+        setupTier: finalSetupTier,
         habits: state.habits.filter((h) => h.isActive),
         startDate: state.startDate,
         visibility: submittedVisibility,
         daysTotal: finalDaysTotal,
+        templateSlug: state.templateSlug,
       } as const;
 
       if (isGuest) {
@@ -231,7 +260,8 @@ export default function OnboardingPage() {
       }
 
       posthog.capture("onboarding_completed", {
-        setup_tier: state.setupTier,
+        setup_tier: finalSetupTier,
+        template_slug: state.templateSlug,
         theme: state.theme,
         active_habit_count: state.habits.filter((h) => h.isActive).length,
         visibility: submittedVisibility,
@@ -299,8 +329,24 @@ export default function OnboardingPage() {
       {currentStep === "theme" && (
         <OnboardingTheme state={state} updateState={updateState} onNext={next} onBack={back} />
       )}
-      {currentStep === "tier" && (
-        <OnboardingTierSelect state={state} updateState={updateState} onNext={next} onBack={back} />
+      {currentStep === "template" && (
+        <OnboardingTemplateSelect
+          state={state}
+          updateState={updateState}
+          onNext={next}
+          onBack={back}
+          onApplyAiProposal={(proposal) => {
+            const aiSlug = `ai-generated:${Date.now()}`;
+            setState((s) => ({
+              ...s,
+              templateSlug: aiSlug,
+              habits: proposal.habits,
+              daysTotal: proposal.daysTotal,
+              setupTier: proposal.strictMode ? "original" : "added",
+            }));
+            goToStep("review");
+          }}
+        />
       )}
       {currentStep === "duration" && (
         <OnboardingDuration state={state} updateState={updateState} onNext={next} onBack={back} />

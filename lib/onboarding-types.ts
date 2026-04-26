@@ -27,6 +27,12 @@ export interface OnboardingState {
   startDate: string;
   visibility: "private" | "friends" | "public";
   daysTotal: number;
+  /**
+   * Slug of the routine catalog template the user picked. Drives the seed
+   * habits, duration, and strict-mode behavior. `setupTier` is derived from
+   * the template's `strictMode` on submit and persisted for back-compat.
+   */
+  templateSlug: string;
 }
 
 export const DURATION_PRESETS = [30, 60, 75, 90] as const;
@@ -46,13 +52,14 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   startDate: new Date().toISOString().split("T")[0],
   visibility: "friends",
   daysTotal: 75,
+  templateSlug: "original-75-hard",
 };
 
 export const ONBOARDING_STEPS = [
   "welcome",
   "goals",
   "theme",
-  "tier",
+  "template",
   "duration",
   "habits",
   "review",

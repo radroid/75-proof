@@ -76,8 +76,8 @@
 |---|------|----------|--------|-------|
 | H-1 | ~~Two block types — Task & Counter~~ | | done | TaskBlock (checkbox with accent bar, hard/soft badge, animated checkmark) and CounterBlock (progress bar, +/- buttons, auto-complete at target). Both used in DynamicDailyChecklist. Schema: habitDefinitions + habitEntries tables. Dual-path detection in challenge status logic. Completed 2026-02-23. |
 | H-2 | Edit habits post-onboarding | P2 | todo | Settings page section to add, remove, rename, or reconfigure habits after initial setup. Change block type, target, hard/soft. Cannot edit while a day is in progress (changes apply next day). |
-| H-3 | LLM-assisted habit creation (future) | P4 | todo | In the Added tier, let users describe what they want to track in free-text (paragraph or bullet points). Validate the input is about habits/tasks, then send to an LLM that returns structured task definitions (`name`, `blockType`, `target`, `isHard`). User reviews and confirms before saving. Deferred — start with manual Task/Counter creation, revisit when usage data shows demand. |
-| H-4 | Challenge templates library | P3 | todo | Pre-built templates beyond "Original 75 HARD": e.g., "75 Medium" (all soft rules), "Fitness Focus" (3 workouts, no reading), "Mindfulness" (meditation + journaling + reading). Templates are starting points — users can customize after selecting. |
+| H-3 | LLM-assisted habit creation | P4 | in-progress | Scaffolding landed on `claude/refine-local-plan-Zjpds`: Convex `personalize.chat` action (Vercel AI SDK + OpenRouter), prompt + sentinel-tagged proposal parser, `OnboardingPersonalizeChat` UI behind `NEXT_PUBLIC_LLM_PERSONALIZE` flag. Live behavior depends on `OPENROUTER_API_KEY`; missing key returns a stub. |
+| H-4 | Challenge templates library | P3 | in-progress | Scaffolding landed on `claude/refine-local-plan-Zjpds`: `lib/routine-templates.ts` static seed (75 HARD + 30-Day Yoga), `routineTemplates` Convex table + dormant `seedTemplates` action, `OnboardingTemplateSelect` step replaces tier select. Full curated catalog (influencer/popular/expert routines from a deep-research agent) lands in a follow-up branch. |
 
 ---
 

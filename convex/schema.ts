@@ -41,6 +41,9 @@ export default defineSchema({
       goals: v.optional(v.array(v.string())),
       healthAdvisoryAcknowledged: v.boolean(),
       setupTier: v.union(v.literal("original"), v.literal("customized"), v.literal("added")),
+      // Routine catalog slug the user picked during onboarding (e.g.
+      // "original-75-hard", "30-day-yoga"). Optional for legacy users.
+      templateSlug: v.optional(v.string()),
     })),
   })
     .index("by_clerk_id", ["clerkId"])
@@ -70,6 +73,8 @@ export default defineSchema({
     // When true the challenge has no end date (habit-tracker mode); the
     // daysTotal field is ignored for completion logic.
     isHabitTracker: v.optional(v.boolean()),
+    // Routine catalog slug. Absent on legacy rows.
+    templateSlug: v.optional(v.string()),
   })
     .index("by_user", ["userId"])
     .index("by_status", ["status"]),
@@ -273,6 +278,69 @@ export default defineSchema({
     localDate: v.string(), // YYYY-MM-DD in user's timezone
     sentAt: v.number(),
   }).index("by_user_slot_date", ["userId", "slot", "localDate"]),
+
+  // Curated routine templates browsable during onboarding. v1 reads from a
+  // static seed in lib/routine-templates.ts when this table is empty; the
+  // table + vectorIndex are registered now so deep-research-driven catalog
+  // ingestion in v2 doesn't need a schema migration.
+  routineTemplates: defineTable({
+    slug: v.string(),
+    title: v.string(),
+    summary: v.string(),
+    description: v.string(),
+    category: v.union(
+      v.literal("discipline"),
+      v.literal("wellness"),
+      v.literal("fitness"),
+      v.literal("mind"),
+      v.literal("custom")
+    ),
+    daysTotal: v.number(),
+    lockedDuration: v.boolean(),
+    isHabitTracker: v.boolean(),
+    strictMode: v.boolean(),
+    difficulty: v.union(
+      v.literal("beginner"),
+      v.literal("intermediate"),
+      v.literal("advanced")
+    ),
+    recommendedGoals: v.array(v.string()),
+    source: v.object({
+      kind: v.union(
+        v.literal("official"),
+        v.literal("influencer"),
+        v.literal("community"),
+        v.literal("ai-generated")
+      ),
+      attribution: v.optional(v.string()),
+      sourceUrl: v.optional(v.string()),
+    }),
+    habits: v.array(
+      v.object({
+        name: v.string(),
+        blockType: v.union(v.literal("task"), v.literal("counter")),
+        target: v.optional(v.number()),
+        unit: v.optional(v.string()),
+        isHard: v.boolean(),
+        category: v.string(),
+        icon: v.string(),
+        sortOrder: v.number(),
+      })
+    ),
+    heroIcon: v.string(),
+    popularity: v.optional(v.number()),
+    version: v.number(),
+    // Embedding vector for similarity search. Sized to OpenAI
+    // text-embedding-3-small. Stays undefined in v1 — the vectorIndex
+    // is registered now so future backfills don't require a schema change.
+    embedding: v.optional(v.array(v.float64())),
+  })
+    .index("by_slug", ["slug"])
+    .vectorIndex("by_embedding", {
+      vectorField: "embedding",
+      dimensions: 1536,
+      filterFields: ["category"],
+    }),
 
   // Connected health devices
   connectedDevices: defineTable({

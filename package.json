@@ -11,8 +11,10 @@
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.53",
     "@clerk/nextjs": "^6.39.2",
     "@opennextjs/cloudflare": "^1.19.2",
+    "@openrouter/ai-sdk-provider": "^2.8.1",
     "@paper-design/shaders-react": "^0.0.71",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.11",
@@ -26,6 +28,7 @@
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-switch": "^1.2.6",
+    "ai": "^6.0.168",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "convex": "^1.35.1",
