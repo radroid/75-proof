@@ -33,12 +33,20 @@ type RetrievedRoutine = {
 };
 
 type ChatTurn = {
+  id: string;
   user: string;
   assistant?: string;
   retrieved?: RetrievedRoutine[];
   pending?: boolean;
   error?: string;
 };
+
+function newTurnId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `t_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
 
 const CATEGORIES: Array<{
   slug: CoachCategory;
@@ -126,7 +134,7 @@ export function CoachClient() {
       const controller = new AbortController();
       requestControllerRef.current = controller;
 
-      const newTurn: ChatTurn = { user: trimmed, pending: true };
+      const newTurn: ChatTurn = { id: newTurnId(), user: trimmed, pending: true };
       const nextTurns = [...turns, newTurn];
       setTurns(nextTurns);
       setDraft("");
@@ -310,8 +318,8 @@ export function CoachClient() {
                 before. The coach will pull from the catalog and tell you which routines fit.
               </p>
             )}
-            {turns.map((t, i) => (
-              <ChatTurnView key={i} turn={t} />
+            {turns.map((t) => (
+              <ChatTurnView key={t.id} turn={t} />
             ))}
           </div>
 
