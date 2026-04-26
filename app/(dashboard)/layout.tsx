@@ -23,6 +23,7 @@ import {
   Users,
   Settings,
   LogIn,
+  Sparkles,
 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,11 @@ const staticNavItems = [
     label: "Progress",
     href: "/dashboard/progress",
     icon: <TrendingUp className="h-5 w-5 flex-shrink-0" />,
+  },
+  {
+    label: "Coach",
+    href: "/dashboard/coach",
+    icon: <Sparkles className="h-5 w-5 flex-shrink-0" />,
   },
 ];
 
@@ -256,7 +262,7 @@ export default function DashboardLayout({
   const guestMobileItems = [
     { label: "Today", href: "/dashboard", icon: LayoutDashboard },
     { label: "Progress", href: "/dashboard/progress", icon: TrendingUp },
-    { label: "Settings", href: "/dashboard/settings", icon: Settings },
+    { label: "Coach", href: "/dashboard/coach", icon: Sparkles },
     { label: "Sign Up", href: "#", icon: LogIn, action: promptSignup },
   ];
 
