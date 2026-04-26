@@ -250,15 +250,17 @@ export const _upsertSeeds = internalMutation({
 export const _listMissingEmbeddings = internalQuery({
   args: { limit: v.number() },
   handler: async (ctx, args) => {
-    const all = await ctx.db.query("popularRoutines").collect();
-    return all
-      .filter((r) => !r.embedding || r.embedding.length === 0)
-      .slice(0, args.limit)
-      .map((r) => ({
-        _id: r._id,
-        slug: r.slug,
-        embeddingText: r.embeddingText ?? "",
-      }));
+    // Filter at the DB layer so we only materialise rows that still need
+    // embedding work, then take(limit) to bound the read.
+    const missing = await ctx.db
+      .query("popularRoutines")
+      .filter((q) => q.eq(q.field("embedding"), undefined))
+      .take(args.limit);
+    return missing.map((r) => ({
+      _id: r._id,
+      slug: r.slug,
+      embeddingText: r.embeddingText ?? "",
+    }));
   },
 });
 
