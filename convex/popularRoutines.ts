@@ -5,6 +5,7 @@ import {
   internalMutation,
   internalQuery,
   query,
+  type ActionCtx,
 } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
@@ -337,21 +338,38 @@ export const seedAndEmbed = internalAction({
   },
 });
 
+const EMBED_FETCH_TIMEOUT_MS = 20_000;
+
 async function embedBatch(
   apiKey: string,
   inputs: string[],
 ): Promise<number[][]> {
-  const res = await fetch("https://api.openai.com/v1/embeddings", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "text-embedding-3-small",
-      input: inputs,
-    }),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), EMBED_FETCH_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "text-embedding-3-small",
+        input: inputs,
+      }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error(
+        `OpenAI embeddings timed out after ${EMBED_FETCH_TIMEOUT_MS}ms`,
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`OpenAI embeddings failed (${res.status}): ${body}`);
@@ -418,6 +436,42 @@ export const _hydrateHits = internalQuery({
 });
 
 /**
+ * Shared core: embed → vector search → hydrate. Both the public action and
+ * the internal mirror call this so the embedding/search/hydration logic
+ * lives in exactly one place.
+ */
+async function performVectorSearch(
+  ctx: ActionCtx,
+  args: { query: string; limit?: number; category?: RoutineCategory },
+): Promise<RoutineSearchHit[]> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "OPENAI_API_KEY not set in Convex env — cannot run vector search.",
+    );
+  }
+  const limit = Math.max(1, Math.min(args.limit ?? 5, 20));
+  const queryEmbedding = await embedQuery(apiKey, args.query);
+
+  const cat = args.category;
+  const results = cat
+    ? await ctx.vectorSearch("popularRoutines", "by_embedding", {
+        vector: queryEmbedding,
+        limit,
+        filter: (q) => q.eq("category", cat),
+      })
+    : await ctx.vectorSearch("popularRoutines", "by_embedding", {
+        vector: queryEmbedding,
+        limit,
+      });
+
+  return await ctx.runQuery(internal.popularRoutines._hydrateHits, {
+    ids: results.map((r) => r._id),
+    scores: results.map((r) => r._score),
+  });
+}
+
+/**
  * Public action: vector search over the embedded routines. Used by both the
  * chat API (for RAG context) and the eval harness.
  */
@@ -428,35 +482,7 @@ export const vectorSearch = action({
     category: v.optional(categoryValidator),
   },
   handler: async (ctx, args): Promise<RoutineSearchHit[]> => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error(
-        "OPENAI_API_KEY not set in Convex env — cannot run vector search.",
-      );
-    }
-    const limit = Math.max(1, Math.min(args.limit ?? 5, 20));
-    const queryEmbedding = await embedQuery(apiKey, args.query);
-
-    const cat = args.category;
-    const results = cat
-      ? await ctx.vectorSearch("popularRoutines", "by_embedding", {
-          vector: queryEmbedding,
-          limit,
-          filter: (q) => q.eq("category", cat),
-        })
-      : await ctx.vectorSearch("popularRoutines", "by_embedding", {
-          vector: queryEmbedding,
-          limit,
-        });
-
-    const hits: RoutineSearchHit[] = await ctx.runQuery(
-      internal.popularRoutines._hydrateHits,
-      {
-        ids: results.map((r) => r._id),
-        scores: results.map((r) => r._score),
-      },
-    );
-    return hits;
+    return performVectorSearch(ctx, args);
   },
 });
 
@@ -549,29 +575,7 @@ export const vectorSearchInternal = internalAction({
     category: v.optional(categoryValidator),
   },
   handler: async (ctx, args): Promise<RoutineSearchHit[]> => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error("OPENAI_API_KEY not set in Convex env");
-    }
-    const limit = Math.max(1, Math.min(args.limit ?? 5, 20));
-    const queryEmbedding = await embedQuery(apiKey, args.query);
-
-    const cat = args.category;
-    const results = cat
-      ? await ctx.vectorSearch("popularRoutines", "by_embedding", {
-          vector: queryEmbedding,
-          limit,
-          filter: (q) => q.eq("category", cat),
-        })
-      : await ctx.vectorSearch("popularRoutines", "by_embedding", {
-          vector: queryEmbedding,
-          limit,
-        });
-
-    return await ctx.runQuery(internal.popularRoutines._hydrateHits, {
-      ids: results.map((r) => r._id),
-      scores: results.map((r) => r._score),
-    });
+    return performVectorSearch(ctx, args);
   },
 });
 
