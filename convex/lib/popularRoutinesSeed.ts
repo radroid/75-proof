@@ -1680,3 +1680,20 @@ export const POPULAR_ROUTINES_SEED: PopularRoutineSeed[] = [
     tags: ["social-media-detox", "monk-mode", "mindfulness", "tiktok-trending", "personal-development"],
   },
 ];
+
+// Module-load-time guard: surfaces duplicate slugs immediately when the
+// seed is imported (during dev / build / convex push) instead of waiting
+// for `by_slug` index conflicts at runtime.
+(() => {
+  const seen = new Set<string>();
+  const duplicates: string[] = [];
+  for (const r of POPULAR_ROUTINES_SEED) {
+    if (seen.has(r.slug)) duplicates.push(r.slug);
+    else seen.add(r.slug);
+  }
+  if (duplicates.length > 0) {
+    throw new Error(
+      `POPULAR_ROUTINES_SEED contains duplicate slugs: ${duplicates.join(", ")}`,
+    );
+  }
+})();

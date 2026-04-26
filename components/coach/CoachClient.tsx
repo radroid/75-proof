@@ -445,7 +445,7 @@ function RetrievedRoutinesList({ routines }: { routines: RetrievedRoutine[] }) {
   );
 }
 
-function humanizeCategory(c: CoachCategory): string {
+function humanizeCategory(c: CoachCategory | string): string {
   switch (c) {
     case "fitness":
       return "Fitness";
@@ -455,5 +455,7 @@ function humanizeCategory(c: CoachCategory): string {
       return "Productivity";
     case "personal-development":
       return "Personal development";
+    default:
+      return c;
   }
 }

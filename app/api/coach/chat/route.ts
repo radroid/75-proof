@@ -9,6 +9,26 @@ type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_CHARS = 4000;
 const TOP_K = 5;
+const VECTOR_SEARCH_TIMEOUT_MS = 15_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`${label} timed out after ${ms}ms`)),
+      ms,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
 
 const CATEGORIES = new Set([
   "fitness",
@@ -100,11 +120,15 @@ export async function POST(req: NextRequest) {
   if (queryText) {
     const convex = new ConvexHttpClient(convexUrl);
     try {
-      const result = (await convex.action(api.popularRoutines.vectorSearch, {
-        query: queryText,
-        limit: TOP_K,
-        category,
-      })) as Retrieved[];
+      const result = (await withTimeout(
+        convex.action(api.popularRoutines.vectorSearch, {
+          query: queryText,
+          limit: TOP_K,
+          category,
+        }),
+        VECTOR_SEARCH_TIMEOUT_MS,
+        "vector search",
+      )) as Retrieved[];
       retrieved = result;
     } catch (err) {
       // Log full error server-side; only surface a generic message to the client.
@@ -187,6 +211,7 @@ function buildSystemPrompt(
             (r, i) => `[${i + 1}] ${r.title} (slug: ${r.slug}, category: ${r.category}, duration: ${r.duration})
 Summary: ${r.summary}
 What it is: ${r.whatItIs}
+Tags: ${r.tags.length > 0 ? r.tags.join(", ") : "—"}
 Tracking: ${r.trackingChecklist.join("; ") || "—"}
 Why it matters: ${r.whyItMatters}${r.caveat ? `\nCaveat: ${r.caveat}` : ""}`,
           )
