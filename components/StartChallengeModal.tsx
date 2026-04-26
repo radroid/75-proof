@@ -94,33 +94,25 @@ export function StartChallengeModal({
           <CardContent className="pt-4">
             <h3 className="font-medium">Daily Requirements:</h3>
             <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                <span>Two 45-minute workouts (one must be outdoor)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                <span>Follow a diet (no cheat meals)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                <span>No alcohol</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                <span>Drink 1 gallon (128 oz) of water</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                <span>Read 10 pages of non-fiction</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                <span>Take a progress photo</span>
-              </li>
+              {template.habits.map((habit, i) => (
+                <li
+                  key={`${habit.name}-${i}`}
+                  className="flex items-start gap-2"
+                >
+                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                  <span>
+                    {habit.name}
+                    {habit.blockType === "counter" && habit.target
+                      ? ` (${habit.target}${habit.unit ? ` ${habit.unit}` : ""})`
+                      : ""}
+                  </span>
+                </li>
+              ))}
             </ul>
             <p className="mt-3 text-xs text-muted-foreground">
-              Miss any requirement? Start over from Day 1.
+              {template.strictMode
+                ? "Miss any requirement? Start over from Day 1."
+                : "Track each day — missed days don't force a restart."}
             </p>
           </CardContent>
         </Card>

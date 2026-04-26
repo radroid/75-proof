@@ -87,10 +87,63 @@ export function parseProposal(text: string): RoutineProposal | null {
   const fenceMatch = /```(?:json)?\s*([\s\S]*?)```/.exec(after);
   if (!fenceMatch) return null;
   try {
-    const parsed = JSON.parse(fenceMatch[1]) as RoutineProposal;
-    if (!parsed.habits || !Array.isArray(parsed.habits)) return null;
+    const parsed = JSON.parse(fenceMatch[1]) as unknown;
+    if (!isRoutineProposal(parsed)) return null;
     return parsed;
   } catch {
     return null;
   }
+}
+
+const VALID_DIFFICULTIES = ["beginner", "intermediate", "advanced"] as const;
+const VALID_BLOCK_TYPES = ["task", "counter"] as const;
+
+function isRoutineProposal(value: unknown): value is RoutineProposal {
+  if (!value || typeof value !== "object") return false;
+  const p = value as Record<string, unknown>;
+  if (typeof p.title !== "string") return false;
+  if (typeof p.summary !== "string") return false;
+  if (typeof p.description !== "string") return false;
+  if (typeof p.daysTotal !== "number" || !Number.isFinite(p.daysTotal)) return false;
+  if (typeof p.strictMode !== "boolean") return false;
+  if (
+    typeof p.difficulty !== "string" ||
+    !VALID_DIFFICULTIES.includes(p.difficulty as (typeof VALID_DIFFICULTIES)[number])
+  ) {
+    return false;
+  }
+  if (typeof p.reasoning !== "string") return false;
+  if (!Array.isArray(p.habits) || p.habits.length === 0) return false;
+  return p.habits.every((h) => {
+    if (!h || typeof h !== "object") return false;
+    const habit = h as Record<string, unknown>;
+    if (typeof habit.name !== "string") return false;
+    if (
+      typeof habit.blockType !== "string" ||
+      !VALID_BLOCK_TYPES.includes(habit.blockType as (typeof VALID_BLOCK_TYPES)[number])
+    ) {
+      return false;
+    }
+    if (typeof habit.isHard !== "boolean") return false;
+    if (typeof habit.category !== "string") return false;
+    if (typeof habit.icon !== "string") return false;
+    if (typeof habit.sortOrder !== "number" || !Number.isFinite(habit.sortOrder)) {
+      return false;
+    }
+    if (
+      habit.target !== undefined &&
+      habit.target !== null &&
+      (typeof habit.target !== "number" || !Number.isFinite(habit.target))
+    ) {
+      return false;
+    }
+    if (
+      habit.unit !== undefined &&
+      habit.unit !== null &&
+      typeof habit.unit !== "string"
+    ) {
+      return false;
+    }
+    return true;
+  });
 }

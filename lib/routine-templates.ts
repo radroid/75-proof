@@ -118,7 +118,11 @@ export const DEFAULT_TEMPLATE_SLUG = "original-75-hard";
 
 export function getTemplateBySlug(slug: string | null | undefined): RoutineTemplate {
   const found = slug ? ROUTINE_TEMPLATES.find((t) => t.slug === slug) : undefined;
-  return found ?? ROUTINE_TEMPLATES[0];
+  if (found) return found;
+  const defaultTemplate = ROUTINE_TEMPLATES.find(
+    (t) => t.slug === DEFAULT_TEMPLATE_SLUG,
+  );
+  return defaultTemplate ?? ROUTINE_TEMPLATES[0];
 }
 
 export function isKnownTemplate(slug: string | null | undefined): boolean {

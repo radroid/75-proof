@@ -1,4 +1,5 @@
 import type { ThemePersonality } from "./themes";
+import { DEFAULT_TEMPLATE_SLUG, getTemplateBySlug } from "./routine-templates";
 
 export interface OnboardingHabit {
   name: string;
@@ -39,6 +40,15 @@ export const DURATION_PRESETS = [30, 60, 75, 90] as const;
 export const DURATION_MIN = 7;
 export const DURATION_MAX = 365;
 
+/** Habits as the default template ships them — used to bootstrap a fresh
+ * onboarding session so we don't need a render-driven seed effect. */
+function defaultHabits(): OnboardingHabit[] {
+  return getTemplateBySlug(DEFAULT_TEMPLATE_SLUG).habits.map((h) => ({
+    ...h,
+    isActive: true,
+  }));
+}
+
 export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   ageRange: null,
   healthConditions: [],
@@ -48,11 +58,11 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   theme: "arctic",
   setupTier: "original",
-  habits: [],
+  habits: defaultHabits(),
   startDate: new Date().toISOString().split("T")[0],
   visibility: "friends",
   daysTotal: 75,
-  templateSlug: "original-75-hard",
+  templateSlug: DEFAULT_TEMPLATE_SLUG,
 };
 
 export const ONBOARDING_STEPS = [

@@ -15,6 +15,7 @@ import {
   Lock,
 } from "lucide-react";
 import {
+  DEFAULT_TEMPLATE_SLUG,
   ROUTINE_TEMPLATES,
   getTemplateBySlug,
   type RoutineTemplate,
@@ -59,11 +60,12 @@ export function OnboardingTemplateSelect({
   const recommendedSlug = pickRecommendedSlug(state.goals);
 
   const handlePick = (template: RoutineTemplate) => {
+    // Seed habits in the same state transition as the template change so
+    // we never render an empty habit list and don't rely on a follow-up
+    // effect to re-populate (avoids a render-triggered setState cycle).
     updateState({
       templateSlug: template.slug,
-      // Reset habits so the page-level seed effect re-populates from the
-      // newly chosen template. The effect runs whenever habits is empty.
-      habits: [],
+      habits: template.habits.map((h) => ({ ...h, isActive: true })),
       daysTotal: template.daysTotal,
       setupTier: template.strictMode ? "original" : "added",
     });
@@ -194,5 +196,5 @@ function pickRecommendedSlug(goals: string[]): string {
     const yoga = getTemplateBySlug("30-day-yoga");
     return yoga.slug;
   }
-  return "original-75-hard";
+  return DEFAULT_TEMPLATE_SLUG;
 }

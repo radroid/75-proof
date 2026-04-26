@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
@@ -51,12 +51,17 @@ export function usePersonalizeChat(
   const [proposal, setProposal] = useState<RoutineProposalLite | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Generation token: bumped on reset so a stale in-flight response
+  // can't mutate state after the user clears the chat.
+  const requestSeq = useRef(0);
   const chat = useAction(api.personalize.chat);
 
   const send = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || pending) return;
+      const seq = requestSeq.current + 1;
+      requestSeq.current = seq;
       const next: ChatMessage[] = [
         ...messages,
         { role: "user", content: trimmed },
@@ -69,6 +74,7 @@ export function usePersonalizeChat(
           messages: next,
           selectedTemplateSlug,
         });
+        if (seq !== requestSeq.current) return;
         setMessages((prev) => [
           ...prev,
           { role: "assistant", content: result.assistantText },
@@ -77,20 +83,23 @@ export function usePersonalizeChat(
           setProposal(result.proposal as RoutineProposalLite);
         }
       } catch (err) {
+        if (seq !== requestSeq.current) return;
         setError(
           err instanceof Error ? err.message : "Personalization request failed",
         );
       } finally {
-        setPending(false);
+        if (seq === requestSeq.current) setPending(false);
       }
     },
     [chat, messages, pending, selectedTemplateSlug],
   );
 
   const reset = useCallback(() => {
+    requestSeq.current += 1;
     setMessages([]);
     setProposal(null);
     setError(null);
+    setPending(false);
   }, []);
 
   return { messages, proposal, pending, error, send, reset };

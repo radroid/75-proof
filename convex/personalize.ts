@@ -46,9 +46,15 @@ export const chat = action({
     const model =
       process.env.OPENROUTER_CHAT_MODEL ?? "anthropic/claude-sonnet-4-5";
 
+    // Tell the model which template the user has currently selected so
+    // "personalize this routine" requests can adapt instead of inventing.
+    const system = args.selectedTemplateSlug
+      ? `${PERSONALIZE_SYSTEM_PROMPT}\n\nCURRENT SELECTION\nThe user currently has template slug "${args.selectedTemplateSlug}" selected. If they ask you to personalize, adapt that template unless they ask for something different.`
+      : PERSONALIZE_SYSTEM_PROMPT;
+
     const result = await generateText({
       model: openrouter.chat(model),
-      system: PERSONALIZE_SYSTEM_PROMPT,
+      system,
       messages: args.messages.map((m) => ({ role: m.role, content: m.content })),
     });
 

@@ -121,22 +121,6 @@ export default function OnboardingPage() {
     }
   }, [user, state.displayName, seededFromPrevious]);
 
-  // Populate default habits from the selected routine template when none
-  // are set. Re-runs whenever the user picks a different template (which
-  // empties `habits` first), so each template seeds its own habit list.
-  useEffect(() => {
-    if (state.habits.length === 0) {
-      const template = getTemplateBySlug(state.templateSlug);
-      setState((s) => ({
-        ...s,
-        habits: template.habits.map((h) => ({
-          ...h,
-          isActive: true,
-        })),
-      }));
-    }
-  }, [state.habits.length, state.templateSlug]);
-
   // Restore chosen theme on page load (e.g. after refresh mid-onboarding)
   useEffect(() => {
     if (state.theme) {
@@ -164,24 +148,27 @@ export default function OnboardingPage() {
     setState((s) => ({ ...s, ...partial }));
   }, []);
 
-  // Templates with a fixed program length (e.g. 75 HARD, 30-Day Yoga) hide
-  // the duration step. Both next/back skip past it, and we pin daysTotal
-  // to the template's value so the user can't carry a stale custom length
-  // across template swaps.
-  const selectedTemplate = getTemplateBySlug(state.templateSlug);
+  // Built-in templates (75 HARD, 30-Day Yoga) hide the duration step and
+  // pin daysTotal to the template's value. AI-generated and unknown slugs
+  // resolve to `null` here so they fall through to the user-chosen
+  // duration — `getTemplateBySlug` would silently default to 75 HARD and
+  // make a personalized 30-day plan look like a strict 75-day challenge.
+  const selectedTemplate = isKnownTemplate(state.templateSlug)
+    ? getTemplateBySlug(state.templateSlug)
+    : null;
   const next = useCallback(() => {
     setStepIndex((i) => {
       let nextIdx = Math.min(i + 1, ONBOARDING_STEPS.length - 1);
       if (
         ONBOARDING_STEPS[nextIdx] === "duration" &&
-        selectedTemplate.lockedDuration
+        selectedTemplate?.lockedDuration
       ) {
         nextIdx = Math.min(nextIdx + 1, ONBOARDING_STEPS.length - 1);
       }
       return nextIdx;
     });
     if (
-      selectedTemplate.lockedDuration &&
+      selectedTemplate?.lockedDuration &&
       state.daysTotal !== selectedTemplate.daysTotal
     ) {
       setState((s) => ({ ...s, daysTotal: selectedTemplate.daysTotal }));
@@ -193,7 +180,7 @@ export default function OnboardingPage() {
       let prevIdx = Math.max(i - 1, 0);
       if (
         ONBOARDING_STEPS[prevIdx] === "duration" &&
-        selectedTemplate.lockedDuration
+        selectedTemplate?.lockedDuration
       ) {
         prevIdx = Math.max(prevIdx - 1, 0);
       }
@@ -215,19 +202,23 @@ export default function OnboardingPage() {
       setPersonality(state.theme);
       setStoredPersonality(state.theme);
 
-      // Templates with locked duration always use the template's value
-      // regardless of any custom length the user toyed with before flipping
-      // back to a fixed-length template.
-      const template = getTemplateBySlug(state.templateSlug);
-      const finalDaysTotal = template.lockedDuration
-        ? template.daysTotal
+      // Locked-duration built-in templates always use the template's value.
+      // AI-generated and unknown slugs (e.g. "ai-generated:*") fall through
+      // to the user-picked duration and the user-chosen setupTier so we
+      // don't silently coerce a personalized plan into the 75 HARD strict
+      // 75-day shape.
+      const knownTemplate = isKnownTemplate(state.templateSlug)
+        ? getTemplateBySlug(state.templateSlug)
+        : null;
+      const finalDaysTotal = knownTemplate?.lockedDuration
+        ? knownTemplate.daysTotal
         : state.daysTotal;
-      // Persist setupTier as the legacy enum derived from the template's
-      // strictness, so back-compat code paths (re-onboarding, legacy
-      // dashboards) keep working.
-      const finalSetupTier: "original" | "added" = template.strictMode
-        ? "original"
-        : "added";
+      const finalSetupTier: "original" | "added" =
+        knownTemplate == null
+          ? state.setupTier
+          : knownTemplate.strictMode
+            ? "original"
+            : "added";
 
       // Local mode has no friend graph and nothing leaves the device, so
       // "friends"/"public" visibility is meaningless. Pin to "private" on
@@ -337,10 +328,14 @@ export default function OnboardingPage() {
           onBack={back}
           onApplyAiProposal={(proposal) => {
             const aiSlug = `ai-generated:${Date.now()}`;
+            // Belt-and-suspenders: the chat panel already sets isActive,
+            // but RoutineProposal.habits doesn't carry it as a contract,
+            // so re-affirm here before the review-step filter drops any
+            // habit that arrived without the flag.
             setState((s) => ({
               ...s,
               templateSlug: aiSlug,
-              habits: proposal.habits,
+              habits: proposal.habits.map((h) => ({ ...h, isActive: true })),
               daysTotal: proposal.daysTotal,
               setupTier: proposal.strictMode ? "original" : "added",
             }));

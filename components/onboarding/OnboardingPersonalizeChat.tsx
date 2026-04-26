@@ -156,7 +156,10 @@ export function OnboardingPersonalizeChat({
 
 /** Hide the raw sentinel + JSON block from the rendered transcript. */
 function stripSentinelBlock(text: string): string {
-  const idx = text.indexOf(PROPOSAL_SENTINEL);
+  // Match parseProposal's "last sentinel wins" rule so revised proposals
+  // don't accidentally swallow earlier transcript text that mentions the
+  // marker.
+  const idx = text.lastIndexOf(PROPOSAL_SENTINEL);
   if (idx === -1) return text;
   return text.slice(0, idx).trimEnd();
 }
