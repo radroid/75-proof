@@ -332,7 +332,11 @@ export const seedAndEmbed = internalAction({
     const batchSize = args.batchSize ?? 32;
     let totalEmbedded = 0;
 
-    while (true) {
+    // Hard upper bound on iterations as defence in depth — if a write
+    // ever fails to persist and the same rows keep being returned by
+    // _listMissingEmbeddings, this stops a runaway loop.
+    const MAX_ITERATIONS = 64;
+    for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
       const batch: Array<{
         _id: Id<"popularRoutines">;
         slug: string;
@@ -353,6 +357,12 @@ export const seedAndEmbed = internalAction({
         })),
       });
       totalEmbedded += batch.length;
+
+      if (iteration === MAX_ITERATIONS - 1) {
+        console.warn(
+          `[seedAndEmbed] hit MAX_ITERATIONS=${MAX_ITERATIONS} — stopping`,
+        );
+      }
     }
 
     return { upsert, embedded: totalEmbedded };
