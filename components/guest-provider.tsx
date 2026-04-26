@@ -42,8 +42,12 @@ interface GuestContextValue {
   promptSignup: () => void;
   /** Switch this browser into local mode and route to onboarding. */
   enterLocalMode: () => void;
-  /** Erase all local data. Used by Settings-equivalent affordances. */
-  resetLocal: () => void;
+  /**
+   * Erase all local data. Returns a Promise that resolves once the
+   * post-reset navigation has been issued, so callers can use it to
+   * disable the trigger until then and avoid double-activations.
+   */
+  resetLocal: () => Promise<void>;
   /**
    * Live local data. Only meaningful when `isGuest === true`. Components
    * still in the legacy "demo" code paths read these via the same names.
@@ -142,10 +146,15 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
     router.push("/onboarding");
   }, [router]);
 
-  const resetLocal = useCallback(() => {
+  const resetLocal = useCallback(async () => {
     clearLocalOptIn();
     setOptInPersisted(false);
     localStore.reset();
+    // `router.push` is synchronous in next/navigation, but we wrap in a
+    // microtask so callers can `await resetLocal()` and reliably disable
+    // their trigger across the click → navigation transition without
+    // racing the React commit that re-renders without the local data.
+    await Promise.resolve();
     router.push("/");
   }, [router]);
 

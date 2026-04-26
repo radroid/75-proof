@@ -144,15 +144,6 @@ class LocalStore {
     this.cache = next;
     this.notify();
   }
-
-  /** Generate the next ID for a given table. Persists alongside the write. */
-  nextIdFor(table: string): string {
-    // Caller is inside a write(); we only mutate the draft, never the cache
-    // directly. Bump nextId on the draft.
-    return `local_${table}_${Date.now().toString(36)}_${Math.random()
-      .toString(36)
-      .slice(2, 8)}`;
-  }
 }
 
 const EMPTY_SNAPSHOT: LocalDB = Object.freeze(emptyDB()) as LocalDB;

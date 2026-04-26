@@ -100,7 +100,7 @@ lib/local-store/
   notifications.ts  # Notification API helpers
 components/
   guest-provider.tsx                # repurposed for local mode
-  GuestDailyChecklist.tsx           # ONE OF: deprecated, OR keep for marketing demo (decide during impl)
+  GuestDailyChecklist.tsx           # retained for potential marketing/demo use; currently unused in production code paths
   themes/*-dashboard.tsx            # branch on isLocal where it currently branched on isGuest
   pwa/install-prompt-gate.tsx       # gate fix
   pwa/notification-prompt-gate.tsx  # local-mode variant
@@ -164,7 +164,7 @@ Two parallel adversarial agent reviews ran against the plan and the implementati
 
 Lower-priority findings (NICE-TO-HAVE) were noted but not addressed in this PR:
 - Storage-event listener registered in `hydrate()` is never removed; benign in production, leaks on dev HMR.
-- `nextId` and `localStore.nextIdFor` are unused; ID generation lives in `mutations.ts`.
+- `nextId` field on `LocalDB` is unused; ID generation lives in `mutations.ts` (`genId`). The dead `localStore.nextIdFor` method was removed; the field is left on the schema for now to avoid a `version` bump.
 - `syncChallengeStatus` doesn't dedupe its `challenge_completed` feed insert; a second call would early-return on `challenge.status !== "active"`, so the existing ordering protects against duplicates.
 
 ## Review/test checklist
@@ -179,7 +179,7 @@ Lower-priority findings (NICE-TO-HAVE) were noted but not addressed in this PR:
 - [ ] Day navigator: tap past day, mark complete, persists
 - [ ] Progress page: stats + calendar + day-by-day history all populated
 - [ ] Friends nav not visible in sidebar/mobile
-- [ ] Settings link not visible in sidebar/mobile
+- [ ] Settings link visible (local-mode surface — see decision #7) and routes to the local-only settings page
 - [ ] PWA install prompt appears (on supported platforms) after second dashboard visit
 - [ ] Notification permission prompt appears, granting it stores a localStorage flag
 - [ ] Clear localStorage → app reverts to landing

@@ -74,6 +74,7 @@ export function LocalSettingsPage() {
   const [permissionStatus, setPermissionStatus] =
     useState<LocalPermissionStatus>("default");
   const [busy, setBusy] = useState(false);
+  const [erasing, setErasing] = useState(false);
 
   useEffect(() => {
     setHapticsOn(isHapticsEnabled());
@@ -208,9 +209,17 @@ export function LocalSettingsPage() {
     }
   };
 
-  const handleErase = () => {
-    resetLocal();
-    toast.success("Local data erased");
+  const handleErase = async () => {
+    if (erasing) return;
+    setErasing(true);
+    try {
+      await resetLocal();
+      toast.success("Local data erased");
+    } finally {
+      // Component will unmount on navigation, but reset the flag in case
+      // the redirect doesn't fire (e.g., user already on `/`).
+      setErasing(false);
+    }
   };
 
   return (
@@ -700,12 +709,15 @@ export function LocalSettingsPage() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel className="min-h-11">Cancel</AlertDialogCancel>
+                      <AlertDialogCancel className="min-h-11" disabled={erasing}>
+                        Cancel
+                      </AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleErase}
+                        disabled={erasing}
                         className="bg-destructive hover:bg-destructive/90 min-h-11"
                       >
-                        Yes, erase everything
+                        {erasing ? "Erasing…" : "Yes, erase everything"}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

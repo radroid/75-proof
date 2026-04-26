@@ -904,28 +904,40 @@ export default function ProgressPage() {
                           >
                             <div className="px-3 pb-3 pt-0">
                               {isHistoryNewSystem ? (
-                                <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                  {sortedHabitDefs
-                                    .filter((h: any) => h.isActive)
-                                    .map((h: any) => {
-                                      const entry = dayEntries.find((e: any) => e.habitDefinitionId === h._id);
-                                      const done = !!entry?.completed;
-                                      const valueText = h.blockType === "counter" && typeof entry?.value === "number"
-                                        ? `${entry.value}${h.target ? ` / ${h.target}` : ""}${h.unit ? ` ${h.unit}` : ""}`
-                                        : done
-                                        ? "Completed"
-                                        : "Not done";
-                                      return (
-                                        <HabitRequirementCard
-                                          key={h._id}
-                                          label={h.name}
-                                          completed={done}
-                                          value={valueText}
-                                          isHard={h.isHard}
-                                        />
-                                      );
-                                    })}
-                                </div>
+                                (() => {
+                                  const activeHabits = sortedHabitDefs.filter((h: any) => h.isActive);
+                                  if (activeHabits.length === 0) {
+                                    return (
+                                      <div className="pt-3 border-t">
+                                        <p className="text-sm text-muted-foreground">
+                                          No habits configured for this day.
+                                        </p>
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                      {activeHabits.map((h: any) => {
+                                        const entry = dayEntries.find((e: any) => e.habitDefinitionId === h._id);
+                                        const done = !!entry?.completed;
+                                        const valueText = h.blockType === "counter" && typeof entry?.value === "number"
+                                          ? `${entry.value}${h.target ? ` / ${h.target}` : ""}${h.unit ? ` ${h.unit}` : ""}`
+                                          : done
+                                          ? "Completed"
+                                          : "Not done";
+                                        return (
+                                          <HabitRequirementCard
+                                            key={h._id}
+                                            label={h.name}
+                                            completed={done}
+                                            value={valueText}
+                                            isHard={h.isHard}
+                                          />
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                })()
                               ) : (log as { backfilled?: boolean } | undefined)?.backfilled ? (
                                 <div className="pt-3 border-t">
                                   <p className="text-sm text-muted-foreground">
