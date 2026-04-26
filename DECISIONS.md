@@ -3,7 +3,7 @@
 Branch: `feat/local-storage-mode`. PR review reference doc.
 
 ## Goal
-Allow privacy-conscious users to track their habits without signing in. Data lives in `localStorage` only — never sent to Convex/Clerk. UX should mirror the signed-in experience minus the social bits (friends + settings page).
+Allow privacy-conscious users to track their habits without signing in. Data lives in `localStorage` only — never sent to Convex/Clerk. UX should mirror the signed-in experience minus the social bits (no friends nav). A pared-down local settings surface ships with this PR (see decision #7) so users can rename themselves, manage challenge length, and erase data without an account.
 
 ---
 
@@ -72,7 +72,6 @@ Allow privacy-conscious users to track their habits without signing in. Data liv
 - No connected devices (Apple Health, Oura, Whoop) in local mode.
 - No progress photos in local mode (would require base64-encoding into localStorage, blowing the quota).
 - No reconciliation / auto-fail (see #7).
-- No challenge "extend duration" or "convert to habit tracker" UI in local mode v1 unless trivially supported by the local store. *(Confirm during implementation.)*
 
 ---
 

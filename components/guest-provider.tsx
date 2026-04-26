@@ -12,7 +12,6 @@ import { useAuth, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { localStore } from "@/lib/local-store/store";
 import {
-  useHasLocalData,
   useHydrateLocalStore,
   useLocalActiveChallenge,
   useLocalLifetimeStats,
@@ -97,7 +96,6 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
   const localEntries = useLocalAllEntriesForChallenge(
     localChallenge?._id ?? undefined,
   );
-  const hasLocalData = useHasLocalData();
 
   // SSR-safe opt-in: render `false` on the server (no localStorage) and
   // sync to the persisted flag on mount. Keeping it in state makes
@@ -124,7 +122,14 @@ export function GuestProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const isLocalOptedIn = optInPersisted || hasLocalData;
+  // Authoritative — derive from the explicit opt-in flag only. We used to
+  // OR with `useHasLocalData()`, but that quietly re-flipped guest mode
+  // back on after sign-out (since local data is intentionally preserved
+  // across sign-in per DECISIONS.md). Returning local users still resume
+  // automatically because `LOCAL_OPT_IN_KEY` itself persists in
+  // localStorage; it's only cleared explicitly via `resetLocal` or on
+  // sign-in.
+  const isLocalOptedIn = optInPersisted;
   const isGuest = isLoaded && !isSignedIn && isLocalOptedIn;
   // "Resolved" is true once we have authoritative answers for both
   // Clerk's auth state and our local opt-in state. Gates that decide

@@ -116,26 +116,15 @@ class LocalStore {
 
   /**
    * Mutator — receives a draft, applies changes, replaces the cache with
-   * a new top-level reference so React's identity check fires. We pass a
-   * shallow clone so mutations on the draft don't mutate the live cache
-   * before notify fires (callers can still freely mutate sub-arrays they
-   * replace wholesale).
+   * a new top-level reference so React's identity check fires. The draft
+   * is a *deep* clone of the live cache: mutators are free to edit any
+   * nested object/array on the draft without smearing writes onto the
+   * live cache. If the mutator throws, the rollback leaves `this.cache`
+   * untouched.
    */
   write(mutator: (draft: LocalDB) => void): void {
     this.hydrate();
-    // Deep-clone the user record so a mutator that edits `draft.user` in
-    // place can't smear writes onto the live cache before notify fires.
-    // (Arrays are already cloned shallowly; nested user objects weren't.)
-    const next: LocalDB = {
-      ...this.cache,
-      user: this.cache.user
-        ? (JSON.parse(JSON.stringify(this.cache.user)) as LocalDB["user"])
-        : null,
-      challenges: [...this.cache.challenges],
-      habitDefinitions: [...this.cache.habitDefinitions],
-      habitEntries: [...this.cache.habitEntries],
-      activityFeed: [...this.cache.activityFeed],
-    };
+    const next: LocalDB = structuredClone(this.cache);
     try {
       mutator(next);
     } catch (err) {

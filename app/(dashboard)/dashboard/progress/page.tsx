@@ -146,53 +146,43 @@ export default function ProgressPage() {
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
 
-  // History logs for selected challenge (if different from active).
-  // Local mode never shows the multi-challenge selector for v1, so we
-  // can keep these Convex-only.
-  const historyLogs = useQuery(
-    api.dailyLogs.getChallengeLogs,
-    isGuest ? "skip" : (selectedChallengeId && selectedChallengeId !== convexUser?.currentChallengeId
-      ? { challengeId: selectedChallengeId }
-      : "skip")
-  );
-  const historyCompletionMap = useQuery(
-    api.challenges.getDayCompletionMap,
-    isGuest ? "skip" : (selectedChallengeId && selectedChallengeId !== convexUser?.currentChallengeId
-      ? { challengeId: selectedChallengeId }
-      : "skip")
-  );
-  const historyHabitDefs = useQuery(
-    api.habitDefinitions.getHabitDefinitions,
-    isGuest ? "skip" : (selectedChallengeId && selectedChallengeId !== convexUser?.currentChallengeId
-      ? { challengeId: selectedChallengeId }
-      : "skip")
-  );
-  const historyHabitEntries = useQuery(
-    api.habitEntries.getAllEntriesForChallenge,
-    isGuest ? "skip" : (selectedChallengeId && selectedChallengeId !== convexUser?.currentChallengeId
-      ? { challengeId: selectedChallengeId }
-      : "skip")
-  );
-
-  // Auto-select active challenge for history
+  // Effective challenge id for the history view. `selectedChallengeId` is
+  // only set when the user manually picks from the selector; otherwise we
+  // fall back to the active challenge (or most recent). Computed inline
+  // instead of mirrored into state to avoid the cascade-render the prior
+  // useEffect introduced.
   const activeChallenge = challenges?.find((c) => c.status === "active");
   const effectiveHistoryId = isGuest
     ? localChallenge?._id
     : (selectedChallengeId ?? activeChallenge?._id ?? challenges?.[0]?._id);
 
-  // Auto-select the active (or most-recent) challenge in the history view
-  // once Convex queries resolve. Done in an effect — calling setState
-  // during render trips React's "cannot update during render" warning.
-  useEffect(() => {
-    if (
-      !isGuest &&
-      !selectedChallengeId &&
-      effectiveHistoryId &&
-      effectiveHistoryId !== selectedChallengeId
-    ) {
-      setSelectedChallengeId(effectiveHistoryId as Id<"challenges">);
-    }
-  }, [isGuest, selectedChallengeId, effectiveHistoryId]);
+  // History queries skip when the effective id matches the active challenge —
+  // its data already comes from `logs` / `activeCompletionMap` above. Any
+  // other id means the user picked a non-active challenge from the selector.
+  const historyLogs = useQuery(
+    api.dailyLogs.getChallengeLogs,
+    isGuest || !effectiveHistoryId || effectiveHistoryId === convexUser?.currentChallengeId
+      ? "skip"
+      : { challengeId: effectiveHistoryId as Id<"challenges"> }
+  );
+  const historyCompletionMap = useQuery(
+    api.challenges.getDayCompletionMap,
+    isGuest || !effectiveHistoryId || effectiveHistoryId === convexUser?.currentChallengeId
+      ? "skip"
+      : { challengeId: effectiveHistoryId as Id<"challenges"> }
+  );
+  const historyHabitDefs = useQuery(
+    api.habitDefinitions.getHabitDefinitions,
+    isGuest || !effectiveHistoryId || effectiveHistoryId === convexUser?.currentChallengeId
+      ? "skip"
+      : { challengeId: effectiveHistoryId as Id<"challenges"> }
+  );
+  const historyHabitEntries = useQuery(
+    api.habitEntries.getAllEntriesForChallenge,
+    isGuest || !effectiveHistoryId || effectiveHistoryId === convexUser?.currentChallengeId
+      ? "skip"
+      : { challengeId: effectiveHistoryId as Id<"challenges"> }
+  );
 
   const selectedHistoryChallenge = isGuest
     ? localChallenge
