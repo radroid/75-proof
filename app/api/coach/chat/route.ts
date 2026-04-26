@@ -107,10 +107,11 @@ export async function POST(req: NextRequest) {
       })) as Retrieved[];
       retrieved = result;
     } catch (err) {
+      // Log full error server-side; only surface a generic message to the client.
       console.error("[coach/chat] vector search failed", err);
       retrieved = [];
       retrievalFailed = true;
-      retrievalError = err instanceof Error ? err.message : "vector search failed";
+      retrievalError = "Failed to retrieve routines";
     }
   }
 

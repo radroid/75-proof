@@ -269,6 +269,25 @@ export const _setEmbedding = internalMutation({
   },
 });
 
+export const _setEmbeddings = internalMutation({
+  args: {
+    items: v.array(
+      v.object({
+        id: v.id("popularRoutines"),
+        embedding: v.array(v.float64()),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    await Promise.all(
+      args.items.map((item) =>
+        ctx.db.patch(item.id, { embedding: item.embedding }),
+      ),
+    );
+    return { written: args.items.length };
+  },
+});
+
 export const _clearAllEmbeddings = internalMutation({
   args: {},
   handler: async (ctx) => {
@@ -325,12 +344,12 @@ export const seedAndEmbed = internalAction({
       const inputs = batch.map((b) => b.embeddingText);
       const embeddings = await embedBatch(apiKey, inputs);
 
-      for (let i = 0; i < batch.length; i++) {
-        await ctx.runMutation(internal.popularRoutines._setEmbedding, {
-          id: batch[i]._id,
+      await ctx.runMutation(internal.popularRoutines._setEmbeddings, {
+        items: batch.map((b, i) => ({
+          id: b._id,
           embedding: embeddings[i],
-        });
-      }
+        })),
+      });
       totalEmbedded += batch.length;
     }
 
