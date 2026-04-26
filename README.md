@@ -10,6 +10,7 @@ A modern, configurable **75 HARD** habit tracker.
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06b6d4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Cloudflare](https://img.shields.io/badge/Deploy-Cloudflare_Pages-f38020?logo=cloudflare&logoColor=white)](https://pages.cloudflare.com)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](./CONTRIBUTING.md)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/radroid/75-proof?utm_source=oss&utm_medium=github&utm_campaign=radroid%2F75-proof&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 Run the classic 75 HARD program or build a fully custom version. Track habits, streaks, and progress with push notifications, themes, and friends.
 
