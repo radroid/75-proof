@@ -56,9 +56,8 @@ export const getBySlug = query({
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .unique();
     if (stored) return toClientShapeFromDoc(stored);
-    return POPULAR_ROUTINES_SEED.find((r) => r.slug === args.slug)
-      ? toClientShape(POPULAR_ROUTINES_SEED.find((r) => r.slug === args.slug)!)
-      : null;
+    const seedMatch = POPULAR_ROUTINES_SEED.find((r) => r.slug === args.slug);
+    return seedMatch ? toClientShape(seedMatch) : null;
   },
 });
 

@@ -17,6 +17,8 @@ const CATEGORIES = new Set([
   "personal-development",
 ]);
 
+const ALLOWED_ROLES = new Set<ChatMessage["role"]>(["user", "assistant"]);
+
 export async function POST(req: NextRequest) {
   let body: {
     messages?: ChatMessage[];
@@ -41,6 +43,12 @@ export async function POST(req: NextRequest) {
   for (const m of messages) {
     if (!m || typeof m.content !== "string") {
       return NextResponse.json({ error: "Bad message shape" }, { status: 400 });
+    }
+    if (!ALLOWED_ROLES.has(m.role)) {
+      return NextResponse.json(
+        { error: "Invalid message role" },
+        { status: 400 },
+      );
     }
     if (m.content.length > MAX_MESSAGE_CHARS) {
       return NextResponse.json(
@@ -114,7 +122,7 @@ export async function POST(req: NextRequest) {
   const { createOpenRouter } = await import("@openrouter/ai-sdk-provider");
   const openrouter = createOpenRouter({ apiKey });
   const model =
-    process.env.OPENROUTER_CHAT_MODEL ?? "anthropic/claude-sonnet-4-5";
+    process.env.OPENROUTER_CHAT_MODEL ?? "anthropic/claude-sonnet-4.5";
 
   const system = buildSystemPrompt(retrieved, category);
 
