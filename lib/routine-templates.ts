@@ -112,6 +112,29 @@ export const ROUTINE_TEMPLATES: RoutineTemplate[] = [
     heroIcon: "flower-2",
     version: 1,
   },
+  {
+    // Open-ended option for users who want to design their own routine
+    // from a familiar starting point. The 75 HARD habits seed the list,
+    // but `lockedDuration: false` reveals the duration step and
+    // `strictMode: false` unlocks habit toggling/adding/removing in
+    // OnboardingHabitConfig. setupTier resolves to "added".
+    slug: "custom",
+    title: "Build your own",
+    summary: "Pick the habits, set the duration, decide what counts as hard.",
+    description:
+      "Start from the 75 HARD habit list, then toggle anything on or off, swap targets, add your own habits, and pick how many days you want to commit to.",
+    category: "custom",
+    daysTotal: 75,
+    lockedDuration: false,
+    isHabitTracker: false,
+    strictMode: false,
+    difficulty: "intermediate",
+    recommendedGoals: [],
+    source: { kind: "official" },
+    habits: STANDARD_HABITS,
+    heroIcon: "sliders",
+    version: 1,
+  },
 ];
 
 export const DEFAULT_TEMPLATE_SLUG = "original-75-hard";
