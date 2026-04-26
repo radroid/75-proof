@@ -383,7 +383,11 @@ function ChatTurnView({ turn }: { turn: ChatTurn }) {
         </div>
       )}
 
-      {turn.retrieved && turn.retrieved.length > 0 && (
+      {/* Only render retrieved routines once the turn has settled
+          (assistant text or an error). Keeps partial state from showing
+          while a request is mid-flight, but still surfaces the catalog
+          matches when the LLM call itself failed. */}
+      {(turn.assistant || turn.error) && turn.retrieved && turn.retrieved.length > 0 && (
         <RetrievedRoutinesList routines={turn.retrieved} />
       )}
     </div>

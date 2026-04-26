@@ -395,47 +395,74 @@ export const seedAndEmbed = internalAction({
 });
 
 const EMBED_FETCH_TIMEOUT_MS = 20_000;
+const EMBED_MAX_RETRIES = 3;
+const EMBED_BACKOFF_BASE_MS = 500;
+
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || (status >= 500 && status <= 599);
+}
 
 async function embedBatch(
   apiKey: string,
   inputs: string[],
 ): Promise<number[][]> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), EMBED_FETCH_TIMEOUT_MS);
-  let res: Response;
-  try {
-    res = await fetch("https://api.openai.com/v1/embeddings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "text-embedding-3-small",
-        input: inputs,
-      }),
-      signal: controller.signal,
-    });
-  } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") {
-      throw new Error(
-        `OpenAI embeddings timed out after ${EMBED_FETCH_TIMEOUT_MS}ms`,
-      );
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= EMBED_MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), EMBED_FETCH_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch("https://api.openai.com/v1/embeddings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "text-embedding-3-small",
+          input: inputs,
+        }),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timer);
+      // Treat aborts and network errors as transient; retry until budget exhausted.
+      lastErr =
+        err instanceof DOMException && err.name === "AbortError"
+          ? new Error(
+              `OpenAI embeddings timed out after ${EMBED_FETCH_TIMEOUT_MS}ms`,
+            )
+          : err;
+      if (attempt === EMBED_MAX_RETRIES) throw lastErr;
+      await sleepWithJitter(EMBED_BACKOFF_BASE_MS * 2 ** attempt);
+      continue;
     }
-    throw err;
-  } finally {
     clearTimeout(timer);
-  }
-  if (!res.ok) {
+    if (res.ok) {
+      const json = (await res.json()) as {
+        data: Array<{ embedding: number[]; index: number }>;
+      };
+      // OpenAI returns data in input order, but sort defensively just in case.
+      const sorted = [...json.data].sort((a, b) => a.index - b.index);
+      return sorted.map((d) => d.embedding);
+    }
     const body = await res.text();
-    throw new Error(`OpenAI embeddings failed (${res.status}): ${body}`);
+    const err = new Error(
+      `OpenAI embeddings failed (${res.status}): ${body}`,
+    );
+    if (!isRetryableStatus(res.status) || attempt === EMBED_MAX_RETRIES) {
+      throw err;
+    }
+    lastErr = err;
+    await sleepWithJitter(EMBED_BACKOFF_BASE_MS * 2 ** attempt);
   }
-  const json = (await res.json()) as {
-    data: Array<{ embedding: number[]; index: number }>;
-  };
-  // OpenAI returns data in input order, but sort defensively just in case.
-  const sorted = [...json.data].sort((a, b) => a.index - b.index);
-  return sorted.map((d) => d.embedding);
+  // Unreachable — loop either returns or throws.
+  throw lastErr ?? new Error("OpenAI embeddings failed");
+}
+
+function sleepWithJitter(baseMs: number): Promise<void> {
+  const jitter = Math.random() * baseMs * 0.25;
+  return new Promise((r) => setTimeout(r, baseMs + jitter));
 }
 
 async function embedQuery(apiKey: string, query: string): Promise<number[]> {
@@ -595,10 +622,13 @@ export const runEvals = internalAction({
       const chunk = cases.slice(i, i + EVAL_CONCURRENCY);
       const chunkResults = await Promise.all(
         chunk.map(async (c) => {
-          const hits: RoutineSearchHit[] = await ctx.runAction(
-            internal.popularRoutines.vectorSearchInternal,
-            { query: c.query, limit: topK },
-          );
+          // Call the shared helper directly instead of going through
+          // ctx.runAction(vectorSearchInternal) — same work, but skips
+          // the per-case Convex action-scheduling round-trip.
+          const hits = await performVectorSearch(ctx, {
+            query: c.query,
+            limit: topK,
+          });
           const topHits = hits.map((h) => ({ slug: h.slug, score: h.score }));
           const passed = topHits.some((h) => c.expectedAnyOf.includes(h.slug));
           return {
