@@ -105,6 +105,10 @@ function isRoutineProposal(value: unknown): value is RoutineProposal {
   if (typeof p.summary !== "string") return false;
   if (typeof p.description !== "string") return false;
   if (typeof p.daysTotal !== "number" || !Number.isFinite(p.daysTotal)) return false;
+  // Match the system prompt contract: integer days, 7..365 inclusive.
+  if (!Number.isInteger(p.daysTotal) || p.daysTotal < 7 || p.daysTotal > 365) {
+    return false;
+  }
   if (typeof p.strictMode !== "boolean") return false;
   if (
     typeof p.difficulty !== "string" ||

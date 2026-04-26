@@ -97,6 +97,16 @@ export default function OnboardingPage() {
     const seededTemplateSlug = isKnownTemplate(previousSlug)
       ? (previousSlug as string)
       : DEFAULT_TEMPLATE_SLUG;
+    // When the previous run captured habits, reuse them. Otherwise derive
+    // from the seeded template — falling back to INITIAL_ONBOARDING_STATE
+    // would leave a Yoga-slug user staring at 75 HARD's habit list.
+    const seededHabits =
+      previousState.habits.length > 0
+        ? previousState.habits
+        : getTemplateBySlug(seededTemplateSlug).habits.map((h) => ({
+            ...h,
+            isActive: true,
+          }));
     const seeded: OnboardingState = {
       ...INITIAL_ONBOARDING_STATE,
       displayName: previousState.displayName,
@@ -106,7 +116,7 @@ export default function OnboardingPage() {
       healthAdvisoryAcknowledged: previousState.healthAdvisoryAcknowledged,
       goals: previousState.goals,
       setupTier: previousState.setupTier,
-      habits: previousState.habits.length > 0 ? previousState.habits : INITIAL_ONBOARDING_STATE.habits,
+      habits: seededHabits,
       daysTotal: previousState.daysTotal ?? INITIAL_ONBOARDING_STATE.daysTotal,
       templateSlug: seededTemplateSlug,
     };

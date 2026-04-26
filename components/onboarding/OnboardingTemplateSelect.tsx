@@ -9,11 +9,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
-  Flower2,
   Star,
   Sparkles,
   Lock,
 } from "lucide-react";
+import * as LucideIcons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   DEFAULT_TEMPLATE_SLUG,
   ROUTINE_TEMPLATES,
@@ -37,13 +38,22 @@ interface Props {
   }) => void;
 }
 
-const ICONS: Record<string, React.ReactNode> = {
-  shield: <Shield className="h-6 w-6" />,
-  "flower-2": <Flower2 className="h-6 w-6" />,
-};
+/** Convert lucide's kebab-case icon names ("flower-2") to the PascalCase
+ * names lucide-react exports ("Flower2"). */
+function kebabToPascal(name: string): string {
+  return name
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
+}
 
 function iconFor(template: RoutineTemplate): React.ReactNode {
-  return ICONS[template.heroIcon] ?? <Shield className="h-6 w-6" />;
+  const exportName = kebabToPascal(template.heroIcon);
+  const Icon =
+    (LucideIcons as unknown as Record<string, LucideIcon | undefined>)[
+      exportName
+    ] ?? Shield;
+  return <Icon className="h-6 w-6" />;
 }
 
 export function OnboardingTemplateSelect({

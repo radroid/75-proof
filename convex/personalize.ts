@@ -25,12 +25,33 @@ export type PersonalizeResult = {
  * Runs in Convex's V8 runtime (no `"use node"` needed) — the AI SDK uses
  * fetch under the hood and bundles fine on the edge runtime.
  */
+// Caps on transcript size before we invoke the model. Prevents a malicious
+// or buggy client from running up cost / latency by sending huge payloads.
+// Generous enough that a normal multi-turn personalization conversation
+// doesn't bump into them.
+const MAX_MESSAGES = 40;
+const MAX_MESSAGE_CHARS = 4000;
+
 export const chat = action({
   args: {
     messages: v.array(messageValidator),
     selectedTemplateSlug: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<PersonalizeResult> => {
+    if (args.messages.length === 0) {
+      throw new Error("messages must not be empty");
+    }
+    if (args.messages.length > MAX_MESSAGES) {
+      throw new Error(`Too many messages (max ${MAX_MESSAGES})`);
+    }
+    for (const m of args.messages) {
+      if (m.content.length > MAX_MESSAGE_CHARS) {
+        throw new Error(
+          `Message too long (max ${MAX_MESSAGE_CHARS} chars per message)`,
+        );
+      }
+    }
+
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 

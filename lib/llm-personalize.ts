@@ -54,12 +54,18 @@ export function usePersonalizeChat(
   // Generation token: bumped on reset so a stale in-flight response
   // can't mutate state after the user clears the chat.
   const requestSeq = useRef(0);
+  // Synchronous re-entrancy lock: state-based `pending` can lag behind a
+  // rapid double-submit in the same frame, letting two requests fire
+  // before React commits the first setPending(true). The ref is updated
+  // synchronously so the second call short-circuits immediately.
+  const inFlightRef = useRef(false);
   const chat = useAction(api.personalize.chat);
 
   const send = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed || pending) return;
+      if (!trimmed || inFlightRef.current) return;
+      inFlightRef.current = true;
       const seq = requestSeq.current + 1;
       requestSeq.current = seq;
       const next: ChatMessage[] = [
@@ -88,14 +94,18 @@ export function usePersonalizeChat(
           err instanceof Error ? err.message : "Personalization request failed",
         );
       } finally {
-        if (seq === requestSeq.current) setPending(false);
+        if (seq === requestSeq.current) {
+          setPending(false);
+          inFlightRef.current = false;
+        }
       }
     },
-    [chat, messages, pending, selectedTemplateSlug],
+    [chat, messages, selectedTemplateSlug],
   );
 
   const reset = useCallback(() => {
     requestSeq.current += 1;
+    inFlightRef.current = false;
     setMessages([]);
     setProposal(null);
     setError(null);

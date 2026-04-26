@@ -145,8 +145,12 @@ export function OnboardingPersonalizeChat({
             placeholder="e.g. desk worker, 30 min/day, hate cardio"
             disabled={pending}
           />
-          <Button type="submit" disabled={pending || !draft.trim()}>
-            <Send className="h-4 w-4" />
+          <Button
+            type="submit"
+            disabled={pending || !draft.trim()}
+            aria-label="Send message"
+          >
+            <Send className="h-4 w-4" aria-hidden="true" />
           </Button>
         </form>
       </CardContent>
