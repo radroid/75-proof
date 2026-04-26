@@ -90,7 +90,7 @@ Allow privacy-conscious users to track their habits without signing in. Data liv
 
 ## File map (target)
 
-```
+```text
 lib/local-store/
   db.ts             # types
   store.ts          # singleton, useSyncExternalStore-friendly

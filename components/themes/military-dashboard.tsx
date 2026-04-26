@@ -19,10 +19,14 @@ import {
   useLocalActiveHabitDefinitions,
   useLocalEntriesForDay,
 } from "@/lib/local-store/hooks";
+import type { Doc } from "@/convex/_generated/dataModel";
 
+// See arctic-dashboard.tsx for the rationale: polymorphic prop typed
+// as the Convex `Doc` shape; local-mode objects are upcast at the
+// call site in `app/(dashboard)/dashboard/page.tsx`.
 interface ThemedDashboardProps {
-  user: any;
-  challenge: any;
+  user: Doc<"users">;
+  challenge: Doc<"challenges">;
 }
 
 export function MilitaryDashboard({ user, challenge }: ThemedDashboardProps) {

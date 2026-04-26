@@ -54,7 +54,7 @@ export default function SettingsPage() {
   // rendered UI at the end based on the flag.
   const { isGuest, promptSignup } = useGuest();
   const router = useRouter();
-  const user = useQuery(api.users.getCurrentUser);
+  const user = useQuery(api.users.getCurrentUser, isGuest ? "skip" : {});
   const updateUser = useMutation(api.users.updateUser);
   const resetAndReOnboard = useMutation(api.challenges.resetAndReOnboard);
   const resetKeepingSetup = useMutation(api.challenges.resetKeepingSetup);
@@ -67,7 +67,10 @@ export default function SettingsPage() {
   const removeSubscriptionById = useMutation(
     api.pushSubscriptions.removeSubscription
   );
-  const mySubs = useQuery(api.pushSubscriptions.listMySubscriptions);
+  const mySubs = useQuery(
+    api.pushSubscriptions.listMySubscriptions,
+    isGuest ? "skip" : {},
+  );
   const {
     status: pushStatus,
     isSubscribed,
@@ -79,9 +82,9 @@ export default function SettingsPage() {
   } = usePushSubscription();
   const challenge = useQuery(
     api.challenges.getChallenge,
-    user?.currentChallengeId
+    !isGuest && user?.currentChallengeId
       ? { challengeId: user.currentChallengeId }
-      : "skip"
+      : "skip",
   );
 
   const [displayName, setDisplayName] = useState("");

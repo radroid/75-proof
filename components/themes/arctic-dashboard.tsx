@@ -19,10 +19,19 @@ import {
   useLocalActiveHabitDefinitions,
   useLocalEntriesForDay,
 } from "@/lib/local-store/hooks";
+import type { Doc } from "@/convex/_generated/dataModel";
 
+// Dashboards are polymorphic — they also render local-mode users — but
+// every Convex query call below expects branded `Id<"...">` values, and
+// the local objects are structurally compatible (`_id: string` is what
+// `Id<X>` collapses to at runtime). Type the props as the Convex `Doc`
+// shape; `app/(dashboard)/dashboard/page.tsx` upcasts the local
+// `demoUser` / `demoChallenge` objects when it invokes the dashboard
+// for guests, and the `useQuery(... isGuest ? "skip" : ...)` pattern
+// makes sure no Convex round trip ever fires with a fake id.
 interface ThemedDashboardProps {
-  user: any;
-  challenge: any;
+  user: Doc<"users">;
+  challenge: Doc<"challenges">;
 }
 
 export function ArcticDashboard({ user, challenge }: ThemedDashboardProps) {

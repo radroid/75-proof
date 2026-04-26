@@ -155,9 +155,23 @@ export function getPreviousOnboardingState(
     }));
   }
 
+  // The Convex API for `previousOnboarding` exposes only "original" / "added",
+  // but `LocalUserOnboarding.setupTier` also allows "customized" (the
+  // user picked the original 75-hard set then edited it). Map "customized"
+  // back to "added" — both surfaces treat anything non-original the same
+  // way — and warn loudly on anything truly unexpected so we don't
+  // silently mask a schema drift.
   const rawTier = user.onboarding.setupTier;
-  const setupTier: "original" | "added" =
-    rawTier === "original" ? "original" : "added";
+  let setupTier: "original" | "added";
+  if (rawTier === "original") {
+    setupTier = "original";
+  } else if (rawTier === "added" || rawTier === "customized") {
+    setupTier = "added";
+  } else {
+    // eslint-disable-next-line no-console
+    console.warn(`[local-store] unexpected setupTier value: ${String(rawTier)}`);
+    setupTier = "added";
+  }
 
   return {
     displayName: user.displayName,

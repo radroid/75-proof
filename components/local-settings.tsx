@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -81,20 +81,48 @@ export function LocalSettingsPage() {
     setPermissionStatus(detectPermission());
   }, []);
 
+  // Seed editable inputs from the live local-store snapshot exactly once
+  // per entity (or once per challenge-length change) — keying these
+  // effects on `user` / `challenge` object identity caused the snapshot
+  // swaps from cross-tab `storage` events (or any unrelated write) to
+  // overwrite whatever the user was typing into Display Name / extend
+  // duration before they hit Save. Track entity ids and the user-edit
+  // pristine flags so the seed only runs when the underlying record
+  // genuinely changes.
+  const seededUserIdRef = useRef<string | null>(null);
+  const seededChallengeIdRef = useRef<string | null>(null);
+  const seededDaysTotalRef = useRef<number | null>(null);
+  const [profilePristine, setProfilePristine] = useState(true);
+  const [extendPristine, setExtendPristine] = useState(true);
+
   useEffect(() => {
-    if (user) {
-      setDisplayName(user.displayName ?? "");
-      setWaterUnitState(user.preferences?.waterUnit ?? "oz");
-    }
-  }, [user]);
+    if (!user) return;
+    const uid = user._id;
+    if (seededUserIdRef.current === uid && !profilePristine) return;
+    if (seededUserIdRef.current === uid) return;
+    seededUserIdRef.current = uid;
+    setDisplayName(user.displayName ?? "");
+    setWaterUnitState(user.preferences?.waterUnit ?? "oz");
+    setProfilePristine(true);
+  }, [user, profilePristine]);
 
   const currentDaysTotal = challenge?.daysTotal ?? 75;
   const [extendValue, setExtendValue] = useState<string>("");
   useEffect(() => {
-    if (challenge && !challenge.isHabitTracker) {
-      setExtendValue(String(currentDaysTotal));
-    }
-  }, [challenge, currentDaysTotal]);
+    if (!challenge || challenge.isHabitTracker) return;
+    const cid = challenge._id;
+    // Re-seed when the active challenge changes, or when the persisted
+    // duration changes (e.g., after a successful extend) — but only if
+    // the user hasn't typed something pending in the input.
+    const challengeChanged = seededChallengeIdRef.current !== cid;
+    const lengthChanged = seededDaysTotalRef.current !== currentDaysTotal;
+    if (!challengeChanged && !lengthChanged) return;
+    if (!extendPristine && !challengeChanged) return;
+    seededChallengeIdRef.current = cid;
+    seededDaysTotalRef.current = currentDaysTotal;
+    setExtendValue(String(currentDaysTotal));
+    setExtendPristine(true);
+  }, [challenge, currentDaysTotal, extendPristine]);
 
   if (!user) {
     return (
@@ -129,6 +157,10 @@ export function LocalSettingsPage() {
     try {
       updateDisplayName(displayName);
       updateWaterUnit(waterUnit);
+      // Returning to pristine after a successful save means a future
+      // cross-tab edit (e.g., the same user changing their display name
+      // in another tab) will reseed the input here on next snapshot.
+      setProfilePristine(true);
       toast.success("Settings saved");
     } catch {
       toast.error("Failed to save settings");
@@ -155,10 +187,23 @@ export function LocalSettingsPage() {
   const handleExtend = () => {
     if (!challenge) return;
     // `parseInt` would silently accept "90.5" as 90 and "120days" as 120;
-    // require the entire value to be a clean integer instead.
-    const parsed = Number(extendValue);
+    // require the entire value to be a clean integer instead. `Number("")`
+    // is `0`, which would also pass `Number.isInteger`, so reject empty
+    // input explicitly.
+    const trimmed = extendValue.trim();
+    if (trimmed === "") {
+      toast.error("Enter a whole number of days");
+      return;
+    }
+    const parsed = Number(trimmed);
     if (!Number.isInteger(parsed)) {
       toast.error("Enter a whole number of days");
+      return;
+    }
+    if (parsed <= currentDaysTotal || parsed > 365) {
+      toast.error(
+        `Enter a total between ${currentDaysTotal + 1} and 365 days`,
+      );
       return;
     }
     try {
@@ -281,7 +326,10 @@ export function LocalSettingsPage() {
                   id="display-name"
                   type="text"
                   value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  onChange={(e) => {
+                    setDisplayName(e.target.value);
+                    setProfilePristine(false);
+                  }}
                   className="h-11 text-base"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -337,7 +385,10 @@ export function LocalSettingsPage() {
                   <Button
                     type="button"
                     variant={waterUnit === "oz" ? "default" : "outline"}
-                    onClick={() => setWaterUnitState("oz")}
+                    onClick={() => {
+                      setWaterUnitState("oz");
+                      setProfilePristine(false);
+                    }}
                     aria-pressed={waterUnit === "oz"}
                     className="flex-1 min-h-11"
                   >
@@ -346,7 +397,10 @@ export function LocalSettingsPage() {
                   <Button
                     type="button"
                     variant={waterUnit === "ml" ? "default" : "outline"}
-                    onClick={() => setWaterUnitState("ml")}
+                    onClick={() => {
+                      setWaterUnitState("ml");
+                      setProfilePristine(false);
+                    }}
                     aria-pressed={waterUnit === "ml"}
                     className="flex-1 min-h-11"
                   >
@@ -477,7 +531,10 @@ export function LocalSettingsPage() {
                               min={currentDaysTotal + 1}
                               max={365}
                               value={extendValue}
-                              onChange={(e) => setExtendValue(e.target.value)}
+                              onChange={(e) => {
+                                setExtendValue(e.target.value);
+                                setExtendPristine(false);
+                              }}
                               className="h-11 text-base"
                             />
                             <span className="text-sm text-muted-foreground whitespace-nowrap">

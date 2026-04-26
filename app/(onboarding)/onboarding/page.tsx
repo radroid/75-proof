@@ -234,7 +234,7 @@ export default function OnboardingPage() {
         setup_tier: state.setupTier,
         theme: state.theme,
         active_habit_count: state.habits.filter((h) => h.isActive).length,
-        visibility: state.visibility,
+        visibility: submittedVisibility,
         days_total: finalDaysTotal,
         is_re_onboarding: user?.hasSeenTutorial ?? false,
         local_mode: isGuest,

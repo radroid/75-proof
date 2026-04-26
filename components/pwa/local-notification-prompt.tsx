@@ -104,10 +104,11 @@ export function LocalNotificationPrompt({ enabled }: LocalNotificationPromptProp
           <Bell className="h-4 w-4 text-primary" />
         </div>
         <div className="flex-1 text-sm">
-          <p className="font-medium text-foreground">Enable in-browser reminders?</p>
+          <p className="font-medium text-foreground">Save permission for future reminders?</p>
           <p className="mt-0.5 text-muted-foreground">
             Local mode keeps notifications on this device only — no servers,
-            no accounts. Granting permission lets the app nudge you when it&apos;s open.
+            no accounts. Granting now records consent so reminders can run when
+            scheduled delivery ships in a future update.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Button type="button" size="sm" onClick={onEnable} disabled={busy}>

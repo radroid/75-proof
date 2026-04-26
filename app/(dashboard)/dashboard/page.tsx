@@ -26,8 +26,12 @@ import { MilitaryDashboard } from "@/components/themes/military-dashboard";
 import { ZenDashboard } from "@/components/themes/zen-dashboard";
 
 import type { ThemePersonality } from "@/lib/themes";
+import type { Doc } from "@/convex/_generated/dataModel";
 
-const dashboardComponents: Record<ThemePersonality, React.ComponentType<{ user: any; challenge: any }>> = {
+const dashboardComponents: Record<
+  ThemePersonality,
+  React.ComponentType<{ user: Doc<"users">; challenge: Doc<"challenges"> }>
+> = {
   arctic: ArcticDashboard,
   broadsheet: BroadsheetDashboard,
   military: MilitaryDashboard,
@@ -61,10 +65,19 @@ export default function DashboardPage() {
       );
     }
     const ThemedDashboard = dashboardComponents[personality];
+    // Upcast the local-store objects to Convex `Doc` shapes — fields used
+    // by the dashboards overlap, and every Convex query inside the
+    // dashboards is `"skip"` for guests, so the branded `Id<...>` is
+    // never actually consumed at runtime in this branch. Casting here
+    // keeps the dashboards strictly typed against `Doc` instead of an
+    // any-typed polymorphic prop. (Field accesses still resolve to the
+    // local data; this is a type-system-only widening.)
+    const guestUser = demoUser as unknown as Doc<"users">;
+    const guestChallenge = demoChallenge as unknown as Doc<"challenges">;
     return (
       <>
         <NotificationPromptGate />
-        <ThemedDashboard user={demoUser} challenge={demoChallenge} />
+        <ThemedDashboard user={guestUser} challenge={guestChallenge} />
       </>
     );
   }
