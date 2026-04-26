@@ -98,6 +98,80 @@ export function getDayCompletionMap(
   return result;
 }
 
+export interface PreviousOnboardingState {
+  displayName: string;
+  timezone: string;
+  ageRange: string | null;
+  healthConditions: string[];
+  healthAdvisoryAcknowledged: boolean;
+  goals: string[];
+  setupTier: "original" | "added";
+  habits: Array<{
+    name: string;
+    blockType: "task" | "counter";
+    target?: number;
+    unit?: string;
+    isHard: boolean;
+    isActive: boolean;
+    category: string;
+    sortOrder: number;
+    icon?: string;
+  }>;
+  daysTotal: number;
+}
+
+/**
+ * Mirrors `convex/onboarding.getPreviousOnboardingState`. Returns null when
+ * the user hasn't completed onboarding before (so we shouldn't pre-seed
+ * anything) — same contract as the Convex query.
+ */
+export function getPreviousOnboardingState(
+  db: LocalDB,
+): PreviousOnboardingState | null {
+  const user = db.user;
+  if (!user || !user.onboarding) return null;
+
+  const userId = user._id;
+  const failedOrCompleted = db.challenges
+    .filter((c) => c.userId === userId && c.status !== "active")
+    .sort((a, b) => b._creationTime - a._creationTime);
+  const latest = failedOrCompleted[0];
+
+  let habits: PreviousOnboardingState["habits"] = [];
+  if (latest) {
+    const habitDefs = db.habitDefinitions.filter(
+      (h) => h.challengeId === latest._id,
+    );
+    habits = habitDefs.map((h) => ({
+      name: h.name,
+      blockType: h.blockType,
+      target: h.target,
+      unit: h.unit,
+      isHard: h.isHard,
+      isActive: h.isActive,
+      category: h.category ?? "",
+      sortOrder: h.sortOrder,
+      icon: h.icon,
+    }));
+  }
+
+  const rawTier = user.onboarding.setupTier;
+  const setupTier: "original" | "added" =
+    rawTier === "original" ? "original" : "added";
+
+  return {
+    displayName: user.displayName,
+    timezone: user.preferences?.timezone ?? "America/New_York",
+    ageRange: user.onboarding.ageRange ?? null,
+    healthConditions: user.onboarding.healthConditions ?? [],
+    healthAdvisoryAcknowledged: user.onboarding.healthAdvisoryAcknowledged,
+    goals: user.onboarding.goals ?? [],
+    setupTier,
+    habits,
+    daysTotal: latest?.daysTotal ?? 75,
+  };
+}
+
 export interface LifetimeStats {
   lifetimeRestartCount: number;
   longestStreak: number;

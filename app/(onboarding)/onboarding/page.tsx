@@ -15,7 +15,10 @@ import {
 } from "@/lib/onboarding-types";
 import { useGuest } from "@/components/guest-provider";
 import { completeOnboarding as localCompleteOnboarding } from "@/lib/local-store/mutations";
-import { useLocalUser } from "@/lib/local-store/hooks";
+import {
+  useLocalPreviousOnboardingState,
+  useLocalUser,
+} from "@/lib/local-store/hooks";
 import { StepIndicator } from "@/components/onboarding/StepIndicator";
 import { OnboardingWelcome } from "@/components/onboarding/OnboardingWelcome";
 import { OnboardingGoals } from "@/components/onboarding/OnboardingGoals";
@@ -57,10 +60,14 @@ export default function OnboardingPage() {
   );
   const localUser = useLocalUser();
   const user = isGuest ? localUser : convexUser;
-  const previousState = useQuery(
+  const convexPreviousState = useQuery(
     api.onboarding.getPreviousOnboardingState,
     isGuest ? "skip" : undefined,
   );
+  const localPreviousState = useLocalPreviousOnboardingState();
+  // For local re-onboarding, surface the user's previous habit setup so they
+  // don't have to rebuild from scratch — same UX as Convex re-onboarding.
+  const previousState = isGuest ? localPreviousState : convexPreviousState;
   const completeOnboardingConvex = useMutation(api.onboarding.completeOnboarding);
   const { setPersonality } = useThemePersonality();
 
@@ -190,6 +197,14 @@ export default function OnboardingPage() {
       // user picked before flipping back to the original setup.
       const finalDaysTotal = state.setupTier === "original" ? 75 : state.daysTotal;
 
+      // Local mode has no friend graph and nothing leaves the device, so
+      // "friends"/"public" visibility is meaningless. Pin to "private" on
+      // submit even if the state happens to carry a stale value (e.g. the
+      // re-onboarding seed inherited it from a prior Convex flow, or it
+      // was the default before the local-mode visibility selector got
+      // hidden in this PR).
+      const submittedVisibility = isGuest ? ("private" as const) : state.visibility;
+
       const args = {
         displayName: state.displayName,
         timezone: state.timezone,
@@ -201,7 +216,7 @@ export default function OnboardingPage() {
         setupTier: state.setupTier,
         habits: state.habits.filter((h) => h.isActive),
         startDate: state.startDate,
-        visibility: state.visibility,
+        visibility: submittedVisibility,
         daysTotal: finalDaysTotal,
       } as const;
 

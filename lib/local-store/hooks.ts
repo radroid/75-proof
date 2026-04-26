@@ -77,6 +77,16 @@ export function useLocalLifetimeStats() {
   return q.getLifetimeStats(db);
 }
 
+/**
+ * Local-mode counterpart of `api.onboarding.getPreviousOnboardingState`.
+ * Returns null until first onboarding has completed; afterwards returns the
+ * shape the onboarding page knows how to seed from.
+ */
+export function useLocalPreviousOnboardingState() {
+  const db = useLocalDB();
+  return q.getPreviousOnboardingState(db);
+}
+
 /** Detects whether localStorage has data. SSR-safe: returns false on server. */
 export function useHasLocalData(): boolean {
   const user = useLocalUser();
