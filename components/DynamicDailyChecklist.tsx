@@ -12,6 +12,8 @@ import { CounterBlock } from "@/components/habits/CounterBlock";
 import { useHabitEntries } from "@/hooks/use-habit-entries";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useGuest } from "@/components/guest-provider";
+import { markDayComplete as localMarkDayComplete } from "@/lib/local-store/mutations";
 
 interface DynamicDailyChecklistProps {
   challengeId: Id<"challenges">;
@@ -56,21 +58,60 @@ export function DynamicDailyChecklist({
   });
 
   const { isActive: confettiActive, trigger: triggerConfetti } = useConfetti();
-  const markDayComplete = useMutation(api.habitEntries.markDayComplete);
-  const prevAllDoneRef = useRef(false);
+  const { isGuest } = useGuest();
+  const markDayCompleteConvex = useMutation(api.habitEntries.markDayComplete);
+  // Track the previous allDone state per (challengeId, dayNumber). Without
+  // keying on the day, navigating from an incomplete day to a past complete
+  // one would re-fire the celebration on every visit — annoying noise and
+  // a duplicate markDayComplete call (deduped server-side, but still a wasted
+  // round trip on Convex / a wasted feed lookup locally).
+  const prevAllDoneRef = useRef({ key: "", value: false });
   const shouldReduceMotion = useReducedMotion();
 
   const allDone = requiredItems > 0 && requiredDone === requiredItems;
 
   useEffect(() => {
-    if (allDone && !prevAllDoneRef.current) {
-      triggerConfetti();
-      markDayComplete({ challengeId, dayNumber }).catch(() => {
-        // Silently ignore — deduplication in backend prevents duplicates
-      });
+    // Wait for the checklist data to load before doing transition detection.
+    // Otherwise the effect fires once with `allDone === false` (no entries
+    // yet), then again once entries hydrate as `true` for an already-complete
+    // past day — re-firing confetti and a duplicate `markDayComplete`.
+    if (!habitDefs) return;
+
+    const key = `${challengeId}:${dayNumber}`;
+    const prev = prevAllDoneRef.current;
+    const isDayChange = prev.key !== key;
+
+    // First effect run for this day after data hydrates: just seed the ref
+    // with the current state so an already-done day doesn't read as a flip.
+    if (isDayChange) {
+      prevAllDoneRef.current = { key, value: allDone };
+      return;
     }
-    prevAllDoneRef.current = allDone;
-  }, [allDone, triggerConfetti, markDayComplete, challengeId, dayNumber]);
+
+    const flippedToDone = allDone && !prev.value;
+    if (flippedToDone) {
+      triggerConfetti();
+      if (isGuest) {
+        localMarkDayComplete({
+          challengeId: challengeId as unknown as string,
+          dayNumber,
+        });
+      } else {
+        markDayCompleteConvex({ challengeId, dayNumber }).catch(() => {
+          // Silently ignore — deduplication in backend prevents duplicates
+        });
+      }
+    }
+    prevAllDoneRef.current = { key, value: allDone };
+  }, [
+    habitDefs,
+    allDone,
+    triggerConfetti,
+    markDayCompleteConvex,
+    challengeId,
+    dayNumber,
+    isGuest,
+  ]);
 
   if (!habitDefs) return null;
 

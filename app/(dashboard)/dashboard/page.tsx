@@ -14,6 +14,7 @@ import { MotionItem } from "@/components/ui/motion";
 import { Rocket } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
 import { useGuest } from "@/components/guest-provider";
+import { useLocalHydrationComplete } from "@/lib/local-store/hooks";
 import { NotificationPromptGate } from "@/components/pwa/notification-prompt-gate";
 import { DashboardTour } from "@/components/DashboardTour";
 import { useFeatureFlagEnabled } from "posthog-js/react";
@@ -25,8 +26,12 @@ import { MilitaryDashboard } from "@/components/themes/military-dashboard";
 import { ZenDashboard } from "@/components/themes/zen-dashboard";
 
 import type { ThemePersonality } from "@/lib/themes";
+import type { Doc } from "@/convex/_generated/dataModel";
 
-const dashboardComponents: Record<ThemePersonality, React.ComponentType<{ user: any; challenge: any }>> = {
+const dashboardComponents: Record<
+  ThemePersonality,
+  React.ComponentType<{ user: Doc<"users">; challenge: Doc<"challenges"> }>
+> = {
   arctic: ArcticDashboard,
   broadsheet: BroadsheetDashboard,
   military: MilitaryDashboard,
@@ -36,11 +41,45 @@ const dashboardComponents: Record<ThemePersonality, React.ComponentType<{ user: 
 export default function DashboardPage() {
   const { isGuest, demoUser, demoChallenge } = useGuest();
   const { personality } = useThemePersonality();
+  const router = useRouter();
+  const localHydrated = useLocalHydrationComplete();
 
-  // Guest experience — render themed dashboard with demo data
+  // Local mode: render themed dashboard against the live local store.
+  // Wait for hydration to complete before deciding the local store is
+  // "empty" — without this guard, a returning user with persisted data
+  // races us and gets bounced to /onboarding before their challenge
+  // hydrates.
+  useEffect(() => {
+    if (isGuest && localHydrated && !demoChallenge) {
+      router.replace("/onboarding");
+    }
+  }, [isGuest, localHydrated, demoChallenge, router]);
+
   if (isGuest) {
+    if (!localHydrated || !demoChallenge || !demoUser) {
+      return (
+        <div className="max-w-4xl space-y-6">
+          <HeroSkeleton />
+          <ChecklistSkeleton />
+        </div>
+      );
+    }
     const ThemedDashboard = dashboardComponents[personality];
-    return <ThemedDashboard user={demoUser} challenge={demoChallenge} />;
+    // Upcast the local-store objects to Convex `Doc` shapes — fields used
+    // by the dashboards overlap, and every Convex query inside the
+    // dashboards is `"skip"` for guests, so the branded `Id<...>` is
+    // never actually consumed at runtime in this branch. Casting here
+    // keeps the dashboards strictly typed against `Doc` instead of an
+    // any-typed polymorphic prop. (Field accesses still resolve to the
+    // local data; this is a type-system-only widening.)
+    const guestUser = demoUser as unknown as Doc<"users">;
+    const guestChallenge = demoChallenge as unknown as Doc<"challenges">;
+    return (
+      <>
+        <NotificationPromptGate />
+        <ThemedDashboard user={guestUser} challenge={guestChallenge} />
+      </>
+    );
   }
 
   return (

@@ -3,6 +3,8 @@
 import { useAuth } from "@clerk/nextjs";
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarBody,
@@ -62,7 +64,17 @@ const staticNavItems = [
   },
 ];
 
-const guestNavItems = staticNavItems;
+// Local-mode users get their own Settings link (different page surface
+// than the signed-in version — no friend prefs, no device list — see
+// components/local-settings.tsx).
+const guestNavItems = [
+  ...staticNavItems,
+  {
+    label: "Settings",
+    href: "/dashboard/settings",
+    icon: <Settings className="h-5 w-5 flex-shrink-0" />,
+  },
+];
 
 // Mobile nav items for guests — built inside component to include signup action
 
@@ -222,16 +234,33 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isLoaded } = useAuth();
-  const { isGuest, promptSignup } = useGuest();
+  const { isLoaded, isSignedIn } = useAuth();
+  const { isGuest, promptSignup, isLocalOptedIn, isResolved } = useGuest();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Anonymous visitor with no local data → bounce off the dashboard so
+  // they don't see an empty themed dashboard. We wait for `isResolved`
+  // before deciding — without that, a returning local user would race
+  // the effect (optInPersisted is `false` for the first render) and get
+  // redirected to landing before their opt-in flag is read.
+  useEffect(() => {
+    if (!isResolved) return;
+    if (isSignedIn) return;
+    if (isLocalOptedIn) return;
+    if (pathname?.startsWith("/dashboard")) {
+      router.replace("/");
+    }
+  }, [isResolved, isSignedIn, isLocalOptedIn, pathname, router]);
 
   const guestMobileItems = [
     { label: "Today", href: "/dashboard", icon: LayoutDashboard },
     { label: "Progress", href: "/dashboard/progress", icon: TrendingUp },
+    { label: "Settings", href: "/dashboard/settings", icon: Settings },
     { label: "Sign Up", href: "#", icon: LogIn, action: promptSignup },
   ];
 
-  if (!isLoaded) {
+  if (!isLoaded || !isResolved) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -242,16 +271,27 @@ export default function DashboardLayout({
     );
   }
 
-  const allNavItems = [
-    ...staticNavItems,
-    {
-      label: "Friends",
-      href: "/dashboard/friends",
-      icon: <FriendsNavIcon />,
-    },
-  ];
+  // Returning visitor with no auth and no local opt-in: the redirect
+  // effect above will kick them off `/dashboard`, but we still need to
+  // avoid mounting the authenticated shell (and downstream Convex
+  // queries like `createOrGetUser`) during that single-frame gap.
+  if (!isSignedIn && !isLocalOptedIn) {
+    return null;
+  }
 
-  const navItems = isGuest ? guestNavItems : allNavItems;
+  // Only build the Friends nav item — and thus mount FriendsNavIcon, which
+  // eagerly subscribes to Convex — when the user is signed in. Local-mode
+  // users have no friends surface, so the query must not fire.
+  const navItems = isGuest
+    ? guestNavItems
+    : [
+        ...staticNavItems,
+        {
+          label: "Friends",
+          href: "/dashboard/friends",
+          icon: <FriendsNavIcon />,
+        },
+      ];
 
   return (
     <SidebarProvider>

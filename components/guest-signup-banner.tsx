@@ -16,7 +16,7 @@ export function GuestSignupBanner() {
     <div
       className="fixed bottom-0 left-0 right-0 z-40 md:left-[60px] pointer-events-none"
       role="region"
-      aria-label="Guest account prompt"
+      aria-label="Local mode prompt"
     >
       {/* On mobile the banner must clear the floating pill nav + safe-area.
           On desktop there's no bottom nav, so we drop the margin. The
@@ -25,9 +25,9 @@ export function GuestSignupBanner() {
       <div className="pointer-events-auto mx-auto max-w-xl px-4 pb-3 md:pb-4 mb-[var(--bottom-nav-gap)] md:mb-0">
         <div className="flex items-center gap-2 rounded-xl border bg-card/95 backdrop-blur-sm p-2.5 pl-3.5 shadow-lg">
           <p className="flex-1 text-sm leading-tight text-muted-foreground min-w-0">
-            <span className="font-medium text-foreground">Demo mode.</span>{" "}
-            <span className="hidden sm:inline">Sign up to save your progress.</span>
-            <span className="sm:hidden">Save this?</span>
+            <span className="font-medium text-foreground">Local mode.</span>{" "}
+            <span className="hidden sm:inline">Data stays on this device. Sign up for cloud sync.</span>
+            <span className="sm:hidden">Cloud sync?</span>
           </p>
           <Button
             size="sm"
@@ -42,7 +42,7 @@ export function GuestSignupBanner() {
           <button
             onClick={() => setDismissed(true)}
             className="shrink-0 h-11 w-11 -mr-1 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 active:bg-muted transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Dismiss guest prompt"
+            aria-label="Dismiss local mode prompt"
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>

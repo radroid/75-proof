@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
 import { sharedUserProfileProps } from "@/lib/clerk-appearance";
+import { useGuest } from "@/components/guest-provider";
 
 const DISEASES = [
   "Type 2 Diabetes", "Heart Disease", "Stroke", "Hypertension", "Obesity",
@@ -51,7 +52,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "How is 75 Proof different from other 75 HARD apps?",
-    a: "Most alternatives charge money, run ads, or collect your data. 75 Proof is free, ad-free, and privacy-first. It's also a web app that works on any device — no app store download required — with a guest mode so you can try the full dashboard before signing up.",
+    a: "Most alternatives charge money, run ads, or collect your data. 75 Proof is free, ad-free, and privacy-first. It's also a web app that works on any device — no app store download required — with a Track Locally mode so you can try the full dashboard before signing up, with all your data staying on your device.",
   },
 ];
 
@@ -158,6 +159,7 @@ function NewspaperClipping() {
 
 function LandingPage() {
   const router = useRouter();
+  const { enterLocalMode } = useGuest();
 
   return (
     <div
@@ -280,15 +282,17 @@ function LandingPage() {
                       Let&apos;s DO This →
                     </button>
                   </SignUpButton>
-                  <Link href="/dashboard" className="w-full sm:w-auto">
-                    <button
-                      className="w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 min-h-[52px] border-2 border-[#1a1a1a]/15 text-[#1a1a1a] text-base sm:text-lg font-black hover:border-[#1a1a1a]/30 active:scale-[0.97] transition-all duration-300"
-                      style={{ fontFamily: "'DM Sans', sans-serif" }}
-                    >
-                      Try the App →
-                    </button>
-                  </Link>
+                  <button
+                    onClick={enterLocalMode}
+                    className="w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 min-h-[52px] border-2 border-[#1a1a1a]/15 text-[#1a1a1a] text-base sm:text-lg font-black hover:border-[#1a1a1a]/30 active:scale-[0.97] transition-all duration-300"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Track Locally →
+                  </button>
                 </div>
+                <p className="text-xs text-[#1a1a1a]/40 mt-3" style={{ fontFamily: "'Space Mono', monospace" }}>
+                  Track Locally: data stays on this device. No account, no cloud, no sharing.
+                </p>
               </Unauthenticated>
               <Authenticated>
                 <button
@@ -594,14 +598,13 @@ function LandingPage() {
                 START NOW — FREE
               </button>
             </SignUpButton>
-            <Link href="/dashboard">
-              <button
-                className="w-full sm:w-auto px-8 sm:px-14 py-5 sm:py-6 border-2 border-[#1a1a1a]/15 text-[#1a1a1a] text-lg sm:text-xl font-black hover:border-[#1a1a1a]/30 hover:scale-105 active:scale-95 transition-all"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                TRY THE APP →
-              </button>
-            </Link>
+            <button
+              onClick={enterLocalMode}
+              className="w-full sm:w-auto px-8 sm:px-14 py-5 sm:py-6 border-2 border-[#1a1a1a]/15 text-[#1a1a1a] text-lg sm:text-xl font-black hover:border-[#1a1a1a]/30 hover:scale-105 active:scale-95 transition-all"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              TRACK LOCALLY →
+            </button>
           </div>
         </Unauthenticated>
         <Authenticated>

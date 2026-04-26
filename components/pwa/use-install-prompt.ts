@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
 // Minimal shape of the non-standard `beforeinstallprompt` event that
 // Chromium browsers fire when a PWA is installable. We intentionally keep
@@ -12,6 +12,77 @@ type BeforeInstallPromptEvent = Event & {
 
 const DISMISS_KEY = "75proof_install_prompt_dismissed_at";
 const DISMISS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+/**
+ * Module-scope singleton that captures the one-shot `beforeinstallprompt`
+ * event from Chromium. The listener is attached eagerly on first import on
+ * the client so we don't miss the event when it fires on `/` or
+ * `/onboarding` (before the dashboard layout — and the install prompt UI —
+ * has mounted). Without this, local-mode users routinely never see the
+ * install prompt: they pass through landing → onboarding → dashboard
+ * quickly, Chrome fires the event before the gate is rendered, and it
+ * never re-fires in the same session.
+ *
+ * `appinstalled` flips the captured event back to null so a stale event
+ * after install doesn't leave the prompt actionable.
+ */
+type InstallEventStore = {
+  event: BeforeInstallPromptEvent | null;
+  installed: boolean;
+};
+// Replaced wholesale (never mutated in place) so `useSyncExternalStore`'s
+// Object.is check sees a new snapshot identity on every change. Mutating
+// the same object reference would silently skip re-renders and leave
+// `canInstall` stuck even after Chrome fired `beforeinstallprompt`.
+let installEventStore: InstallEventStore = { event: null, installed: false };
+const installEventListeners = new Set<() => void>();
+let installEventListenerAttached = false;
+
+function notifyInstallEventChange() {
+  for (const fn of installEventListeners) fn();
+}
+
+function attachInstallEventListener() {
+  if (installEventListenerAttached) return;
+  if (typeof window === "undefined") return;
+  installEventListenerAttached = true;
+  window.addEventListener("beforeinstallprompt", (event: Event) => {
+    event.preventDefault();
+    installEventStore = {
+      ...installEventStore,
+      event: event as BeforeInstallPromptEvent,
+    };
+    notifyInstallEventChange();
+  });
+  window.addEventListener("appinstalled", () => {
+    installEventStore = { event: null, installed: true };
+    notifyInstallEventChange();
+  });
+}
+
+// Side effect on module load: attach as early as possible. Importing this
+// module from the root layout via a tiny `<InstallPromptCapture />` is
+// enough — see `components/pwa/install-prompt-capture.tsx`.
+attachInstallEventListener();
+
+function subscribeInstallEvent(fn: () => void): () => void {
+  installEventListeners.add(fn);
+  return () => {
+    installEventListeners.delete(fn);
+  };
+}
+
+function getInstallEventSnapshot(): InstallEventStore {
+  return installEventStore;
+}
+
+const SERVER_INSTALL_EVENT_SNAPSHOT: InstallEventStore = {
+  event: null,
+  installed: false,
+};
+function getInstallEventServerSnapshot(): InstallEventStore {
+  return SERVER_INSTALL_EVENT_SNAPSHOT;
+}
 
 function readDismissedAt(): number | null {
   if (typeof window === "undefined") return null;
@@ -82,9 +153,23 @@ export type UseInstallPromptResult = {
   dismiss: () => void;
 };
 
+/**
+ * Imperative entry point for the root-layout capture component. Calling
+ * this is a no-op after the first call; it just makes the side effect's
+ * intent obvious at the call site.
+ */
+export function ensureInstallPromptListener(): void {
+  attachInstallEventListener();
+}
+
 export function useInstallPrompt(): UseInstallPromptResult {
-  const [deferredEvent, setDeferredEvent] =
-    useState<BeforeInstallPromptEvent | null>(null);
+  const installSnapshot = useSyncExternalStore(
+    subscribeInstallEvent,
+    getInstallEventSnapshot,
+    getInstallEventServerSnapshot,
+  );
+  const deferredEvent = installSnapshot.event;
+  const installedFromCapture = installSnapshot.installed;
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -97,30 +182,11 @@ export function useInstallPrompt(): UseInstallPromptResult {
     setDismissed(isWithinDismissWindow());
   }, []);
 
-  // Listen for Android/Chromium install hint.
+  // The module-scope `appinstalled` listener flips a flag for us — mirror
+  // it into local state so the dialog hides on completed install.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const handler = (event: Event) => {
-      event.preventDefault();
-      setDeferredEvent(event as BeforeInstallPromptEvent);
-    };
-    const installedHandler = () => {
-      setDeferredEvent(null);
-      setIsStandalone(true);
-    };
-
-    window.addEventListener("beforeinstallprompt", handler as EventListener);
-    window.addEventListener("appinstalled", installedHandler);
-
-    return () => {
-      window.removeEventListener(
-        "beforeinstallprompt",
-        handler as EventListener
-      );
-      window.removeEventListener("appinstalled", installedHandler);
-    };
-  }, []);
+    if (installedFromCapture) setIsStandalone(true);
+  }, [installedFromCapture]);
 
   // React to users toggling into standalone while the tab is open.
   useEffect(() => {
@@ -147,7 +213,8 @@ export function useInstallPrompt(): UseInstallPromptResult {
       // event this session, and we don't want to nag on next load either.
       writeDismissedAt();
       setDismissed(true);
-      setDeferredEvent(null);
+      installEventStore = { ...installEventStore, event: null };
+      notifyInstallEventChange();
       if (choice.outcome === "accepted") {
         setIsStandalone(true);
       }

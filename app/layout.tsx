@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { GuestProvider } from "@/components/guest-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
+import { InstallPromptCapture } from "@/components/pwa/install-prompt-capture";
 import { clerkProviderAppearance } from "@/lib/clerk-appearance";
 import { PostHogUserIdentifier } from "@/components/PostHogUserIdentifier";
 
@@ -204,6 +205,7 @@ export default function RootLayout({
           }}
         />
         <ServiceWorkerRegistration />
+        <InstallPromptCapture />
         <ClerkProvider appearance={clerkProviderAppearance}>
           <ThemeProvider>
             <ConvexClientProvider>

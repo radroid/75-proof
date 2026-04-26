@@ -18,6 +18,7 @@ import {
 import { themeMetadata } from "@/lib/themes";
 import type { OnboardingState, OnboardingStep } from "@/lib/onboarding-types";
 import { formatEndDate } from "@/lib/day-utils";
+import { useGuest } from "@/components/guest-provider";
 
 interface Props {
   state: OnboardingState;
@@ -36,6 +37,7 @@ export function OnboardingReview({
   onComplete,
   isSubmitting,
 }: Props) {
+  const { isGuest } = useGuest();
   const activeHabits = state.habits.filter((h) => h.isActive);
   const hardCount = activeHabits.filter((h) => h.isHard).length;
   const themeName = themeMetadata[state.theme]?.name ?? state.theme;
@@ -146,41 +148,46 @@ export function OnboardingReview({
         />
       </div>
 
-      {/* Visibility */}
-      <div className="space-y-2">
-        <Label>Who can see your progress?</Label>
-        <RadioGroup
-          value={state.visibility}
-          onValueChange={(v) =>
-            updateState({ visibility: v as OnboardingState["visibility"] })
-          }
-          className="space-y-2"
-        >
-          {[
-            { value: "private", label: "Private", desc: "Only you" },
-            {
-              value: "friends",
-              label: "Friends",
-              desc: "Your friends can see",
-            },
-            { value: "public", label: "Public", desc: "Anyone can see" },
-          ].map((option) => (
-            <Label
-              key={option.value}
-              htmlFor={`vis-${option.value}`}
-              className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg border border-transparent px-2 py-1 hover:border-border active:bg-muted/40"
-            >
-              <RadioGroupItem value={option.value} id={`vis-${option.value}`} />
-              <span className="flex-1">
-                <span className="font-medium">{option.label}</span>
-                <span className="text-sm text-muted-foreground ml-2">
-                  {option.desc}
+      {/* Visibility — hidden in local mode. There's no account, no friend
+          graph, and nothing leaves the device, so "who can see this" is a
+          meaningless question. The submit handler forces "private" for
+          guests so the persisted shape stays valid. */}
+      {!isGuest && (
+        <div className="space-y-2">
+          <Label>Who can see your progress?</Label>
+          <RadioGroup
+            value={state.visibility}
+            onValueChange={(v) =>
+              updateState({ visibility: v as OnboardingState["visibility"] })
+            }
+            className="space-y-2"
+          >
+            {[
+              { value: "private", label: "Private", desc: "Only you" },
+              {
+                value: "friends",
+                label: "Friends",
+                desc: "Your friends can see",
+              },
+              { value: "public", label: "Public", desc: "Anyone can see" },
+            ].map((option) => (
+              <Label
+                key={option.value}
+                htmlFor={`vis-${option.value}`}
+                className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg border border-transparent px-2 py-1 hover:border-border active:bg-muted/40"
+              >
+                <RadioGroupItem value={option.value} id={`vis-${option.value}`} />
+                <span className="flex-1">
+                  <span className="font-medium">{option.label}</span>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    {option.desc}
+                  </span>
                 </span>
-              </span>
-            </Label>
-          ))}
-        </RadioGroup>
-      </div>
+              </Label>
+            ))}
+          </RadioGroup>
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="flex items-center justify-between gap-3 pt-4">

@@ -12,12 +12,18 @@ const buttonVariants = cva(
         default: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
         destructive:
           "bg-destructive text-white shadow-sm hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+        // Outline + ghost variants use the secondary surface for hover —
+        // not accent. `--accent` is the brand emphasis color across themes
+        // (loud blue/red/tan/sand) and `--accent-foreground` is tuned for
+        // contrast against THAT color, not against the at-rest button bg.
+        // Using secondary keeps text-foreground readable through the whole
+        // state transition.
         outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+          "border bg-background text-foreground shadow-xs hover:bg-secondary dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
         secondary:
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+          "text-foreground hover:bg-secondary dark:hover:bg-secondary/60",
         link: "text-primary underline-offset-4 hover:underline",
         gradient:
           "bg-[var(--gradient-primary)] text-primary-foreground shadow-md hover:shadow-lg hover:brightness-105",

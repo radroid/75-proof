@@ -41,6 +41,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useGuest } from "@/components/guest-provider";
+import { LocalSettingsPage } from "@/components/local-settings";
 import { sharedUserProfileProps, userButtonPopoverElements } from "@/lib/clerk-appearance";
 import { usePushSubscription } from "@/components/pwa/use-push-subscription";
 import { haptic, isHapticsEnabled, setHapticsEnabled } from "@/lib/haptics";
@@ -53,7 +54,7 @@ export default function SettingsPage() {
   // rendered UI at the end based on the flag.
   const { isGuest, promptSignup } = useGuest();
   const router = useRouter();
-  const user = useQuery(api.users.getCurrentUser);
+  const user = useQuery(api.users.getCurrentUser, isGuest ? "skip" : {});
   const updateUser = useMutation(api.users.updateUser);
   const resetAndReOnboard = useMutation(api.challenges.resetAndReOnboard);
   const resetKeepingSetup = useMutation(api.challenges.resetKeepingSetup);
@@ -66,7 +67,10 @@ export default function SettingsPage() {
   const removeSubscriptionById = useMutation(
     api.pushSubscriptions.removeSubscription
   );
-  const mySubs = useQuery(api.pushSubscriptions.listMySubscriptions);
+  const mySubs = useQuery(
+    api.pushSubscriptions.listMySubscriptions,
+    isGuest ? "skip" : {},
+  );
   const {
     status: pushStatus,
     isSubscribed,
@@ -78,9 +82,9 @@ export default function SettingsPage() {
   } = usePushSubscription();
   const challenge = useQuery(
     api.challenges.getChallenge,
-    user?.currentChallengeId
+    !isGuest && user?.currentChallengeId
       ? { challengeId: user.currentChallengeId }
-      : "skip"
+      : "skip",
   );
 
   const [displayName, setDisplayName] = useState("");
@@ -323,22 +327,7 @@ export default function SettingsPage() {
   };
 
   if (isGuest) {
-    return (
-      <PageContainer>
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-            <Settings className="h-8 w-8 text-primary" />
-          </div>
-          <h2 className="text-2xl font-bold">Personalize Your Experience</h2>
-          <p className="mt-3 text-muted-foreground max-w-md">
-            Sign up to access settings, customize your theme, and manage your profile.
-          </p>
-          <Button onClick={promptSignup} size="lg" className="mt-8">
-            Sign Up Free
-          </Button>
-        </div>
-      </PageContainer>
-    );
+    return <LocalSettingsPage />;
   }
 
   if (user === undefined) {

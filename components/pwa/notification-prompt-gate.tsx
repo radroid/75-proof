@@ -6,7 +6,9 @@ import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useGuest } from "@/components/guest-provider";
+import { useLocalUser } from "@/lib/local-store/hooks";
 import { NotificationPermissionPrompt } from "./notification-permission-prompt";
+import { LocalNotificationPrompt } from "./local-notification-prompt";
 
 // Track dashboard visits separately from the install prompt so both prompts
 // can coexist without interfering.
@@ -50,18 +52,29 @@ export function NotificationPromptGate() {
 
   const user = useQuery(
     api.users.getCurrentUser,
-    isLoaded && isSignedIn && !isGuest ? {} : "skip"
+    isLoaded && isSignedIn && !isGuest ? {} : "skip",
   );
+  const localUser = useLocalUser();
 
   const onDashboard = pathname === "/dashboard";
   const visitedBefore = useHasVisitedDashboardBefore(onDashboard);
 
-  if (!isLoaded || !isSignedIn || isGuest) return null;
+  if (!isLoaded) return null;
   if (!onDashboard) return null;
+
+  // Local mode: use the in-page Notification API only, no Web Push.
+  if (isGuest) {
+    if (!localUser?.onboardingComplete) return null;
+    return (
+      <div className="mb-4">
+        <LocalNotificationPrompt enabled={visitedBefore} />
+      </div>
+    );
+  }
+
+  if (!isSignedIn) return null;
   if (!user || !user.onboardingComplete) return null;
 
-  // Only render the prompt component once we've cleared the visit gate —
-  // this prevents the card from flashing on first-ever dashboard load.
   return (
     <div className="mb-4">
       <NotificationPermissionPrompt enabled={visitedBefore} />

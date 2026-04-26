@@ -6,16 +6,31 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
+import { useGuest } from "@/components/guest-provider";
+import {
+  useLocalActiveHabitDefinitions,
+  useLocalEntriesForDay,
+} from "@/lib/local-store/hooks";
+import {
+  toggleTaskEntry as localToggleTask,
+  updateCounterEntry as localUpdateCounter,
+} from "@/lib/local-store/mutations";
 
 interface UseHabitEntriesArgs {
-  challengeId: Id<"challenges">;
-  userId: Id<"users">;
+  challengeId: Id<"challenges"> | string;
+  userId: Id<"users"> | string;
   dayNumber: number;
   date: string;
   userTimezone?: string;
   isEditable: boolean;
 }
 
+/**
+ * Polymorphic data + mutation hook for the day-level habit checklist.
+ * Routes to the local store when the visitor is in local mode (`isGuest`),
+ * otherwise to Convex. Hook order is stable: both branches' subscriptions
+ * are always set up; only one source feeds the return value.
+ */
 export function useHabitEntries({
   challengeId,
   userId,
@@ -24,20 +39,39 @@ export function useHabitEntries({
   userTimezone,
   isEditable,
 }: UseHabitEntriesArgs) {
-  const habitDefs = useQuery(api.habitDefinitions.getActiveHabitDefinitions, {
-    challengeId,
-  });
+  const { isGuest } = useGuest();
 
-  const entries = useQuery(api.habitEntries.getEntriesForDay, {
-    challengeId,
+  const convexHabitDefs = useQuery(
+    api.habitDefinitions.getActiveHabitDefinitions,
+    isGuest ? "skip" : { challengeId: challengeId as Id<"challenges"> },
+  );
+  const convexEntries = useQuery(
+    api.habitEntries.getEntriesForDay,
+    isGuest
+      ? "skip"
+      : { challengeId: challengeId as Id<"challenges">, dayNumber },
+  );
+  const convexToggleTask = useMutation(api.habitEntries.toggleTaskEntry);
+  const convexUpdateCounter = useMutation(api.habitEntries.updateCounterEntry);
+
+  const localHabitDefs = useLocalActiveHabitDefinitions(
+    isGuest ? (challengeId as string) : undefined,
+  );
+  const localEntries = useLocalEntriesForDay(
+    isGuest ? (challengeId as string) : undefined,
     dayNumber,
-  });
+  );
 
-  const toggleTask = useMutation(api.habitEntries.toggleTaskEntry);
-  const updateCounter = useMutation(api.habitEntries.updateCounterEntry);
+  const habitDefs = isGuest ? localHabitDefs : convexHabitDefs;
+  const entries = isGuest ? localEntries : convexEntries;
 
-  const entryMap = new Map(
-    (entries ?? []).map((e) => [e.habitDefinitionId, e])
+  type EntryShape = {
+    habitDefinitionId: string;
+    completed: boolean;
+    value?: number;
+  };
+  const entryMap = new Map<string, EntryShape>(
+    (entries ?? []).map((e: EntryShape) => [e.habitDefinitionId, e]),
   );
 
   // Keep the latest completion state available to click handlers without
@@ -59,12 +93,11 @@ export function useHabitEntries({
   }, [isEditable]);
 
   const handleToggleTask = useCallback(
-    async (habitDefinitionId: Id<"habitDefinitions">) => {
+    async (habitDefinitionId: Id<"habitDefinitions"> | string) => {
       if (!guardEdit()) return;
 
-      // Predict: is this tap going to flip the last required habit to done?
-      // If yes, fire success haptic; otherwise a regular impact. Both fire
-      // synchronously — iOS gates navigator.vibrate() on a recent click.
+      // Predict whether this tap completes the last hard habit so the
+      // success haptic fires inside the trusted-event window.
       const defs = stateRef.current.habitDefs;
       const em = stateRef.current.entryMap;
       const required = defs?.filter((h) => h.isHard) ?? [];
@@ -75,7 +108,7 @@ export function useHabitEntries({
         const wasDone = Boolean(em.get(h._id)?.completed);
         const flipsNow = h._id === habitDefinitionId;
         const doneAfter = flipsNow ? !wasDone : wasDone;
-        if (flipsNow) willFlip = !wasDone; // true iff this tap is completing the habit
+        if (flipsNow) willFlip = !wasDone;
         if (doneAfter) requiredDoneAfter++;
       }
       const completesDay =
@@ -85,10 +118,19 @@ export function useHabitEntries({
       haptic(completesDay ? "success" : "impact");
 
       try {
-        await toggleTask({
-          habitDefinitionId,
-          challengeId,
-          userId,
+        if (isGuest) {
+          localToggleTask({
+            habitDefinitionId: habitDefinitionId as string,
+            challengeId: challengeId as string,
+            dayNumber,
+            date,
+          });
+          return;
+        }
+        await convexToggleTask({
+          habitDefinitionId: habitDefinitionId as Id<"habitDefinitions">,
+          challengeId: challengeId as Id<"challenges">,
+          userId: userId as Id<"users">,
           dayNumber,
           date,
           userTimezone,
@@ -97,24 +139,43 @@ export function useHabitEntries({
         toast.error("Failed to update");
       }
     },
-    [toggleTask, challengeId, userId, dayNumber, date, userTimezone, guardEdit]
+    [
+      isGuest,
+      convexToggleTask,
+      challengeId,
+      userId,
+      dayNumber,
+      date,
+      userTimezone,
+      guardEdit,
+    ],
   );
 
   const handleUpdateCounter = useCallback(
     async (
-      habitDefinitionId: Id<"habitDefinitions">,
+      habitDefinitionId: Id<"habitDefinitions"> | string,
       currentValue: number,
-      increment: number
+      increment: number,
     ) => {
       if (!guardEdit()) return;
       haptic("selection");
       const nextValue = Math.max(0, currentValue + increment);
       const newValue = Math.round((nextValue + Number.EPSILON) * 1000) / 1000;
       try {
-        await updateCounter({
-          habitDefinitionId,
-          challengeId,
-          userId,
+        if (isGuest) {
+          localUpdateCounter({
+            habitDefinitionId: habitDefinitionId as string,
+            challengeId: challengeId as string,
+            dayNumber,
+            date,
+            value: newValue,
+          });
+          return;
+        }
+        await convexUpdateCounter({
+          habitDefinitionId: habitDefinitionId as Id<"habitDefinitions">,
+          challengeId: challengeId as Id<"challenges">,
+          userId: userId as Id<"users">,
           dayNumber,
           date,
           value: newValue,
@@ -124,7 +185,16 @@ export function useHabitEntries({
         toast.error("Failed to update");
       }
     },
-    [updateCounter, challengeId, userId, dayNumber, date, userTimezone, guardEdit]
+    [
+      isGuest,
+      convexUpdateCounter,
+      challengeId,
+      userId,
+      dayNumber,
+      date,
+      userTimezone,
+      guardEdit,
+    ],
   );
 
   // Compute totals
@@ -134,8 +204,7 @@ export function useHabitEntries({
       const entry = entryMap.get(h._id);
       return entry?.completed;
     }).length ?? 0;
-  const requiredItems =
-    habitDefs?.filter((h) => h.isHard).length ?? 0;
+  const requiredItems = habitDefs?.filter((h) => h.isHard).length ?? 0;
   const requiredDone =
     habitDefs?.filter((h) => {
       if (!h.isHard) return false;

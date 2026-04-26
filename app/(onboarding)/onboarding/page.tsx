@@ -13,6 +13,12 @@ import {
   INITIAL_ONBOARDING_STATE,
   ONBOARDING_STEPS,
 } from "@/lib/onboarding-types";
+import { useGuest } from "@/components/guest-provider";
+import { completeOnboarding as localCompleteOnboarding } from "@/lib/local-store/mutations";
+import {
+  useLocalPreviousOnboardingState,
+  useLocalUser,
+} from "@/lib/local-store/hooks";
 import { StepIndicator } from "@/components/onboarding/StepIndicator";
 import { OnboardingWelcome } from "@/components/onboarding/OnboardingWelcome";
 import { OnboardingGoals } from "@/components/onboarding/OnboardingGoals";
@@ -47,9 +53,26 @@ function loadStep(): number {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const user = useQuery(api.users.getCurrentUser);
-  const previousState = useQuery(api.onboarding.getPreviousOnboardingState);
-  const completeOnboarding = useMutation(api.onboarding.completeOnboarding);
+  const { isGuest, isLocalOptedIn, isResolved } = useGuest();
+  // Wait for guest resolution before kicking off Convex queries — otherwise a
+  // returning local-mode user (who reads `isGuest === false` for the first
+  // render until `optInResolved` flips) would briefly trigger the signed-in
+  // path and could be bounced to /sign-in before their local data hydrates.
+  const convexUser = useQuery(
+    api.users.getCurrentUser,
+    !isResolved || isGuest ? "skip" : undefined,
+  );
+  const localUser = useLocalUser();
+  const user = isGuest ? localUser : convexUser;
+  const convexPreviousState = useQuery(
+    api.onboarding.getPreviousOnboardingState,
+    !isResolved || isGuest ? "skip" : undefined,
+  );
+  const localPreviousState = useLocalPreviousOnboardingState();
+  // For local re-onboarding, surface the user's previous habit setup so they
+  // don't have to rebuild from scratch — same UX as Convex re-onboarding.
+  const previousState = isGuest ? localPreviousState : convexPreviousState;
+  const completeOnboardingConvex = useMutation(api.onboarding.completeOnboarding);
   const { setPersonality } = useThemePersonality();
 
   const [state, setState] = useState<OnboardingState>(loadState);
@@ -166,7 +189,8 @@ export default function OnboardingPage() {
   }, []);
 
   const handleComplete = useCallback(async () => {
-    if (!user || isSubmitting) return;
+    if (isSubmitting) return;
+    if (!isGuest && !user) return;
     setIsSubmitting(true);
     try {
       // Apply theme
@@ -177,28 +201,43 @@ export default function OnboardingPage() {
       // user picked before flipping back to the original setup.
       const finalDaysTotal = state.setupTier === "original" ? 75 : state.daysTotal;
 
-      // Submit to backend
-      await completeOnboarding({
+      // Local mode has no friend graph and nothing leaves the device, so
+      // "friends"/"public" visibility is meaningless. Pin to "private" on
+      // submit even if the state happens to carry a stale value (e.g. the
+      // re-onboarding seed inherited it from a prior Convex flow, or it
+      // was the default before the local-mode visibility selector got
+      // hidden in this PR).
+      const submittedVisibility = isGuest ? ("private" as const) : state.visibility;
+
+      const args = {
         displayName: state.displayName,
         timezone: state.timezone,
         ageRange: state.ageRange ?? undefined,
-        healthConditions: state.healthConditions.length > 0 ? state.healthConditions : undefined,
+        healthConditions:
+          state.healthConditions.length > 0 ? state.healthConditions : undefined,
         healthAdvisoryAcknowledged: state.healthAdvisoryAcknowledged,
         goals: state.goals.length > 0 ? state.goals : undefined,
         setupTier: state.setupTier,
         habits: state.habits.filter((h) => h.isActive),
         startDate: state.startDate,
-        visibility: state.visibility,
+        visibility: submittedVisibility,
         daysTotal: finalDaysTotal,
-      });
+      } as const;
+
+      if (isGuest) {
+        localCompleteOnboarding(args);
+      } else {
+        await completeOnboardingConvex(args);
+      }
 
       posthog.capture("onboarding_completed", {
         setup_tier: state.setupTier,
         theme: state.theme,
         active_habit_count: state.habits.filter((h) => h.isActive).length,
-        visibility: state.visibility,
+        visibility: submittedVisibility,
         days_total: finalDaysTotal,
-        is_re_onboarding: user.hasSeenTutorial,
+        is_re_onboarding: user?.hasSeenTutorial ?? false,
+        local_mode: isGuest,
       });
 
       sessionStorage.removeItem(STEP_KEY);
@@ -208,9 +247,28 @@ export default function OnboardingPage() {
       console.error("Onboarding failed:", err);
       setIsSubmitting(false);
     }
-  }, [user, isSubmitting, state, completeOnboarding, setPersonality, router]);
+  }, [
+    user,
+    isSubmitting,
+    state,
+    completeOnboardingConvex,
+    setPersonality,
+    router,
+    isGuest,
+  ]);
 
-  if (user === undefined) {
+  // Kick anonymous-and-not-local-mode users to sign-in. Side-effect goes
+  // in an effect, not the render path, to avoid the "router.replace
+  // during render" warning and the "redirect didn't commit" race.
+  // Wait for `isResolved` so a returning local user isn't bounced before
+  // their persisted opt-in flag has been read.
+  useEffect(() => {
+    if (isResolved && !isGuest && !isLocalOptedIn && user === null) {
+      router.replace("/sign-in");
+    }
+  }, [isResolved, isGuest, isLocalOptedIn, user, router]);
+
+  if (!isResolved || (!isGuest && user === undefined)) {
     return (
       <div className="space-y-6">
         <HeroSkeleton />
@@ -218,9 +276,8 @@ export default function OnboardingPage() {
     );
   }
 
-  if (user === null) {
-    // Not authenticated — redirect to sign in
-    router.replace("/sign-in");
+  if (!isGuest && !isLocalOptedIn && user === null) {
+    // While the redirect is in flight, render nothing.
     return null;
   }
 

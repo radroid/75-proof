@@ -52,64 +52,92 @@ import { useGuest } from "@/components/guest-provider";
 import { useSwipe } from "@/hooks/use-swipe";
 import { useRouter } from "next/navigation";
 import { effectiveDaysTotal, formatEndDate } from "@/lib/day-utils";
+import {
+  useLocalActiveChallenge,
+  useLocalUserChallenges,
+  useLocalHabitDefinitions,
+  useLocalAllEntriesForChallenge,
+  useLocalDayCompletionMap,
+} from "@/lib/local-store/hooks";
 
 type FilterType = "all" | "complete" | "incomplete";
 
 export default function ProgressPage() {
   const router = useRouter();
-  const { isGuest, demoUser, demoChallenge, demoChallengeLogs, demoLifetimeStats } = useGuest();
+  const { isGuest, demoUser, demoChallenge, demoLifetimeStats } = useGuest();
 
-  const user = useQuery(api.users.getCurrentUser, isGuest ? "skip" : undefined);
-  const challenges = useQuery(
+  const convexUser = useQuery(api.users.getCurrentUser, isGuest ? "skip" : undefined);
+  const user = isGuest ? demoUser : convexUser;
+  const convexChallenges = useQuery(
     api.challenges.getUserChallenges,
-    isGuest ? "skip" : (user ? { userId: user._id } : "skip")
+    isGuest ? "skip" : (convexUser ? { userId: convexUser._id } : "skip")
   );
-  const challenge = useQuery(
+  const localChallenges = useLocalUserChallenges();
+  const challenges = isGuest ? localChallenges : convexChallenges;
+  const convexChallenge = useQuery(
     api.challenges.getChallenge,
-    isGuest ? "skip" : (user?.currentChallengeId
-      ? { challengeId: user.currentChallengeId }
+    isGuest ? "skip" : (convexUser?.currentChallengeId
+      ? { challengeId: convexUser.currentChallengeId }
       : "skip")
   );
+  const localChallenge = useLocalActiveChallenge();
+  const challenge = isGuest ? localChallenge : convexChallenge;
   const logs = useQuery(
     api.dailyLogs.getChallengeLogs,
-    isGuest ? "skip" : (user?.currentChallengeId
-      ? { challengeId: user.currentChallengeId }
+    isGuest ? "skip" : (convexUser?.currentChallengeId
+      ? { challengeId: convexUser.currentChallengeId }
       : "skip")
   );
   const photos = useQuery(
     api.dailyLogs.getProgressPhotos,
-    isGuest ? "skip" : (user?.currentChallengeId
-      ? { challengeId: user.currentChallengeId }
+    isGuest ? "skip" : (convexUser?.currentChallengeId
+      ? { challengeId: convexUser.currentChallengeId }
       : "skip")
   );
-  const lifetimeStats = useQuery(
+  const convexLifetimeStats = useQuery(
     api.challenges.getLifetimeStats,
-    isGuest ? "skip" : (user ? { userId: user._id } : "skip")
+    isGuest ? "skip" : (convexUser ? { userId: convexUser._id } : "skip")
   );
-  const activeCompletionMap = useQuery(
+  const convexActiveCompletionMap = useQuery(
     api.challenges.getDayCompletionMap,
-    isGuest ? "skip" : (user?.currentChallengeId
-      ? { challengeId: user.currentChallengeId }
+    isGuest ? "skip" : (convexUser?.currentChallengeId
+      ? { challengeId: convexUser.currentChallengeId }
       : "skip")
   );
-  const activeHabitDefs = useQuery(
+  const localActiveCompletionMap = useLocalDayCompletionMap(
+    isGuest ? localChallenge?._id : undefined,
+  );
+  const activeCompletionMap = isGuest
+    ? localActiveCompletionMap
+    : convexActiveCompletionMap;
+  const convexActiveHabitDefs = useQuery(
     api.habitDefinitions.getHabitDefinitions,
-    isGuest ? "skip" : (user?.currentChallengeId
-      ? { challengeId: user.currentChallengeId }
+    isGuest ? "skip" : (convexUser?.currentChallengeId
+      ? { challengeId: convexUser.currentChallengeId }
       : "skip")
   );
-  const activeHabitEntries = useQuery(
+  const localActiveHabitDefs = useLocalHabitDefinitions(
+    isGuest ? localChallenge?._id : undefined,
+  );
+  const activeHabitDefs = isGuest ? localActiveHabitDefs : convexActiveHabitDefs;
+  const convexActiveHabitEntries = useQuery(
     api.habitEntries.getAllEntriesForChallenge,
-    isGuest ? "skip" : (user?.currentChallengeId
-      ? { challengeId: user.currentChallengeId }
+    isGuest ? "skip" : (convexUser?.currentChallengeId
+      ? { challengeId: convexUser.currentChallengeId }
       : "skip")
   );
+  const localActiveHabitEntries = useLocalAllEntriesForChallenge(
+    isGuest ? localChallenge?._id : undefined,
+  );
+  const activeHabitEntries = isGuest
+    ? localActiveHabitEntries
+    : convexActiveHabitEntries;
 
-  // Effective data — use demo for guests
-  const effectiveUser = isGuest ? demoUser : user;
-  const effectiveChallenge = isGuest ? demoChallenge : challenge;
-  const effectiveLogs = isGuest ? demoChallengeLogs : logs;
-  const effectiveLifetimeStats = isGuest ? demoLifetimeStats : lifetimeStats;
+  // Effective data
+  const effectiveUser = user;
+  const effectiveChallenge = challenge;
+  const effectiveLogs = isGuest ? [] : logs;
+  const effectiveLifetimeStats = isGuest ? demoLifetimeStats : convexLifetimeStats;
   const effectivePhotos = isGuest ? [] : photos;
 
   // History state
@@ -118,67 +146,68 @@ export default function ProgressPage() {
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
 
-  // History logs for selected challenge (if different from active)
+  // Effective challenge id for the history view. `selectedChallengeId` is
+  // only set when the user manually picks from the selector; otherwise we
+  // fall back to the active challenge (or most recent). Computed inline
+  // instead of mirrored into state to avoid the cascade-render the prior
+  // useEffect introduced.
+  const activeChallenge = challenges?.find((c) => c.status === "active");
+  const effectiveHistoryId = isGuest
+    ? localChallenge?._id
+    : (selectedChallengeId ?? activeChallenge?._id ?? challenges?.[0]?._id);
+
+  // History queries skip when the effective id matches the active challenge —
+  // its data already comes from `logs` / `activeCompletionMap` above. Any
+  // other id means the user picked a non-active challenge from the selector.
   const historyLogs = useQuery(
     api.dailyLogs.getChallengeLogs,
-    isGuest ? "skip" : (selectedChallengeId && selectedChallengeId !== user?.currentChallengeId
-      ? { challengeId: selectedChallengeId }
-      : "skip")
+    isGuest || !effectiveHistoryId || effectiveHistoryId === convexUser?.currentChallengeId
+      ? "skip"
+      : { challengeId: effectiveHistoryId as Id<"challenges"> }
   );
   const historyCompletionMap = useQuery(
     api.challenges.getDayCompletionMap,
-    isGuest ? "skip" : (selectedChallengeId && selectedChallengeId !== user?.currentChallengeId
-      ? { challengeId: selectedChallengeId }
-      : "skip")
+    isGuest || !effectiveHistoryId || effectiveHistoryId === convexUser?.currentChallengeId
+      ? "skip"
+      : { challengeId: effectiveHistoryId as Id<"challenges"> }
   );
   const historyHabitDefs = useQuery(
     api.habitDefinitions.getHabitDefinitions,
-    isGuest ? "skip" : (selectedChallengeId && selectedChallengeId !== user?.currentChallengeId
-      ? { challengeId: selectedChallengeId }
-      : "skip")
+    isGuest || !effectiveHistoryId || effectiveHistoryId === convexUser?.currentChallengeId
+      ? "skip"
+      : { challengeId: effectiveHistoryId as Id<"challenges"> }
   );
   const historyHabitEntries = useQuery(
     api.habitEntries.getAllEntriesForChallenge,
-    isGuest ? "skip" : (selectedChallengeId && selectedChallengeId !== user?.currentChallengeId
-      ? { challengeId: selectedChallengeId }
-      : "skip")
+    isGuest || !effectiveHistoryId || effectiveHistoryId === convexUser?.currentChallengeId
+      ? "skip"
+      : { challengeId: effectiveHistoryId as Id<"challenges"> }
   );
 
-  // Auto-select active challenge for history
-  const activeChallenge = challenges?.find((c) => c.status === "active");
-  const effectiveHistoryId = isGuest ? demoChallenge._id : (selectedChallengeId ?? activeChallenge?._id ?? challenges?.[0]?._id);
-
-  if (!isGuest && !selectedChallengeId && effectiveHistoryId && effectiveHistoryId !== selectedChallengeId) {
-    setSelectedChallengeId(effectiveHistoryId);
-  }
-
-  const selectedHistoryChallenge = isGuest ? demoChallenge : challenges?.find((c) => c._id === effectiveHistoryId);
+  const selectedHistoryChallenge = isGuest
+    ? localChallenge
+    : challenges?.find((c) => c._id === effectiveHistoryId);
   const effectiveHistoryLogs = isGuest
-    ? demoChallengeLogs
-    : effectiveHistoryId === user?.currentChallengeId ? logs : historyLogs;
-
-  // Guest/demo mode uses the legacy `allRequirementsMet` field — derive a map.
-  const demoCompletionMap: Record<number, boolean> = isGuest
-    ? Object.fromEntries(demoChallengeLogs.map((l: any) => [l.dayNumber, !!l.allRequirementsMet]))
-    : {};
+    ? []
+    : effectiveHistoryId === convexUser?.currentChallengeId ? logs : historyLogs;
 
   const effectiveHistoryCompletionMap: Record<number, boolean> = isGuest
-    ? demoCompletionMap
-    : (effectiveHistoryId === user?.currentChallengeId
+    ? (localActiveCompletionMap ?? {})
+    : (effectiveHistoryId === convexUser?.currentChallengeId
         ? (activeCompletionMap ?? {})
         : (historyCompletionMap ?? {}));
 
   const activeEffectiveCompletionMap: Record<number, boolean> = isGuest
-    ? demoCompletionMap
+    ? (localActiveCompletionMap ?? {})
     : (activeCompletionMap ?? {});
 
   const effectiveHistoryHabitDefs = isGuest
-    ? []
-    : (effectiveHistoryId === user?.currentChallengeId ? activeHabitDefs : historyHabitDefs);
+    ? localActiveHabitDefs
+    : (effectiveHistoryId === convexUser?.currentChallengeId ? activeHabitDefs : historyHabitDefs);
   const effectiveHistoryHabitEntries = isGuest
-    ? []
-    : (effectiveHistoryId === user?.currentChallengeId ? activeHabitEntries : historyHabitEntries);
-  const isHistoryNewSystem = !!effectiveHistoryHabitDefs && effectiveHistoryHabitDefs.length > 0;
+    ? localActiveHabitEntries
+    : (effectiveHistoryId === convexUser?.currentChallengeId ? activeHabitEntries : historyHabitEntries);
+  const isHistoryNewSystem = isGuest || (!!effectiveHistoryHabitDefs && effectiveHistoryHabitDefs.length > 0);
 
   // Filter and sort history
   const loggedDaysMap = new Map(effectiveHistoryLogs?.map((log) => [log.dayNumber, log]));
@@ -367,7 +396,7 @@ export default function ProgressPage() {
             <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Best Streak</span>
           </div>
           <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
-            {lifetimeStats?.longestStreak ?? 0}
+            {effectiveLifetimeStats?.longestStreak ?? 0}
             <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">days</span>
           </p>
         </motion.div>
@@ -377,38 +406,46 @@ export default function ProgressPage() {
             <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Attempt</span>
           </div>
           <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
-            #{lifetimeStats?.attemptNumber ?? 1}
+            #{effectiveLifetimeStats?.attemptNumber ?? 1}
           </p>
         </motion.div>
-        <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
-          <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
-            <Dumbbell className="h-5 w-5 text-chart-1" />
-            <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Total Workouts</span>
-          </div>
-          <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
-            {totalWorkouts}
-          </p>
-        </motion.div>
-        <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
-          <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
-            <Droplets className="h-5 w-5 text-chart-2" />
-            <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Water Consumed</span>
-          </div>
-          <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
-            {Math.round(totalWater / 128)}
-            <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">gallons</span>
-          </p>
-        </motion.div>
-        <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
-          <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
-            <BookOpen className="h-5 w-5 text-chart-3" />
-            <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Reading Time</span>
-          </div>
-          <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
-            {totalReading}
-            <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">min</span>
-          </p>
-        </motion.div>
+        {/* Total Workouts / Water / Reading are sourced from the legacy
+            `dailyLogs` table, which local mode doesn't replicate (its
+            data lives in `habitEntries` and the metric mapping isn't 1:1).
+            Hiding for guests avoids showing a misleading "0" mid-streak. */}
+        {!isGuest && (
+          <>
+            <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
+              <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
+                <Dumbbell className="h-5 w-5 text-chart-1" />
+                <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Total Workouts</span>
+              </div>
+              <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
+                {totalWorkouts}
+              </p>
+            </motion.div>
+            <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
+              <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
+                <Droplets className="h-5 w-5 text-chart-2" />
+                <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Water Consumed</span>
+              </div>
+              <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
+                {Math.round(totalWater / 128)}
+                <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">gallons</span>
+              </p>
+            </motion.div>
+            <motion.div variants={fadeUp} className="rounded-xl border bg-card/40 p-3 md:p-5 text-left">
+              <div className="flex items-center gap-2 mb-1.5 md:mb-3 min-w-0">
+                <BookOpen className="h-5 w-5 text-chart-3" />
+                <span className="text-[9px] md:text-[10px] tracking-[0.14em] md:tracking-[0.2em] uppercase text-muted-foreground truncate">Reading Time</span>
+              </div>
+              <p className="text-3xl md:text-5xl font-light tabular-nums leading-none" style={{ fontFamily: "var(--font-heading)" }}>
+                {totalReading}
+                <span className="text-sm md:text-lg text-muted-foreground/50 ml-1">min</span>
+              </p>
+            </motion.div>
+          </>
+        )}
       </MotionGrid>
 
       {/* Progress Photos Gallery */}
@@ -672,7 +709,7 @@ export default function ProgressPage() {
         </div>
 
         {/* Challenge Overview (for non-active challenges) */}
-        {!isGuest && selectedHistoryChallenge && selectedHistoryChallenge._id !== user?.currentChallengeId && (
+        {!isGuest && selectedHistoryChallenge && selectedHistoryChallenge._id !== convexUser?.currentChallengeId && (
           <div className="rounded-xl border p-5 mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -867,28 +904,63 @@ export default function ProgressPage() {
                           >
                             <div className="px-3 pb-3 pt-0">
                               {isHistoryNewSystem ? (
-                                <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                  {sortedHabitDefs
-                                    .filter((h: any) => h.isActive)
-                                    .map((h: any) => {
-                                      const entry = dayEntries.find((e: any) => e.habitDefinitionId === h._id);
-                                      const done = !!entry?.completed;
-                                      const valueText = h.blockType === "counter" && typeof entry?.value === "number"
-                                        ? `${entry.value}${h.target ? ` / ${h.target}` : ""}${h.unit ? ` ${h.unit}` : ""}`
-                                        : done
-                                        ? "Completed"
-                                        : "Not done";
-                                      return (
-                                        <HabitRequirementCard
-                                          key={h._id}
-                                          label={h.name}
-                                          completed={done}
-                                          value={valueText}
-                                          isHard={h.isHard}
-                                        />
-                                      );
-                                    })}
-                                </div>
+                                (() => {
+                                  // Structural type: covers both Convex `Doc<"habitDefinitions">`
+                                  // and `LocalHabitDefinition`. Avoids a hard import-time
+                                  // dependency on either origin since this view is polymorphic.
+                                  type HabitDefView = {
+                                    _id: string;
+                                    name: string;
+                                    isActive: boolean;
+                                    isHard: boolean;
+                                    blockType: "task" | "counter";
+                                    target?: number;
+                                    unit?: string;
+                                  };
+                                  type HabitEntryView = {
+                                    habitDefinitionId: string;
+                                    completed?: boolean;
+                                    value?: number;
+                                  };
+                                  const activeHabits = (sortedHabitDefs as HabitDefView[]).filter(
+                                    (h) => h.isActive,
+                                  );
+                                  if (activeHabits.length === 0) {
+                                    return (
+                                      <div className="pt-3 border-t">
+                                        <p className="text-sm text-muted-foreground">
+                                          No habits configured for this day.
+                                        </p>
+                                      </div>
+                                    );
+                                  }
+                                  const typedEntries = dayEntries as HabitEntryView[];
+                                  return (
+                                    <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                      {activeHabits.map((h) => {
+                                        const entry = typedEntries.find(
+                                          (e) => e.habitDefinitionId === h._id,
+                                        );
+                                        const done = !!entry?.completed;
+                                        const valueText =
+                                          h.blockType === "counter" && typeof entry?.value === "number"
+                                            ? `${entry.value}${h.target ? ` / ${h.target}` : ""}${h.unit ? ` ${h.unit}` : ""}`
+                                            : done
+                                              ? "Completed"
+                                              : "Not done";
+                                        return (
+                                          <HabitRequirementCard
+                                            key={h._id}
+                                            label={h.name}
+                                            completed={done}
+                                            value={valueText}
+                                            isHard={h.isHard}
+                                          />
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                })()
                               ) : (log as { backfilled?: boolean } | undefined)?.backfilled ? (
                                 <div className="pt-3 border-t">
                                   <p className="text-sm text-muted-foreground">
