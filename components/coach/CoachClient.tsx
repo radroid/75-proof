@@ -239,6 +239,7 @@ export function CoachClient() {
                 <button
                   key={c.slug}
                   type="button"
+                  aria-pressed={selected}
                   onClick={() => handleCategoryPick(c.slug)}
                   className={cn(
                     "group relative overflow-hidden rounded-xl border bg-card p-5 text-left shadow-sm transition-all hover:shadow-md",

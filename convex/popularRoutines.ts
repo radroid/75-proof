@@ -587,24 +587,30 @@ export const runEvals = internalAction({
     const cases: EvalCase[] = args.cases ?? DEFAULT_EVAL_CASES;
     const topK = args.topK ?? 3;
 
-    // Eval cases are independent — fire them in parallel so a 20-case
-    // run doesn't pay 20× the network/embedding latency serially.
-    const results: EvalRunResult[] = await Promise.all(
-      cases.map(async (c) => {
-        const hits: RoutineSearchHit[] = await ctx.runAction(
-          internal.popularRoutines.vectorSearchInternal,
-          { query: c.query, limit: topK },
-        );
-        const topHits = hits.map((h) => ({ slug: h.slug, score: h.score }));
-        const passed = topHits.some((h) => c.expectedAnyOf.includes(h.slug));
-        return {
-          query: c.query,
-          expectedAnyOf: c.expectedAnyOf,
-          topHits,
-          passed,
-        };
-      }),
-    );
+    // Run cases in chunks rather than all at once so a 100-case sweep
+    // can't overwhelm the OpenAI embeddings rate limit.
+    const EVAL_CONCURRENCY = 5;
+    const results: EvalRunResult[] = [];
+    for (let i = 0; i < cases.length; i += EVAL_CONCURRENCY) {
+      const chunk = cases.slice(i, i + EVAL_CONCURRENCY);
+      const chunkResults = await Promise.all(
+        chunk.map(async (c) => {
+          const hits: RoutineSearchHit[] = await ctx.runAction(
+            internal.popularRoutines.vectorSearchInternal,
+            { query: c.query, limit: topK },
+          );
+          const topHits = hits.map((h) => ({ slug: h.slug, score: h.score }));
+          const passed = topHits.some((h) => c.expectedAnyOf.includes(h.slug));
+          return {
+            query: c.query,
+            expectedAnyOf: c.expectedAnyOf,
+            topHits,
+            passed,
+          };
+        }),
+      );
+      results.push(...chunkResults);
+    }
 
     const passed = results.filter((r) => r.passed).length;
     const failed = results.length - passed;

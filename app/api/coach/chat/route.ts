@@ -75,6 +75,15 @@ function rateLimit(req: NextRequest): { ok: true } | { ok: false; retryAfter: nu
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     req.headers.get("x-real-ip") ??
     "unknown";
+  if (ip === "unknown" && process.env.NODE_ENV !== "production") {
+    // In dev this usually just means localhost; in production it means the
+    // proxy isn't forwarding client IPs and many requests will share the
+    // single "unknown" bucket. Surface it loudly during development so
+    // misconfigured deployments don't silently degrade rate limiting.
+    console.warn(
+      "[coach/chat] rateLimit could not determine client IP — check cf-connecting-ip / x-forwarded-for / x-real-ip headers from upstream proxy",
+    );
+  }
   const now = Date.now();
   const cutoff = now - RATE_LIMIT_WINDOW_MS;
   const existing = rateLimitBuckets.get(ip);
@@ -328,11 +337,14 @@ function stubResponse(
   queryText: string,
   retrieved: Array<{ title: string; slug: string; summary: string; duration: string }>,
 ): string {
+  // Generic, non-sensitive message — operational details (env var names,
+  // setup commands) are intentionally kept out of the response body so
+  // they aren't surfaced to end users in production.
   if (retrieved.length === 0) {
-    return `(stub mode — set OPENROUTER_API_KEY in env to get a real reply)\n\nI couldn't retrieve matching routines for "${queryText}". The vector search may not be seeded yet — run \`npx convex run popularRoutines:seedAndEmbed\` from the project root.`;
+    return `(coach is in fallback mode — full LLM replies are not available right now.)\n\nNo matching routines were retrieved for "${queryText}".`;
   }
   const lines = retrieved
     .slice(0, 3)
     .map((r, i) => `${i + 1}. **${r.title}** (${r.duration}) — ${r.summary}`);
-  return `(stub mode — set OPENROUTER_API_KEY for a real LLM reply)\n\nTop matches for "${queryText}":\n\n${lines.join("\n")}`;
+  return `(coach is in fallback mode — showing top vector-search matches without an LLM summary.)\n\nTop matches for "${queryText}":\n\n${lines.join("\n")}`;
 }
