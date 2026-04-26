@@ -4,7 +4,7 @@ import { api } from "@/convex/_generated/api";
 
 export const runtime = "nodejs";
 
-type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
+type ChatMessage = { role: "user" | "assistant"; content: string };
 
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_CHARS = 4000;
