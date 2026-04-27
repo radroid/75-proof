@@ -8,6 +8,7 @@ import {
   TrendingUp,
   Users,
   Settings,
+  Sparkles,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -39,6 +40,10 @@ function FriendsMobileIcon(props: IconProps) {
   );
 }
 
+// Authed mobile nav. Coach lives here too so the AI surface is reachable
+// without opening the desktop sidebar — it's becoming the central
+// interaction point (see BACKLOG C-3). Settings stays one tap away
+// because there's no other persistent settings affordance on mobile.
 const defaultNavItems: NavItem[] = [
   {
     label: "Today",
@@ -49,6 +54,11 @@ const defaultNavItems: NavItem[] = [
     label: "Progress",
     href: "/dashboard/progress",
     icon: TrendingUp,
+  },
+  {
+    label: "Coach",
+    href: "/dashboard/coach",
+    icon: Sparkles,
   },
   {
     label: "Friends",
@@ -86,7 +96,10 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
     >
       <nav
         aria-label="Primary"
-        className="flex justify-around items-center mx-auto max-w-[360px]"
+        // 5-item nav (Today/Progress/Coach/Friends/Settings) needs a bit
+        // more width on small phones than the previous 4-item layout. The
+        // ceiling caps it on tablet so it doesn't sprawl across the screen.
+        className="flex justify-around items-center mx-auto max-w-[420px]"
         style={{
           height: "var(--bottom-nav-height)",
           background: "var(--nav-bg)",

@@ -5,7 +5,7 @@ import { Loader2, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { ChatBubble } from "@/components/ui/chat-bubble";
 import { usePersonalizeChat } from "@/lib/llm-personalize";
 import type { OnboardingHabit } from "@/lib/onboarding-types";
 import { PROPOSAL_SENTINEL } from "@/convex/lib/llmPrompts";
@@ -82,7 +82,7 @@ export function OnboardingPersonalizeChat({
           </div>
         </div>
 
-        <div className="space-y-3 max-h-80 overflow-y-auto rounded-md border bg-muted/30 p-3">
+        <div className="space-y-2 max-h-80 overflow-y-auto rounded-md border bg-background/40 p-3">
           {messages.length === 0 && (
             <p className="text-sm text-muted-foreground">
               Tell me about your goals, schedule, and what&apos;s worked or
@@ -91,20 +91,11 @@ export function OnboardingPersonalizeChat({
             </p>
           )}
           {messages.map((m, i) => (
-            <div
+            <ChatBubble
               key={i}
-              className={cn(
-                "text-sm whitespace-pre-wrap",
-                m.role === "user"
-                  ? "text-foreground"
-                  : "text-muted-foreground",
-              )}
-            >
-              <span className="text-xs uppercase tracking-wider mr-2 opacity-70">
-                {m.role === "user" ? "You" : "AI"}
-              </span>
-              {stripSentinelBlock(m.content)}
-            </div>
+              role={m.role === "user" ? "user" : "assistant"}
+              content={stripSentinelBlock(m.content)}
+            />
           ))}
           {pending && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">

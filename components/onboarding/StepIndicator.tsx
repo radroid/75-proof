@@ -6,9 +6,33 @@ import type { OnboardingStep } from "@/lib/onboarding-types";
 interface StepIndicatorProps {
   steps: readonly OnboardingStep[];
   currentIndex: number;
+  /**
+   * Highest step index the user has reached. Dots at or below this index
+   * become clickable shortcuts; later dots stay static so we don't land
+   * on a screen whose required input hasn't been collected yet.
+   */
+  maxReachedIndex?: number;
+  onStepClick?: (index: number) => void;
 }
 
-export function StepIndicator({ steps, currentIndex }: StepIndicatorProps) {
+const STEP_LABELS: Record<OnboardingStep, string> = {
+  path: "Path",
+  welcome: "Welcome",
+  goals: "Goals",
+  theme: "Theme",
+  template: "Routine",
+  duration: "Duration",
+  habits: "Habits",
+  review: "Review",
+};
+
+export function StepIndicator({
+  steps,
+  currentIndex,
+  maxReachedIndex,
+  onStepClick,
+}: StepIndicatorProps) {
+  const ceiling = maxReachedIndex ?? currentIndex;
   return (
     <div
       className="flex flex-col items-center gap-1.5"
@@ -19,23 +43,51 @@ export function StepIndicator({ steps, currentIndex }: StepIndicatorProps) {
       aria-valuemax={steps.length}
     >
       <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-        {steps.map((_, i) => (
-          <div
-            key={i}
-            aria-hidden="true"
-            className={cn(
-              "h-2 rounded-full transition-all duration-300 motion-reduce:transition-none",
-              i === currentIndex
-                ? "w-8 bg-primary"
-                : i < currentIndex
-                  ? "w-2 bg-primary/60"
-                  : "w-2 bg-muted"
-            )}
-          />
-        ))}
+        {steps.map((step, i) => {
+          const isCurrent = i === currentIndex;
+          const isVisited = i < currentIndex;
+          const isReachable = onStepClick != null && i <= ceiling;
+          const dot = (
+            <span
+              aria-hidden="true"
+              className={cn(
+                "block h-2 rounded-full transition-all duration-300 motion-reduce:transition-none",
+                isCurrent
+                  ? "w-8 bg-primary"
+                  : isVisited
+                    ? "w-2 bg-primary/60"
+                    : "w-2 bg-muted",
+              )}
+            />
+          );
+          if (!isReachable) {
+            return (
+              <div key={i} aria-hidden="true">
+                {dot}
+              </div>
+            );
+          }
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onStepClick?.(i)}
+              aria-label={`Go to step ${i + 1}: ${STEP_LABELS[step]}`}
+              aria-current={isCurrent ? "step" : undefined}
+              className={cn(
+                "inline-flex h-6 items-center justify-center rounded-full px-1",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "hover:scale-110 active:scale-95 motion-reduce:transform-none",
+                "transition-transform",
+              )}
+            >
+              {dot}
+            </button>
+          );
+        })}
       </div>
       <p className="text-xs text-muted-foreground tabular-nums">
-        Step {currentIndex + 1} of {steps.length}
+        Step {currentIndex + 1} of {steps.length} · {STEP_LABELS[steps[currentIndex]]}
       </p>
     </div>
   );

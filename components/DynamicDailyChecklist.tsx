@@ -28,10 +28,23 @@ const categoryIcons: Record<string, React.ReactNode> = {
   fitness: <Dumbbell className="h-4 w-4" />,
   nutrition: <Apple className="h-4 w-4" />,
   mind: <Brain className="h-4 w-4" />,
+  "skill-building": <Brain className="h-4 w-4" />,
+  productivity: <LayoutGrid className="h-4 w-4" />,
+  "personal-development": <Sparkles className="h-4 w-4" />,
   other: <LayoutGrid className="h-4 w-4" />,
 };
 
-const categoryOrder = ["fitness", "nutrition", "mind", "other"];
+const categoryOrder = ["fitness", "nutrition", "mind", "skill-building", "productivity", "personal-development", "other"];
+
+const categoryLabels: Record<string, string> = {
+  fitness: "fitness",
+  nutrition: "nutrition",
+  mind: "mind",
+  "skill-building": "skill",
+  productivity: "productivity",
+  "personal-development": "personal",
+  other: "other",
+};
 
 export function DynamicDailyChecklist({
   challengeId,
@@ -123,7 +136,15 @@ export function DynamicDailyChecklist({
     grouped.get(cat)!.push(habit);
   }
 
-  const sortedCategories = categoryOrder.filter((c) => grouped.has(c));
+  // Render known categories in their canonical order, then any unknown
+  // ones (e.g. user-typed custom categories) appended alphabetically so
+  // habits never silently disappear from the list.
+  const knownInOrder = categoryOrder.filter((c) => grouped.has(c));
+  const knownSet = new Set(categoryOrder);
+  const extras = Array.from(grouped.keys())
+    .filter((c) => !knownSet.has(c))
+    .sort();
+  const sortedCategories = [...knownInOrder, ...extras];
 
   return (
     <>
@@ -155,7 +176,7 @@ export function DynamicDailyChecklist({
                     {categoryIcons[category] ?? categoryIcons.other}
                   </span>
                   <h3 className="text-xs font-medium uppercase tracking-[0.08em] sm:tracking-[0.15em] text-muted-foreground">
-                    {category}
+                    {categoryLabels[category] ?? category.replace(/-/g, " ")}
                   </h3>
                 </div>
                 {catComplete && (

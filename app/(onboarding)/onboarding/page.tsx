@@ -83,6 +83,11 @@ export default function OnboardingPage() {
 
   const [state, setState] = useState<OnboardingState>(loadState);
   const [stepIndex, setStepIndex] = useState(loadStep);
+  // Track the furthest step the user has reached so the StepIndicator
+  // can render visited dots as clickable shortcuts back. Forward jumps
+  // are still gated by the per-step Continue button so we never land on
+  // a screen whose required input hasn't been collected yet.
+  const [maxReachedIndex, setMaxReachedIndex] = useState(loadStep);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [seededFromPrevious, setSeededFromPrevious] = useState(false);
 
@@ -147,6 +152,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     sessionStorage.setItem(STEP_KEY, String(stepIndex));
+    setMaxReachedIndex((prev) => Math.max(prev, stepIndex));
   }, [stepIndex]);
 
   // Redirect away if user already completed onboarding
@@ -214,6 +220,17 @@ export default function OnboardingPage() {
     const idx = ONBOARDING_STEPS.indexOf(step);
     if (idx >= 0) setStepIndex(idx);
   }, []);
+
+  // Click handler for the StepIndicator dots. Only allow jumping to a
+  // step the user has already reached; forward jumps stay gated by
+  // Continue so we don't land on a screen whose required state isn't
+  // collected yet.
+  const goToIndex = useCallback(
+    (idx: number) => {
+      if (idx <= maxReachedIndex) setStepIndex(idx);
+    },
+    [maxReachedIndex],
+  );
 
   const handleComplete = useCallback(async () => {
     if (isSubmitting) return;
@@ -355,6 +372,8 @@ export default function OnboardingPage() {
       <StepIndicator
         steps={ONBOARDING_STEPS}
         currentIndex={stepIndex}
+        maxReachedIndex={maxReachedIndex}
+        onStepClick={goToIndex}
       />
 
       {currentStep === "path" && (

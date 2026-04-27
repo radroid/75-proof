@@ -152,7 +152,7 @@ export function OnboardingBrowsePopular({
     <motion.div
       initial={{ opacity: 0, x: 40 }}
       animate={{ opacity: 1, x: 0 }}
-      className="space-y-6"
+      className="space-y-6 pb-28 sm:pb-32"
     >
       <div className="text-center space-y-3">
         <h1 className="text-3xl font-bold tracking-tight">Pick a popular routine</h1>
@@ -265,21 +265,33 @@ export function OnboardingBrowsePopular({
         })}
       </ul>
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between gap-3 pt-2">
-        <Button variant="ghost" onClick={onBack} className="gap-1 min-h-[44px]">
-          <ChevronLeft className="h-4 w-4" />
-          Back
-        </Button>
-        <Button
-          onClick={onNext}
-          size="lg"
-          disabled={!selectedSlug}
-          className="flex-1 sm:flex-initial gap-2 min-h-[48px]"
-        >
-          Continue
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+      {/* Sticky navigation — pinned to viewport bottom across active +
+          inactive states so the user never has to scroll a long catalog
+          just to confirm a pick. The wrapper handles the safe-area inset
+          on notched devices; the inner row mirrors the section's max
+          width so the button stays aligned with the cards above. */}
+      <div
+        className={cn(
+          "fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/85",
+          "backdrop-blur supports-[backdrop-filter]:bg-background/65",
+        )}
+        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)" }}
+      >
+        <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-3 px-4 pt-3 sm:px-6">
+          <Button variant="ghost" onClick={onBack} className="gap-1 min-h-[44px]">
+            <ChevronLeft className="h-4 w-4" />
+            Back
+          </Button>
+          <Button
+            onClick={onNext}
+            size="lg"
+            disabled={!selectedSlug}
+            className="flex-1 sm:flex-initial gap-2 min-h-[48px]"
+          >
+            Continue
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </motion.div>
   );
