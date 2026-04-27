@@ -24,10 +24,12 @@ import {
   useLocalUser,
 } from "@/lib/local-store/hooks";
 import { StepIndicator } from "@/components/onboarding/StepIndicator";
+import { OnboardingPathSelect } from "@/components/onboarding/OnboardingPathSelect";
 import { OnboardingWelcome } from "@/components/onboarding/OnboardingWelcome";
 import { OnboardingGoals } from "@/components/onboarding/OnboardingGoals";
 import { OnboardingTheme } from "@/components/onboarding/OnboardingTheme";
-import { OnboardingTemplateSelect } from "@/components/onboarding/OnboardingTemplateSelect";
+import { OnboardingBrowsePopular } from "@/components/onboarding/OnboardingBrowsePopular";
+import { OnboardingAiStep } from "@/components/onboarding/OnboardingAiStep";
 import { OnboardingDuration } from "@/components/onboarding/OnboardingDuration";
 import { OnboardingHabitConfig } from "@/components/onboarding/OnboardingHabitConfig";
 import { OnboardingReview } from "@/components/onboarding/OnboardingReview";
@@ -166,9 +168,16 @@ export default function OnboardingPage() {
   const selectedTemplate = isKnownTemplate(state.templateSlug)
     ? getTemplateBySlug(state.templateSlug)
     : null;
+  // Custom path skips the template step entirely — the build-your-own
+  // habits are seeded at the path picker, so there's nothing to choose.
+  const skipsTemplate = state.entryPath === "custom";
+
   const next = useCallback(() => {
     setStepIndex((i) => {
       let nextIdx = Math.min(i + 1, ONBOARDING_STEPS.length - 1);
+      if (ONBOARDING_STEPS[nextIdx] === "template" && skipsTemplate) {
+        nextIdx = Math.min(nextIdx + 1, ONBOARDING_STEPS.length - 1);
+      }
       if (
         ONBOARDING_STEPS[nextIdx] === "duration" &&
         selectedTemplate?.lockedDuration
@@ -183,7 +192,7 @@ export default function OnboardingPage() {
     ) {
       setState((s) => ({ ...s, daysTotal: selectedTemplate.daysTotal }));
     }
-  }, [selectedTemplate, state.daysTotal]);
+  }, [selectedTemplate, state.daysTotal, skipsTemplate]);
 
   const back = useCallback(() => {
     setStepIndex((i) => {
@@ -194,9 +203,12 @@ export default function OnboardingPage() {
       ) {
         prevIdx = Math.max(prevIdx - 1, 0);
       }
+      if (ONBOARDING_STEPS[prevIdx] === "template" && skipsTemplate) {
+        prevIdx = Math.max(prevIdx - 1, 0);
+      }
       return prevIdx;
     });
-  }, [selectedTemplate]);
+  }, [selectedTemplate, skipsTemplate]);
 
   const goToStep = useCallback((step: OnboardingStep) => {
     const idx = ONBOARDING_STEPS.indexOf(step);
@@ -314,6 +326,30 @@ export default function OnboardingPage() {
 
   const currentStep = ONBOARDING_STEPS[stepIndex];
 
+  const handleAiProposal = useCallback(
+    (proposal: {
+      title: string;
+      daysTotal: number;
+      habits: OnboardingState["habits"];
+      strictMode: boolean;
+    }) => {
+      const aiSlug = `ai-generated:${Date.now()}`;
+      // Belt-and-suspenders: the chat panel already sets isActive, but
+      // RoutineProposal.habits doesn't carry it as a contract, so re-affirm
+      // here before the review-step filter drops any habit that arrived
+      // without the flag.
+      setState((s) => ({
+        ...s,
+        templateSlug: aiSlug,
+        habits: proposal.habits.map((h) => ({ ...h, isActive: true })),
+        daysTotal: proposal.daysTotal,
+        setupTier: proposal.strictMode ? "original" : "added",
+      }));
+      goToStep("review");
+    },
+    [goToStep],
+  );
+
   return (
     <div className="space-y-8">
       <StepIndicator
@@ -321,6 +357,9 @@ export default function OnboardingPage() {
         currentIndex={stepIndex}
       />
 
+      {currentStep === "path" && (
+        <OnboardingPathSelect state={state} updateState={updateState} onNext={next} />
+      )}
       {currentStep === "welcome" && (
         <OnboardingWelcome state={state} updateState={updateState} onNext={next} />
       )}
@@ -330,27 +369,19 @@ export default function OnboardingPage() {
       {currentStep === "theme" && (
         <OnboardingTheme state={state} updateState={updateState} onNext={next} onBack={back} />
       )}
-      {currentStep === "template" && (
-        <OnboardingTemplateSelect
+      {currentStep === "template" && state.entryPath === "ai" && (
+        <OnboardingAiStep
+          state={state}
+          onBack={back}
+          onApplyProposal={handleAiProposal}
+        />
+      )}
+      {currentStep === "template" && state.entryPath !== "ai" && (
+        <OnboardingBrowsePopular
           state={state}
           updateState={updateState}
           onNext={next}
           onBack={back}
-          onApplyAiProposal={(proposal) => {
-            const aiSlug = `ai-generated:${Date.now()}`;
-            // Belt-and-suspenders: the chat panel already sets isActive,
-            // but RoutineProposal.habits doesn't carry it as a contract,
-            // so re-affirm here before the review-step filter drops any
-            // habit that arrived without the flag.
-            setState((s) => ({
-              ...s,
-              templateSlug: aiSlug,
-              habits: proposal.habits.map((h) => ({ ...h, isActive: true })),
-              daysTotal: proposal.daysTotal,
-              setupTier: proposal.strictMode ? "original" : "added",
-            }));
-            goToStep("review");
-          }}
         />
       )}
       {currentStep === "duration" && (
