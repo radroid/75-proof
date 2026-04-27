@@ -311,21 +311,6 @@ export default function OnboardingPage() {
     }
   }, [isResolved, isGuest, isLocalOptedIn, user, router]);
 
-  if (!isResolved || (!isGuest && user === undefined)) {
-    return (
-      <div className="space-y-6">
-        <HeroSkeleton />
-      </div>
-    );
-  }
-
-  if (!isGuest && !isLocalOptedIn && user === null) {
-    // While the redirect is in flight, render nothing.
-    return null;
-  }
-
-  const currentStep = ONBOARDING_STEPS[stepIndex];
-
   const handleAiProposal = useCallback(
     (proposal: {
       title: string;
@@ -349,6 +334,21 @@ export default function OnboardingPage() {
     },
     [goToStep],
   );
+
+  if (!isResolved || (!isGuest && user === undefined)) {
+    return (
+      <div className="space-y-6">
+        <HeroSkeleton />
+      </div>
+    );
+  }
+
+  if (!isGuest && !isLocalOptedIn && user === null) {
+    // While the redirect is in flight, render nothing.
+    return null;
+  }
+
+  const currentStep = ONBOARDING_STEPS[stepIndex];
 
   return (
     <div className="space-y-8">

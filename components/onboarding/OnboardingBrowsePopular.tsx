@@ -83,14 +83,29 @@ function parseDurationToDays(raw: string): number | null {
   return null;
 }
 
+/**
+ * Derive habit hardness from the routine's tags. The seed catalog tags
+ * gentle/beginner-friendly programs (e.g. 75 SOFT, Couch-to-5K, Hot Girl
+ * Walk) — we honour those by seeding habits as soft so the user isn't
+ * stuck restarting day 1 over a missed walk. Everything else defaults to
+ * hard, matching the "miss = restart" 75-HARD ethos most of the catalog
+ * targets.
+ */
+const SOFT_TAGS: ReadonlySet<string> = new Set(["gentle", "beginner-friendly"]);
+
+function deriveIsHard(tags: readonly string[]): boolean {
+  return !tags.some((t) => SOFT_TAGS.has(t));
+}
+
 export function popularRoutineToOnboardingPatch(
   routine: PopularRoutineSeed,
 ): Partial<OnboardingState> {
   const days = parseDurationToDays(routine.duration) ?? 30;
+  const isHard = deriveIsHard(routine.tags);
   const habits: OnboardingHabit[] = routine.trackingChecklist.map((name, i) => ({
     name,
     blockType: "task",
-    isHard: true,
+    isHard,
     isActive: true,
     category: routine.category,
     sortOrder: i + 1,
