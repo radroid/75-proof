@@ -177,6 +177,11 @@ export function perHabitStats(
     .map((h) => {
       const inner = byHabit.get(h._id);
       const series: number[] = [];
+      // Score across the window. For counter habits we add the fractional
+      // progress (clamped 0..1) so 32 of 64 oz contributes 0.5 to the rate;
+      // task habits add 0 or 1. `completedDays` (kept in the field name for
+      // API compat) is therefore "completion-equivalent days" — matches how
+      // the headline `effortRollingRate` already aggregates.
       let completedDays = 0;
       for (let day = start; day <= currentDay; day++) {
         const entry = inner?.get(day);
@@ -189,7 +194,7 @@ export function perHabitStats(
           value = entry?.completed ? 1 : 0;
         }
         series.push(value);
-        if (value >= 1) completedDays += 1;
+        completedDays += Math.max(0, Math.min(1, value));
       }
       const rate = consideredDays > 0 ? (completedDays / consideredDays) * 100 : 0;
       const trend = trendFromSlope(linearSlope(series));

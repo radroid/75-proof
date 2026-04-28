@@ -50,9 +50,11 @@ export function HeadlineMetrics({
           style={{ fontFamily: "var(--font-heading)" }}
         >
           {rate === null ? "—" : `${Math.round(rate)}`}
-          <span className="text-base md:text-2xl text-muted-foreground/60 ml-1">
-            %
-          </span>
+          {rate !== null && (
+            <span className="text-base md:text-2xl text-muted-foreground/60 ml-1">
+              %
+            </span>
+          )}
         </p>
         <p className="mt-2 text-xs text-muted-foreground">{rateLabel}</p>
       </motion.div>

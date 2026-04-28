@@ -154,10 +154,13 @@ export function pickIdentityTemplate(input: IdentityCardInput): string {
     return `Day ${input.currentDay} of your ${input.routineLabel}.`;
   }
 
-  // Weighted pick. Use a per-week salt so the line stays stable for ≤7 days
+  // Weighted pick. Use a per-week salt so the line stays stable for 7 days
   // before rotating, mirroring research §5's "rotation" guidance without
-  // localStorage state (cheaper, doesn't fight server rendering).
-  const weekSalt = Math.floor(input.currentDay / 7);
+  // localStorage state. Bucket on the 0-based day index so the rotation
+  // crosses on Day 8 (after seven full days), not on Day 7 itself —
+  // `floor(currentDay / 7)` would flip mid-week one boundary too early.
+  const dayIndex = Math.max(0, input.currentDay - 1);
+  const weekSalt = Math.floor(dayIndex / 7);
   const seed = hash(`${input.userSalt}::${weekSalt}`);
   const totalWeight = eligible.reduce((acc, t) => acc + t.weight, 0);
   let target = seed % totalWeight;

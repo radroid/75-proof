@@ -204,7 +204,7 @@ This is the proposal we'll iterate on. Concrete, mobile-first, bound to the data
 
 ### 3.1 Above the fold (phone, ~600px)
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │ Personal development · You're on Day 12 │  ← context line (small)
 ├─────────────────────────────────────────┤
@@ -229,7 +229,7 @@ This is the proposal we'll iterate on. Concrete, mobile-first, bound to the data
 
 So the Today block on Progress is a one-line *snapshot* with a tap-out, not a checklist:
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │  TODAY · 4 of 6 done                    │
 │  ●●●●○○                          Log →  │
@@ -242,7 +242,7 @@ So the Today block on Progress is a one-line *snapshot* with a tap-out, not a ch
 
 ### 3.3 Friends ribbon (single strip — kindness, not competition)
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │  WITH FRIENDS                           │
 │  3 of 6 friends finished today          │  ← anonymized aggregate
@@ -286,7 +286,7 @@ Friend dots on the same calendar — small, optional, opt-in — deferred to v2 
 
 Sparkline-per-habit list, 30-day rolling rate per habit:
 
-```
+```text
 ☑ Meditate 10 min    ▁▂▃▅▆▇▆▆▇▇▆▅▆▇▇    93% (28/30)
 ◐ Water 64 oz/day    ▁▃▅▇▇▆▅▅▆▇▇▆▆▆▆    78%
 ☑ Journal entry      ▆▇▇▇▇▆▇▆▇▇▆▇▇▇▇    97%
@@ -300,11 +300,11 @@ Sparkline-per-habit list, 30-day rolling rate per habit:
 
 ### 3.6 Photos section — removed in v1
 
-The dedicated Progress Photos gallery is being **removed** from the Progress page. If a routine wants to track a daily photo (e.g., 75 Hard), it should be a regular task-type habit on `habitDefinitions` that the user ticks off — same as any other habit, no special UI. We'll revisit a gallery view later if there's a real demand. ([Backlog item](#backlog))
+The dedicated Progress Photos gallery is being **removed** from the Progress page. If a routine wants to track a daily photo (e.g., 75 Hard), it should be a regular task-type habit on `habitDefinitions` that the user ticks off — same as any other habit, no special UI. We'll revisit a gallery view later if there's a real demand. ([Backlog item](#11-backlog-post-v1))
 
 ### 3.7 Day-by-day history
 
-Keep largely as-is. The polymorphic legacy/new-system rendering already works (`isHistoryNewSystem`). Pause/rest-day tracking is deferred to a separate feature ([backlog](#backlog)) — until that lands, missed days continue to render with the existing neutral "No data" / "Partial" treatment.
+Keep largely as-is. The polymorphic legacy/new-system rendering already works (`isHistoryNewSystem`). Pause/rest-day tracking is deferred to a separate feature ([backlog](#11-backlog-post-v1)) — until that lands, missed days continue to render with the existing neutral "No data" / "Partial" treatment.
 
 ---
 
@@ -340,7 +340,7 @@ The identity card was the highest-leverage and least-shipped pattern in the rese
 
 **v1 template library** (formation-stage; ~5–8 per slot, randomly rotated weekly):
 
-```
+```text
 [FORMATION · days 1–7, all categories]
 "You showed up. That's the whole game on Day {currentDay}."
 "{currentDay} days in. The hardest part is convincing yourself it's possible — you just did."
@@ -364,9 +364,9 @@ Implementation notes:
 - Templates live in `lib/identity-cards.ts` as data, not LLM-generated. Cheap, deterministic, easy to A/B.
 - Stale-copy guard: rate-limit identical phrasing to ≤1× per 14 days per user; rotate within the same eligible bucket.
 - Failsafe: if no template matches the user's state, fall back to a generic "Day {currentDay} of your {routineLabel}" line. Never blank.
-- Consolidation (30–90) and maintenance (90+) template libraries → [backlog](#backlog).
-- Coach-memory-driven personalization → [backlog](#backlog).
-- User-authored identity statement ("you're becoming a runner" set during onboarding) → [backlog](#backlog).
+- Consolidation (30–90) and maintenance (90+) template libraries → [backlog](#11-backlog-post-v1).
+- Coach-memory-driven personalization → [backlog](#11-backlog-post-v1).
+- User-authored identity statement ("you're becoming a runner" set during onboarding) → [backlog](#11-backlog-post-v1).
 
 ---
 

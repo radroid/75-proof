@@ -138,14 +138,16 @@ export const setIdentityStatement = mutation({
       .unique();
     if (!user) throw new Error("User not found");
 
+    // Truncate (don't throw) — clients can send arbitrary input from the
+    // settings UI; throwing on a UTF-8-bloated 140-char paste would surprise
+    // the user and the cap is a presentation choice, not a correctness one.
     const trimmed =
       typeof args.statement === "string" ? args.statement.trim() : "";
-    if (trimmed.length > 140) {
-      throw new Error("Identity statement must be 140 characters or fewer.");
-    }
+    const capped = trimmed.slice(0, 140);
+    const cleared = args.statement === null || capped.length === 0;
 
     await ctx.db.patch(user._id, {
-      identityStatement: trimmed.length === 0 ? undefined : trimmed,
+      identityStatement: cleared ? undefined : capped,
     });
   },
 });

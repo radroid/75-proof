@@ -74,14 +74,14 @@
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
-| PD-1 | Progress dashboard v1 redesign + Friends Phase 1 + Phase 2 merge | P0 | in-progress | Replace 75-Hard-hardcoded stat tiles with abstractions (target, completion %, streak) so all routine shapes render correctly. Sections per §3 of research doc: identity-card hero (formation-stage templates only), today snapshot read-only, friends ribbon (Phase 1), calendar branched on `isHabitTracker`, per-habit sparkline, day-by-day history (replaces photo gallery), Activity tab (Phase 2). Keep `/dashboard/friends` route alive — Phase 3 collapse is backlogged. Branch: `feat/progress-dashboard-redesign`. Doc + decisions committed; implementation pending user kickoff. |
+| PD-1 | ~~Progress dashboard v1 redesign + Friends Phase 1 + Phase 2 merge~~ | | done | Shipped via PR #21 from `feat/progress-dashboard-redesign`. Routine-agnostic IA: identity card hero, effort-based completion rate, today snapshot, friends ribbon (Phase 1), calendar branched on `isHabitTracker` (heatmap ≥90 days, bounded grid otherwise), per-habit sparkline list, day-by-day history kept polymorphic, Activity tab (Phase 2) merging personal + friend feeds with reactions. Photo gallery + legacy Workouts/Water/Reading tiles removed. `/dashboard/friends` kept live; Phase 3 collapse remains in PD-14. |
 | PD-2 | Pause / rest-day tracking | P2 | todo | Schema flag on `habitEntries` or `challenges`; UI affordance to mark a day as paused; rolling-rate denominator excludes paused days; day-by-day history renames "No data" to "Rest day" for paused rows. Resolves a known Goodhart flaw in the v1 rolling rate (missed days currently count as misses regardless of intent). |
 | PD-3 | Friend dots on the calendar | P3 | todo | Small avatar marks on days a friend also completed. Ambient co-presence pattern from Apple Sharing. Query cost needs benchmarking before commit. |
 | PD-4 | Consolidation-stage identity-card templates (days 30–90) | P2 | todo | Per-category copy library for users past formation, before maintenance. Triggers when cohort reaches stage-2; pairs with PD-6. |
 | PD-5 | Maintenance-stage identity-card templates (day 90+) | P3 | todo | Variance / recovery / "you're a {x} now" copy. Triggers when first cohort hits stage-3 (likely later in 2026). |
 | PD-6 | Per-stage Progress dashboard layouts | P3 | todo | Distinct layouts (not just copy) for formation / consolidation / maintenance. Driven by user stage telemetry. Wait for PD-4/PD-5 cohorts to materialize before designing. |
 | PD-7 | Coach-memory-driven personalization on the identity card | P3 | todo | Pull from `users.coachMemory.facts` to make the card hyper-personal ("you said morning workouts work for you — and you've completed mornings 5/7 days this week"). Feature-flagged, gated on coach-memory opt-in (now possible since C-1 shipped). |
-| PD-8 | User-authored identity statement | P2 | todo | Let user write or pick their own ("I'm becoming a runner") during onboarding; prefer over generated copy when present. Coach onboarding (H-3) could harvest it as part of the AI-path conversation. |
+| PD-8 | ~~User-authored identity statement~~ | | done | Shipped via PR #21 alongside PD-1. Onboarding now has a dedicated "What are you becoming?" step (`OnboardingIdentity.tsx`) on all three paths (AI / Browse / Custom) with category-derived suggestions. Persisted to `users.identityStatement` (≤140 chars). The Progress identity card prefers user copy over the generated formation-stage template. Coach-side harvest from H-3 conversations is a future enhancement. |
 | PD-9 | Per-user / per-routine social-intensity override | P3 | todo | Schema field on `users.preferences` or `challenges` to override the v1 inferred default (currently derived from `popularRoutines.category`). Quiet / accountable / competitive. |
 | PD-10 | Split `showCompletionStatus` → `showWins` + `showMisses` | P3 | todo | Make the asymmetric default explicit in schema (defaults: wins on, misses off, mirroring §2.7 of the research doc). One-shot migration for existing rows. |
 | PD-11 | Progress photo gallery (re-introduction) | P4 | todo | Re-introduce as a separate `/dashboard/photos` route — not on Progress — gated by routine photo-task presence. Only if real demand surfaces; v1 explicitly removes the gallery. |
@@ -319,6 +319,8 @@ A Remotion-powered animated walkthrough that plays after a new user completes on
 | ~~C-1~~ | Persistent coach memory (per-user blob, distill on `after()`, opt-in + audit) | 2026-04 (PR #20) |
 | ~~C-2~~ | Coach chat history & threads (persisted threads, onboarding auto-promote) | 2026-04 (PR #20) |
 | ~~C-5~~ | Downloadable coach context (`/api/coach/export`, JSON bundle + audit log) | 2026-04 (PR #20) |
+| ~~PD-1~~ | Progress dashboard redesign + Friends Phase 1/2 merge | 2026-04 (PR #21) |
+| ~~PD-8~~ | User-authored identity statement (onboarding step + identity card) | 2026-04 (PR #21) |
 
 ---
 

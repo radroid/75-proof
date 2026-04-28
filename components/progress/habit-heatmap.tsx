@@ -28,19 +28,20 @@ const RAMP_BG = [
  * pre-aggregated value and computing it inline would over-fetch.
  */
 export function HabitHeatmap({ completionMap, currentDay }: Props) {
-  // Bucket days into weeks of 7. We pad the leading week so the most
-  // recent day sits at the bottom-right of the rightmost column —
-  // matches GitHub's intuition (today is here ↘) without a date join.
+  // Bucket days into weeks of 7. Leading-pad so the most recent day sits at
+  // the bottom-right of the rightmost column — matches GitHub's intuition
+  // (today is here ↘). Trailing-pad would put today mid-column when
+  // currentDay isn't a multiple of 7.
+  const totalSlots = Math.ceil(currentDay / 7) * 7;
+  const padCount = totalSlots - currentDay;
+  const flat: Array<number | null> = [
+    ...new Array<number | null>(padCount).fill(null),
+    ...Array.from({ length: currentDay }, (_, i) => i + 1),
+  ];
   const weeks: Array<Array<number | null>> = [];
-  let cursor: Array<number | null> = new Array(7).fill(null);
-  for (let day = 1; day <= currentDay; day++) {
-    cursor[(day - 1) % 7] = day;
-    if (day % 7 === 0) {
-      weeks.push(cursor);
-      cursor = new Array(7).fill(null);
-    }
+  for (let i = 0; i < flat.length; i += 7) {
+    weeks.push(flat.slice(i, i + 7));
   }
-  if (cursor.some((c) => c !== null)) weeks.push(cursor);
 
   return (
     <div

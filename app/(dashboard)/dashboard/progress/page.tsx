@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,70 @@ type FilterType = "all" | "complete" | "incomplete";
 
 const ROLLING_WINDOW = 30;
 const HEATMAP_MIN_DAYS = 90;
+
+// Local view types — kept here because they cover both the Convex `Doc<>`
+// shapes and the `LocalDB` shapes the guest hooks return. Importing the
+// generated Convex types would force-narrow away the local-mode rows. These
+// pick only the fields this page actually reads.
+type UserView = {
+  _id?: string;
+  clerkId?: string;
+  displayName?: string;
+  avatarUrl?: string;
+  identityStatement?: string | null;
+};
+
+type HistoryEntryView = {
+  habitDefinitionId: string;
+  dayNumber: number;
+  date?: string;
+  completed?: boolean;
+  value?: number;
+};
+
+type ChallengeRowView = {
+  _id: string;
+  status: "active" | "completed" | "failed";
+  currentDay: number;
+  startDate: string;
+  daysTotal?: number;
+  isHabitTracker?: boolean;
+  failedOnDay?: number;
+  templateSlug?: string;
+};
+
+type FeedItemView = {
+  _id: string;
+  type:
+    | "day_completed"
+    | "challenge_started"
+    | "challenge_completed"
+    | "challenge_failed"
+    | "milestone";
+  message: string;
+  createdAt: string;
+  dayNumber?: number;
+  backfilled?: boolean;
+  // ActivityFeed's prop accepts `null` but not `undefined`. Personal-feed
+  // rows from Convex don't carry a `user`; we always attach one before
+  // passing in, so this stays `... | null` (never undefined).
+  user: { displayName: string; avatarUrl?: string } | null;
+};
+
+type LegacyDayLog = {
+  dayNumber: number;
+  date?: string;
+  completedAt?: string;
+  backfilled?: boolean;
+  workout1?: { name: string; durationMinutes: number };
+  workout2?: { name: string; durationMinutes: number };
+  outdoorWorkoutCompleted: boolean;
+  waterIntakeOz: number;
+  readingMinutes: number;
+  dietFollowed: boolean;
+  noAlcohol: boolean;
+  progressPhotoId?: string;
+};
 
 export default function ProgressPage() {
   const { isGuest, demoUser, demoLifetimeStats } = useGuest();
@@ -243,15 +307,15 @@ export default function ProgressPage() {
   const loggedDaysMap = new Map(
     effectiveHistoryLogs?.map((log) => [log.dayNumber, log]),
   );
-  const historyEntriesByDay = new Map<number, any[]>();
-  for (const e of effectiveHistoryHabitEntries ?? []) {
+  const historyEntriesByDay = new Map<number, HistoryEntryView[]>();
+  for (const e of (effectiveHistoryHabitEntries ?? []) as HistoryEntryView[]) {
     const list = historyEntriesByDay.get(e.dayNumber) ?? [];
     list.push(e);
     historyEntriesByDay.set(e.dayNumber, list);
   }
-  const sortedHabitDefs = effectiveHistoryHabitDefs
-    ? [...effectiveHistoryHabitDefs].sort(
-        (a: any, b: any) => a.sortOrder - b.sortOrder,
+  const sortedHabitDefs: HabitDefView[] = effectiveHistoryHabitDefs
+    ? [...(effectiveHistoryHabitDefs as HabitDefView[])].sort(
+        (a, b) => a.sortOrder - b.sortOrder,
       )
     : [];
   const allDays = selectedHistoryChallenge
@@ -373,18 +437,27 @@ export default function ProgressPage() {
 
   // Salt the identity card pick by user id so two users on the same day see
   // different lines, but the same user sees a stable line within a week.
-  const userSalt = (user as any)?._id ?? (user as any)?.clerkId ?? "anon";
+  const userView = user as UserView | null | undefined;
+  const userSalt = userView?._id ?? userView?.clerkId ?? "anon";
 
-  // Page-view event. Fire once per mount.
+  // Page-view event. Fire once per mount, after we have the user + challenge.
+  // `currentDay` is intentionally NOT in the deps — including it would re-fire
+  // the event every time the user logs a habit and advances the day. The ref
+  // guard makes the "fire once" promise hold even if React Strict Mode
+  // double-invokes the effect.
+  const pageViewSentRef = useRef(false);
   useEffect(() => {
+    if (pageViewSentRef.current) return;
     if (!user || !challenge) return;
+    pageViewSentRef.current = true;
     posthog.capture("progress_page_view", {
       is_habit_tracker: isActiveHabitTracker,
       current_day: currentDay,
       template_slug: challenge.templateSlug ?? null,
       local_mode: isGuest,
     });
-  }, [user, challenge, isActiveHabitTracker, currentDay, isGuest]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, challenge, isActiveHabitTracker, isGuest]);
 
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value as "stats" | "activity");
@@ -405,25 +478,27 @@ export default function ProgressPage() {
   // from the current user record. Backfilled rows are filtered to match
   // `getFriendsFeed`'s contract (those are reconciliation artifacts, not
   // moments worth surfacing in the feed).
-  const mergedActivityFeed = useMemo(() => {
+  const mergedActivityFeed = useMemo<FeedItemView[] | undefined>(() => {
     if (friendsFeed === undefined && personalFeedRaw === undefined)
       return undefined;
-    const friendItems = (friendsFeed ?? []) as Array<any>;
-    const myItems = ((personalFeedRaw ?? []) as Array<any>)
+    const friendItems = (friendsFeed ?? []) as FeedItemView[];
+    // Personal-feed rows are raw `Doc<"activityFeed">` shapes (no `user` join).
+    // Cast through unknown because we're explicitly attaching `user` below.
+    type PersonalRaw = Omit<FeedItemView, "user">;
+    const rawPersonal = (personalFeedRaw ?? []) as unknown as PersonalRaw[];
+    const myItems: FeedItemView[] = rawPersonal
       .filter((a) => !a.backfilled)
       .map((a) => ({
         ...a,
-        user: user
-          ? {
-              displayName: (user as any).displayName ?? "You",
-              avatarUrl: (user as any).avatarUrl,
-            }
-          : { displayName: "You" },
+        user: {
+          displayName: userView?.displayName ?? "You",
+          avatarUrl: userView?.avatarUrl,
+        },
       }));
     return [...friendItems, ...myItems].sort((a, b) =>
       a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0,
     );
-  }, [friendsFeed, personalFeedRaw, user]);
+  }, [friendsFeed, personalFeedRaw, userView]);
 
   // ── Loading / empty ────────────────────────────────────────
   if (!isGuest && user === undefined) {
@@ -495,7 +570,7 @@ export default function ProgressPage() {
         <TabsContent value="stats" className="space-y-8 md:space-y-12">
           {/* Identity card — hero */}
           <IdentityCard
-            userStatement={(user as any)?.identityStatement ?? null}
+            userStatement={userView?.identityStatement ?? null}
             rolling7CompleteDays={rolling7.completedDays}
             templateInput={{
               currentDay: Math.max(1, currentDay),
@@ -686,9 +761,11 @@ export default function ProgressPage() {
                             : ` / ${selectedHistoryChallenge.daysTotal ?? 75}`}
                         </span>
                       </p>
-                      {(selectedHistoryChallenge as any).failedOnDay && (
+                      {(selectedHistoryChallenge as ChallengeRowView).failedOnDay !==
+                        undefined && (
                         <p className="text-sm text-destructive mt-1">
-                          Ended on Day {(selectedHistoryChallenge as any).failedOnDay}
+                          Ended on Day{" "}
+                          {(selectedHistoryChallenge as ChallengeRowView).failedOnDay}
                         </p>
                       )}
                     </div>
@@ -851,11 +928,11 @@ export default function ProgressPage() {
                                 <div className="px-3 pb-3 pt-0">
                                   {isHistoryNewSystem ? (
                                     <HabitDayDetail
-                                      habits={sortedHabitDefs as HabitDefView[]}
-                                      entries={dayEntries as HabitEntryView[]}
+                                      habits={sortedHabitDefs}
+                                      entries={dayEntries}
                                     />
                                   ) : (
-                                    <LegacyDayDetail log={log!} />
+                                    <LegacyDayDetail log={log as LegacyDayLog} />
                                   )}
                                   {log?.completedAt && (
                                     <p className="text-xs text-muted-foreground mt-3">
@@ -903,7 +980,7 @@ function HabitDayDetail({
   entries,
 }: {
   habits: HabitDefView[];
-  entries: HabitEntryView[];
+  entries: HistoryEntryView[];
 }) {
   const active = habits.filter((h) => h.isActive);
   if (active.length === 0) {
@@ -919,7 +996,18 @@ function HabitDayDetail({
     <div className="pt-3 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
       {active.map((h) => {
         const entry = entries.find((e) => e.habitDefinitionId === h._id);
-        const done = !!entry?.completed;
+        // Counter habits: a row is "done" if either flag is set OR the
+        // accumulated value already met the target. The toggle-mutation path
+        // sets `completed` for counters at target, but historic / partially
+        // synced rows can have value >= target without `completed === true`.
+        // Aligning here keeps the day detail consistent with the headline
+        // rate's effort-based view.
+        const counterMetTarget =
+          h.blockType === "counter" &&
+          typeof entry?.value === "number" &&
+          typeof h.target === "number" &&
+          entry.value >= h.target;
+        const done = !!entry?.completed || counterMetTarget;
         const valueText =
           h.blockType === "counter" && typeof entry?.value === "number"
             ? `${entry.value}${h.target ? ` / ${h.target}` : ""}${h.unit ? ` ${h.unit}` : ""}`
@@ -962,7 +1050,7 @@ function HabitDayDetail({
  * still display the original task breakdown. New system rendering goes
  * through HabitDayDetail above.
  */
-function LegacyDayDetail({ log }: { log: any }) {
+function LegacyDayDetail({ log }: { log: LegacyDayLog }) {
   if (log?.backfilled) {
     return (
       <div className="pt-3 border-t">
