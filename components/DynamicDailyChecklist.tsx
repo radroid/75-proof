@@ -24,27 +24,22 @@ interface DynamicDailyChecklistProps {
   userTimezone?: string;
 }
 
-const categoryIcons: Record<string, React.ReactNode> = {
-  fitness: <Dumbbell className="h-4 w-4" />,
-  nutrition: <Apple className="h-4 w-4" />,
-  mind: <Brain className="h-4 w-4" />,
-  "skill-building": <Brain className="h-4 w-4" />,
-  productivity: <LayoutGrid className="h-4 w-4" />,
-  "personal-development": <Sparkles className="h-4 w-4" />,
-  other: <LayoutGrid className="h-4 w-4" />,
-};
+// Single source of truth for habit categories. Order is the array order;
+// adding or moving a category only requires editing this list.
+const CATEGORY_META = [
+  { key: "fitness", label: "fitness", icon: <Dumbbell className="h-4 w-4" /> },
+  { key: "nutrition", label: "nutrition", icon: <Apple className="h-4 w-4" /> },
+  { key: "mind", label: "mind", icon: <Brain className="h-4 w-4" /> },
+  { key: "skill-building", label: "skill", icon: <Brain className="h-4 w-4" /> },
+  { key: "productivity", label: "productivity", icon: <LayoutGrid className="h-4 w-4" /> },
+  { key: "personal-development", label: "personal", icon: <Sparkles className="h-4 w-4" /> },
+  { key: "other", label: "other", icon: <LayoutGrid className="h-4 w-4" /> },
+] as const;
 
-const categoryOrder = ["fitness", "nutrition", "mind", "skill-building", "productivity", "personal-development", "other"];
-
-const categoryLabels: Record<string, string> = {
-  fitness: "fitness",
-  nutrition: "nutrition",
-  mind: "mind",
-  "skill-building": "skill",
-  productivity: "productivity",
-  "personal-development": "personal",
-  other: "other",
-};
+const categoryMeta: Record<string, { label: string; icon: React.ReactNode }> =
+  Object.fromEntries(CATEGORY_META.map((c) => [c.key, c]));
+const categoryOrder: readonly string[] = CATEGORY_META.map((c) => c.key);
+const FALLBACK_ICON = <LayoutGrid className="h-4 w-4" />;
 
 export function DynamicDailyChecklist({
   challengeId,
@@ -173,10 +168,10 @@ export function DynamicDailyChecklist({
               <div className="flex items-center justify-between mb-1 pb-3 border-b border-border">
                 <div className="flex items-center gap-2.5">
                   <span className={cn("transition-colors", catComplete ? "text-success" : "text-muted-foreground")}>
-                    {categoryIcons[category] ?? categoryIcons.other}
+                    {categoryMeta[category]?.icon ?? FALLBACK_ICON}
                   </span>
                   <h3 className="text-xs font-medium uppercase tracking-[0.08em] sm:tracking-[0.15em] text-muted-foreground">
-                    {categoryLabels[category] ?? category.replace(/-/g, " ")}
+                    {categoryMeta[category]?.label ?? category.replace(/-/g, " ")}
                   </h3>
                 </div>
                 {catComplete && (

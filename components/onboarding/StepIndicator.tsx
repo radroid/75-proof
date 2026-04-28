@@ -34,15 +34,16 @@ export function StepIndicator({
 }: StepIndicatorProps) {
   const ceiling = maxReachedIndex ?? currentIndex;
   return (
-    <div
-      className="flex flex-col items-center gap-1.5"
-      role="progressbar"
-      aria-label={`Onboarding step ${currentIndex + 1} of ${steps.length}`}
-      aria-valuenow={currentIndex + 1}
-      aria-valuemin={1}
-      aria-valuemax={steps.length}
-    >
-      <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+    // Now that the dots are real buttons, a `progressbar` wrapper would
+    // hide the children from assistive tech. Use a plain navigation
+    // landmark and let each dot carry its own `aria-current`/label, then
+    // surface the numeric "Step X of Y" line as a separate live status
+    // outside the nav so it still gets announced when the step changes.
+    <div className="flex flex-col items-center gap-1.5">
+      <nav
+        aria-label="Onboarding steps"
+        className="flex items-center justify-center gap-1.5 sm:gap-2"
+      >
         {steps.map((step, i) => {
           const isCurrent = i === currentIndex;
           const isVisited = i < currentIndex;
@@ -85,8 +86,12 @@ export function StepIndicator({
             </button>
           );
         })}
-      </div>
-      <p className="text-xs text-muted-foreground tabular-nums">
+      </nav>
+      <p
+        className="text-xs text-muted-foreground tabular-nums"
+        role="status"
+        aria-live="polite"
+      >
         Step {currentIndex + 1} of {steps.length} · {STEP_LABELS[steps[currentIndex]]}
       </p>
     </div>

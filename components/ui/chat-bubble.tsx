@@ -92,23 +92,44 @@ export function MarkdownInline({
           h3: ({ children }) => (
             <h3 className="mt-1 mb-1 text-sm font-semibold">{children}</h3>
           ),
-          a: ({ href, children }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(
-                "underline underline-offset-2",
-                isUser
-                  ? "text-primary-foreground/90 hover:text-primary-foreground"
-                  : "text-primary hover:text-primary/80",
-              )}
-            >
-              {children}
-            </a>
-          ),
-          code: ({ className, children, ...rest }) => {
-            const isBlock = className?.includes("language-");
+          a: ({ href, children }) => {
+            // Defence-in-depth: react-markdown doesn't render raw HTML by
+            // default, but the model can still produce a markdown link
+            // whose href is `javascript:`, `data:`, or another unsafe
+            // scheme. Whitelist the protocols we want to ship as live
+            // links and downgrade everything else to a plain styled span
+            // — the link text is preserved either way.
+            const safeHref =
+              typeof href === "string" && /^(https?:|mailto:|\/)/i.test(href)
+                ? href
+                : undefined;
+            return (
+              <a
+                href={safeHref}
+                target={safeHref ? "_blank" : undefined}
+                rel={safeHref ? "noopener noreferrer" : undefined}
+                className={cn(
+                  "underline underline-offset-2",
+                  isUser
+                    ? "text-primary-foreground/90 hover:text-primary-foreground"
+                    : "text-primary hover:text-primary/80",
+                )}
+              >
+                {children}
+              </a>
+            );
+          },
+          code: ({ inline, className, children, ...rest }: {
+            inline?: boolean;
+            className?: string;
+            children?: React.ReactNode;
+          }) => {
+            // react-markdown 10's `code` renderer passes an explicit
+            // `inline` flag — trust that over sniffing className. Fenced
+            // blocks without a language tag (plain ``` … ```) have
+            // `inline=false` but no `language-*` class, so the old
+            // className check would render them as inline pills.
+            const isBlock = inline === false;
             if (isBlock) {
               return (
                 <code
