@@ -1,7 +1,5 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
-
 export const alt = "75 Proof - Do Hard Stuff. Feel Amazing.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
