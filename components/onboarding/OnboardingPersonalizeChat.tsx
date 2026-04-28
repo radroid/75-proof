@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "convex/react";
 import { Loader2, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { ChatBubble } from "@/components/ui/chat-bubble";
 import { usePersonalizeChat } from "@/lib/llm-personalize";
 import type { OnboardingHabit } from "@/lib/onboarding-types";
 import { PROPOSAL_SENTINEL } from "@/convex/lib/llmPrompts";
+import { api } from "@/convex/_generated/api";
 
 interface Props {
   selectedTemplateSlug: string;
@@ -36,6 +38,10 @@ export function OnboardingPersonalizeChat({
   const { messages, proposal, pending, error, send, reset } =
     usePersonalizeChat(selectedTemplateSlug);
   const [draft, setDraft] = useState("");
+  // C-2: when the user accepts the AI-built routine, capture the
+  // onboarding chat as a coach thread so the conversation is preserved.
+  // Fire-and-forget — failure here must not block onboarding.
+  const createThread = useMutation(api.coach.createThread);
 
   const handleSend = async () => {
     const text = draft;
@@ -56,6 +62,26 @@ export function OnboardingPersonalizeChat({
       sortOrder: h.sortOrder ?? i + 1,
       icon: h.icon,
     }));
+
+    // Auto-promote the onboarding chat into a coach thread. Skip if
+    // there's no exchange yet (defensive — applying without messages
+    // would mean a stub-mode proposal). Strip the sentinel + JSON
+    // proposal block from assistant turns so the persisted transcript
+    // matches what the user actually saw, not the raw payload.
+    if (messages.length > 0) {
+      void createThread({
+        title: `Onboarding: ${proposal.title}`.slice(0, 80),
+        source: "onboarding",
+        initialMessages: messages.map((m) => ({
+          role: m.role,
+          content:
+            m.role === "assistant" ? stripSentinelBlock(m.content) : m.content,
+        })),
+      }).catch((err) => {
+        console.error("[onboarding] thread persist failed", err);
+      });
+    }
+
     onApplyProposal({
       title: proposal.title,
       daysTotal: proposal.daysTotal,

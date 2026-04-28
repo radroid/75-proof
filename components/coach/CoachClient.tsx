@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { useMutation } from "convex/react";
 import { Loader2, Send, Sparkles, ChevronRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ChatBubble } from "@/components/ui/chat-bubble";
 import { cn } from "@/lib/utils";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { CoachThreadList } from "./CoachThreadList";
 
 export type CoachCategory =
   | "fitness"
@@ -111,8 +115,13 @@ export function CoachClient() {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
+  // Persisted thread id once the user starts chatting. Created lazily
+  // on the first send so guests + abandoned sessions don't leave empty
+  // threads behind. The chat API uses this to append messages server-side.
+  const [threadId, setThreadId] = useState<Id<"coachThreads"> | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const requestControllerRef = useRef<AbortController | null>(null);
+  const createThread = useMutation(api.coach.createThread);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -147,6 +156,22 @@ export function CoachClient() {
         return arr;
       });
 
+      // Lazily create a thread on the first message. Guests will get a
+      // mutation rejection — we swallow it and continue without a thread,
+      // since the chat itself is open to guests.
+      let activeThreadId = threadId;
+      if (!activeThreadId) {
+        try {
+          activeThreadId = await createThread({
+            title: trimmed.slice(0, 80),
+            source: "coach",
+          });
+          setThreadId(activeThreadId);
+        } catch {
+          activeThreadId = null;
+        }
+      }
+
       try {
         const res = await fetch("/api/coach/chat", {
           method: "POST",
@@ -154,6 +179,7 @@ export function CoachClient() {
           body: JSON.stringify({
             messages,
             category: category ?? undefined,
+            threadId: activeThreadId ?? undefined,
           }),
           signal: controller.signal,
         });
@@ -194,7 +220,7 @@ export function CoachClient() {
         }
       }
     },
-    [turns, pending, category],
+    [turns, pending, category, threadId, createThread],
   );
 
   const handleCategoryPick = (slug: CoachCategory) => {
@@ -205,6 +231,9 @@ export function CoachClient() {
     setTurns([]);
     setCategory(null);
     setDraft("");
+    // Drop the thread id so the next message starts a fresh thread —
+    // matches user mental model of "Reset = new conversation."
+    setThreadId(null);
   };
 
   const activeCategory = useMemo(
@@ -290,6 +319,8 @@ export function CoachClient() {
           )}
         </section>
       )}
+
+      <CoachThreadList />
 
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 pb-3">
