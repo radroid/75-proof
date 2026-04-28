@@ -341,6 +341,10 @@ async function persistAndDistill(args: {
   const { convexUrl, token, threadId, messages, assistantText } = args;
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
   if (!lastUser) return;
+  // Both downstream calls require auth and silently no-op for guests on
+  // the Convex side. Skip the round-trips entirely so guest traffic
+  // doesn't hammer Convex with calls that always reject.
+  if (!token) return;
 
   if (threadId) {
     try {
