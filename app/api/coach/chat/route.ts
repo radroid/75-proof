@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { runConvex } from "@/lib/convex-http";
 
 export const runtime = "nodejs";
 
@@ -12,58 +13,6 @@ const VECTOR_SEARCH_TIMEOUT_MS = 15_000;
 const MEMORY_FETCH_TIMEOUT_MS = 5_000;
 const THREAD_APPEND_TIMEOUT_MS = 10_000;
 const MEMORY_DISTILL_TIMEOUT_MS = 30_000;
-
-// Call Convex via its HTTP API (`/api/query`, `/api/mutation`, `/api/action`)
-// instead of `ConvexHttpClient` from `convex/browser`. The client transitively
-// pulls in `ws`, `bufferutil`, and `node-gyp-build`, none of which load on
-// Cloudflare Workers — bundling them broke the entire route module so
-// production requests crashed before POST ever ran ("ComponentMod.handler is
-// not a function"). A direct fetch keeps this route Workers-safe.
-async function runConvex<T>(
-  baseUrl: string,
-  kind: "query" | "mutation" | "action",
-  path: string,
-  args: Record<string, unknown>,
-  opts: { timeoutMs: number; token?: string | null },
-): Promise<T> {
-  // AbortController so the outbound fetch is actually cancelled on timeout —
-  // a Promise.race-style local timeout would let the request keep running on
-  // workerd, racking up CPU time and load on Convex.
-  const controller = new AbortController();
-  const timer = setTimeout(
-    () =>
-      controller.abort(
-        new Error(`Convex ${kind} ${path} timed out after ${opts.timeoutMs}ms`),
-      ),
-    opts.timeoutMs,
-  );
-  try {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (opts.token) headers["Authorization"] = `Bearer ${opts.token}`;
-    const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/api/${kind}`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ path, args, format: "json" }),
-      signal: controller.signal,
-    });
-    if (!res.ok) {
-      throw new Error(
-        `Convex ${kind} ${path} failed: HTTP ${res.status} ${await res.text().catch(() => "")}`.trim(),
-      );
-    }
-    const body = (await res.json()) as
-      | { status: "success"; value: T }
-      | { status: "error"; errorMessage: string; errorData?: unknown };
-    if (body.status === "error") {
-      throw new Error(`Convex ${kind} ${path} returned error: ${body.errorMessage}`);
-    }
-    return body.value;
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 /**
  * Best-effort fetch of a Clerk JWT minted from the "convex" template, so
@@ -414,22 +363,27 @@ async function persistAndDistill(args: {
     }
   }
 
-  // Memory writer runs in the background. We don't await — the chat
-  // response shouldn't block on distillation. The action itself
+  // Memory writer runs after the response is sent so the chat response
+  // isn't blocked on distillation. `after()` (vs `void promise.catch(...)`)
+  // is the supported way to do this in serverless — it uses waitUntil
+  // under the hood so the worker isn't torn down mid-request, which would
+  // otherwise drop the distill write intermittently. The action itself
   // exits quickly when memory is disabled, so guests skip cleanly.
   const fullMessages: ChatMessage[] = [
     ...messages,
     { role: "assistant", content: assistantText },
   ];
-  void runConvex<null>(
-    convexUrl,
-    "action",
-    "coachActions:distillMemoryFromChat",
-    { messages: fullMessages },
-    { timeoutMs: MEMORY_DISTILL_TIMEOUT_MS, token },
-  ).catch((err) => {
-    console.error("[coach/chat] memory distill failed", err);
-  });
+  after(() =>
+    runConvex<null>(
+      convexUrl,
+      "action",
+      "coachActions:distillMemoryFromChat",
+      { messages: fullMessages },
+      { timeoutMs: MEMORY_DISTILL_TIMEOUT_MS, token },
+    ).catch((err) => {
+      console.error("[coach/chat] memory distill failed", err);
+    }),
+  );
 }
 
 function buildSystemPrompt(

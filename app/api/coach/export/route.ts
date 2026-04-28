@@ -1,51 +1,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { runConvex } from "@/lib/convex-http";
 
 export const runtime = "nodejs";
 
 const SNAPSHOT_TIMEOUT_MS = 30_000;
-
-// See app/api/coach/chat/route.ts for the rationale: `convex/browser` pulls
-// in `ws` / `bufferutil` / `node-gyp-build`, none of which load on Cloudflare
-// Workers. We hit Convex's HTTP API directly with the Clerk-issued JWT.
-async function runConvexAction<T>(
-  baseUrl: string,
-  path: string,
-  args: Record<string, unknown>,
-  token: string,
-  timeoutMs: number,
-): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(
-    () => controller.abort(new Error(`Convex action ${path} timed out after ${timeoutMs}ms`)),
-    timeoutMs,
-  );
-  try {
-    const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/api/action`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ path, args, format: "json" }),
-      signal: controller.signal,
-    });
-    if (!res.ok) {
-      throw new Error(
-        `Convex action ${path} failed: HTTP ${res.status} ${await res.text().catch(() => "")}`.trim(),
-      );
-    }
-    const body = (await res.json()) as
-      | { status: "success"; value: T }
-      | { status: "error"; errorMessage: string; errorData?: unknown };
-    if (body.status === "error") {
-      throw new Error(`Convex action ${path} returned error: ${body.errorMessage}`);
-    }
-    return body.value;
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 /**
  * C-5: Downloadable coach context bundle.
@@ -82,12 +41,18 @@ export async function GET() {
     truncation: unknown;
   };
   try {
-    snapshot = await runConvexAction<{
+    snapshot = await runConvex<{
       memory: unknown;
       threads: unknown;
       audit: unknown;
       truncation: unknown;
-    }>(convexUrl, "coach:exportSnapshot", {}, token, SNAPSHOT_TIMEOUT_MS);
+    }>(
+      convexUrl,
+      "action",
+      "coach:exportSnapshot",
+      {},
+      { timeoutMs: SNAPSHOT_TIMEOUT_MS, token },
+    );
   } catch (err) {
     console.error("[coach/export] snapshot failed", err);
     return NextResponse.json(
