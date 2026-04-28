@@ -42,6 +42,8 @@ export interface LocalUserOnboarding {
   goals?: string[];
   healthAdvisoryAcknowledged: boolean;
   setupTier: "original" | "customized" | "added";
+  /** Routine catalog slug picked during onboarding. Optional for legacy users. */
+  templateSlug?: string;
 }
 
 export interface LocalUser {
@@ -72,6 +74,7 @@ export interface LocalChallenge {
   setupTier?: "original" | "customized" | "added";
   daysTotal?: number;
   isHabitTracker?: boolean;
+  templateSlug?: string;
 }
 
 export interface LocalHabitDefinition {

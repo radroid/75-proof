@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import type { OnboardingState, OnboardingHabit } from "@/lib/onboarding-types";
+import { getTemplateBySlug, isKnownTemplate } from "@/lib/routine-templates";
 import { HabitCard } from "./HabitCard";
 
 interface Props {
@@ -37,7 +38,13 @@ export function OnboardingHabitConfig({
   const [newUnit, setNewUnit] = useState("");
   const [newCategory, setNewCategory] = useState("fitness");
 
-  const isOriginal = state.setupTier === "original";
+  // Strict catalog templates (75 HARD, 30-Day Yoga, etc.) lock the habit
+  // list — the habits panel renders read-only. AI-generated routines and
+  // unknown slugs default to fully customizable so users can tune them.
+  const isStrictCatalog =
+    isKnownTemplate(state.templateSlug) &&
+    getTemplateBySlug(state.templateSlug).strictMode;
+  const isOriginal = isStrictCatalog;
   const canCustomize = !isOriginal;
 
   const updateHabit = (index: number, updates: Partial<OnboardingHabit>) => {
@@ -84,7 +91,7 @@ export function OnboardingHabitConfig({
         </h1>
         <p className="text-muted-foreground max-w-md mx-auto">
           {isOriginal
-            ? "The classic 75 HARD habits. All are required every day."
+            ? "The routine's habits. All are required every day."
             : "Toggle habits on/off and set hard vs soft rules."}
         </p>
       </div>

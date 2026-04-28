@@ -1,4 +1,5 @@
 import type { ThemePersonality } from "./themes";
+import { DEFAULT_TEMPLATE_SLUG, getTemplateBySlug } from "./routine-templates";
 
 export interface OnboardingHabit {
   name: string;
@@ -14,6 +15,16 @@ export interface OnboardingHabit {
 
 export type SetupTier = "original" | "added";
 
+/**
+ * How the user chose to start their routine. Drives which sub-flow renders
+ * at the `template` step:
+ *   - "custom"  → skip template selection, use the build-your-own seeds
+ *   - "ai"      → personalize chat takes the whole step
+ *   - "popular" → categorized + searchable browse over the curated catalog
+ *   - null      → user hasn't chosen yet (first render of the path step)
+ */
+export type EntryPath = "custom" | "ai" | "popular" | null;
+
 export interface OnboardingState {
   ageRange: string | null;
   healthConditions: string[];
@@ -27,11 +38,27 @@ export interface OnboardingState {
   startDate: string;
   visibility: "private" | "friends" | "public";
   daysTotal: number;
+  /**
+   * Slug of the routine catalog template the user picked. Drives the seed
+   * habits, duration, and strict-mode behavior. `setupTier` is derived from
+   * the template's `strictMode` on submit and persisted for back-compat.
+   */
+  templateSlug: string;
+  entryPath: EntryPath;
 }
 
 export const DURATION_PRESETS = [30, 60, 75, 90] as const;
 export const DURATION_MIN = 7;
 export const DURATION_MAX = 365;
+
+/** Habits as the default template ships them — used to bootstrap a fresh
+ * onboarding session so we don't need a render-driven seed effect. */
+function defaultHabits(): OnboardingHabit[] {
+  return getTemplateBySlug(DEFAULT_TEMPLATE_SLUG).habits.map((h) => ({
+    ...h,
+    isActive: true,
+  }));
+}
 
 export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   ageRange: null,
@@ -42,17 +69,20 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   theme: "arctic",
   setupTier: "original",
-  habits: [],
+  habits: defaultHabits(),
   startDate: new Date().toISOString().split("T")[0],
   visibility: "friends",
   daysTotal: 75,
+  templateSlug: DEFAULT_TEMPLATE_SLUG,
+  entryPath: null,
 };
 
 export const ONBOARDING_STEPS = [
+  "path",
   "welcome",
   "goals",
   "theme",
-  "tier",
+  "template",
   "duration",
   "habits",
   "review",

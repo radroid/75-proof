@@ -18,13 +18,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
 import posthog from "posthog-js";
+import {
+  DEFAULT_TEMPLATE_SLUG,
+  getTemplateBySlug,
+} from "@/lib/routine-templates";
 
 interface StartChallengeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Routine catalog slug to label this dialog with. Defaults to 75 HARD. */
+  templateSlug?: string;
 }
 
-export function StartChallengeModal({ open, onOpenChange }: StartChallengeModalProps) {
+export function StartChallengeModal({
+  open,
+  onOpenChange,
+  templateSlug = DEFAULT_TEMPLATE_SLUG,
+}: StartChallengeModalProps) {
+  const template = getTemplateBySlug(templateSlug);
   const user = useQuery(api.users.getCurrentUser);
   const startChallenge = useMutation(api.challenges.startChallenge);
 
@@ -71,10 +82,10 @@ export function StartChallengeModal({ open, onOpenChange }: StartChallengeModalP
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-2xl">
-            Start <span className="text-emerald-500">75 HARD</span>
+            Start <span className="text-emerald-500">{template.title}</span>
           </DialogTitle>
           <DialogDescription>
-            Are you ready to commit to 75 days of mental toughness?
+            Ready to commit to {template.daysTotal} days?
           </DialogDescription>
         </DialogHeader>
 
@@ -83,33 +94,25 @@ export function StartChallengeModal({ open, onOpenChange }: StartChallengeModalP
           <CardContent className="pt-4">
             <h3 className="font-medium">Daily Requirements:</h3>
             <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                <span>Two 45-minute workouts (one must be outdoor)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                <span>Follow a diet (no cheat meals)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                <span>No alcohol</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                <span>Drink 1 gallon (128 oz) of water</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                <span>Read 10 pages of non-fiction</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                <span>Take a progress photo</span>
-              </li>
+              {template.habits.map((habit, i) => (
+                <li
+                  key={`${habit.name}-${i}`}
+                  className="flex items-start gap-2"
+                >
+                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                  <span>
+                    {habit.name}
+                    {habit.blockType === "counter" && habit.target
+                      ? ` (${habit.target}${habit.unit ? ` ${habit.unit}` : ""})`
+                      : ""}
+                  </span>
+                </li>
+              ))}
             </ul>
             <p className="mt-3 text-xs text-muted-foreground">
-              Miss any requirement? Start over from Day 1.
+              {template.strictMode
+                ? "Miss any requirement? Start over from Day 1."
+                : "Track each day — missed days don't force a restart."}
             </p>
           </CardContent>
         </Card>

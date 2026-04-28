@@ -19,6 +19,8 @@ import { themeMetadata } from "@/lib/themes";
 import type { OnboardingState, OnboardingStep } from "@/lib/onboarding-types";
 import { formatEndDate } from "@/lib/day-utils";
 import { useGuest } from "@/components/guest-provider";
+import { getTemplateBySlug, isKnownTemplate } from "@/lib/routine-templates";
+import { POPULAR_ROUTINES_SEED } from "@/convex/lib/popularRoutinesSeed";
 
 interface Props {
   state: OnboardingState;
@@ -41,14 +43,8 @@ export function OnboardingReview({
   const activeHabits = state.habits.filter((h) => h.isActive);
   const hardCount = activeHabits.filter((h) => h.isHard).length;
   const themeName = themeMetadata[state.theme]?.name ?? state.theme;
-
-  const tierLabels: Record<string, string> = {
-    original: "Original 75 HARD",
-    added: "Fully customized",
-    // Legacy — pre-existing users may still carry this value on their
-    // profile; preserved so re-onboarding doesn't blank the label.
-    customized: "Fully customized",
-  };
+  const isCatalogTemplate = isKnownTemplate(state.templateSlug);
+  const templateLabel = resolveTemplateLabel(state.templateSlug, isCatalogTemplate);
 
   return (
     <motion.div
@@ -81,20 +77,29 @@ export function OnboardingReview({
           onEdit={() => onGoToStep("theme")}
         />
 
-        {/* Tier */}
+        {/* Routine template */}
         <SummaryRow
-          label="Setup"
-          value={tierLabels[state.setupTier] ?? state.setupTier}
-          onEdit={() => onGoToStep("tier")}
+          label="Routine"
+          value={templateLabel}
+          onEdit={() =>
+            // The custom path skips the template step entirely (the
+            // build-your-own seeds are set at the path picker), so route
+            // its Edit button to the habits step instead — that's where
+            // a custom user actually shapes their routine.
+            onGoToStep(state.entryPath === "custom" ? "habits" : "template")
+          }
         />
 
         {/* Challenge length + computed end date */}
         <SummaryRow
           label="Challenge length"
           value={`${state.daysTotal} days · ends ${formatEndDate(state.startDate, state.daysTotal)}`}
-          onEdit={() =>
-            onGoToStep(state.setupTier === "original" ? "tier" : "duration")
-          }
+          onEdit={() => {
+            const lockedDuration =
+              isCatalogTemplate &&
+              getTemplateBySlug(state.templateSlug).lockedDuration;
+            onGoToStep(lockedDuration ? "template" : "duration");
+          }}
         />
 
         {/* Habits */}
@@ -245,4 +250,15 @@ function SummaryRow({
       </button>
     </div>
   );
+}
+
+function resolveTemplateLabel(slug: string, isCatalog: boolean): string {
+  if (isCatalog) return getTemplateBySlug(slug).title;
+  if (slug.startsWith("ai-generated:")) return "AI-generated routine";
+  if (slug.startsWith("popular:")) {
+    const popularSlug = slug.slice("popular:".length);
+    const found = POPULAR_ROUTINES_SEED.find((r) => r.slug === popularSlug);
+    return found?.title ?? "Popular routine";
+  }
+  return "Custom routine";
 }

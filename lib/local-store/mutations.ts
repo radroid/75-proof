@@ -39,6 +39,7 @@ export interface CompleteOnboardingArgs {
   startDate: string;
   visibility: "private" | "friends" | "public";
   daysTotal: number;
+  templateSlug?: string;
 }
 
 function genId(table: string): string {
@@ -93,6 +94,7 @@ export function completeOnboarding(args: CompleteOnboardingArgs): string {
       restartCount: 0,
       setupTier: args.setupTier,
       daysTotal: finalDaysTotal,
+      templateSlug: args.templateSlug,
     };
     draft.challenges.push(challenge);
 
@@ -125,6 +127,7 @@ export function completeOnboarding(args: CompleteOnboardingArgs): string {
       goals: args.goals,
       healthAdvisoryAcknowledged: args.healthAdvisoryAcknowledged,
       setupTier: args.setupTier,
+      templateSlug: args.templateSlug,
     };
     user.preferences = {
       ...user.preferences,
@@ -588,6 +591,7 @@ export function resetKeepingSetup(args: {
       setupTier: old.setupTier,
       daysTotal: carriedDaysTotal,
       isHabitTracker: old.isHabitTracker,
+      templateSlug: old.templateSlug,
     });
     for (const h of oldHabits) {
       draft.habitDefinitions.push({

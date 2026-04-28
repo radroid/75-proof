@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useThemePersonality } from "@/components/theme-provider";
 import { setStoredPersonality } from "@/lib/themes";
-import { STANDARD_HABITS } from "@/convex/lib/standardHabits";
+import {
+  getTemplateBySlug,
+  isKnownTemplate,
+  DEFAULT_TEMPLATE_SLUG,
+} from "@/lib/routine-templates";
 import {
   type OnboardingState,
   type OnboardingStep,
@@ -20,10 +24,12 @@ import {
   useLocalUser,
 } from "@/lib/local-store/hooks";
 import { StepIndicator } from "@/components/onboarding/StepIndicator";
+import { OnboardingPathSelect } from "@/components/onboarding/OnboardingPathSelect";
 import { OnboardingWelcome } from "@/components/onboarding/OnboardingWelcome";
 import { OnboardingGoals } from "@/components/onboarding/OnboardingGoals";
 import { OnboardingTheme } from "@/components/onboarding/OnboardingTheme";
-import { OnboardingTierSelect } from "@/components/onboarding/OnboardingTierSelect";
+import { OnboardingBrowsePopular } from "@/components/onboarding/OnboardingBrowsePopular";
+import { OnboardingAiStep } from "@/components/onboarding/OnboardingAiStep";
 import { OnboardingDuration } from "@/components/onboarding/OnboardingDuration";
 import { OnboardingHabitConfig } from "@/components/onboarding/OnboardingHabitConfig";
 import { OnboardingReview } from "@/components/onboarding/OnboardingReview";
@@ -77,6 +83,11 @@ export default function OnboardingPage() {
 
   const [state, setState] = useState<OnboardingState>(loadState);
   const [stepIndex, setStepIndex] = useState(loadStep);
+  // Track the furthest step the user has reached so the StepIndicator
+  // can render visited dots as clickable shortcuts back. Forward jumps
+  // are still gated by the per-step Continue button so we never land on
+  // a screen whose required input hasn't been collected yet.
+  const [maxReachedIndex, setMaxReachedIndex] = useState(loadStep);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [seededFromPrevious, setSeededFromPrevious] = useState(false);
 
@@ -89,6 +100,20 @@ export default function OnboardingPage() {
       setSeededFromPrevious(true);
       return;
     }
+    const previousSlug = previousState.templateSlug;
+    const seededTemplateSlug = isKnownTemplate(previousSlug)
+      ? (previousSlug as string)
+      : DEFAULT_TEMPLATE_SLUG;
+    // When the previous run captured habits, reuse them. Otherwise derive
+    // from the seeded template — falling back to INITIAL_ONBOARDING_STATE
+    // would leave a Yoga-slug user staring at 75 HARD's habit list.
+    const seededHabits =
+      previousState.habits.length > 0
+        ? previousState.habits
+        : getTemplateBySlug(seededTemplateSlug).habits.map((h) => ({
+            ...h,
+            isActive: true,
+          }));
     const seeded: OnboardingState = {
       ...INITIAL_ONBOARDING_STATE,
       displayName: previousState.displayName,
@@ -98,8 +123,9 @@ export default function OnboardingPage() {
       healthAdvisoryAcknowledged: previousState.healthAdvisoryAcknowledged,
       goals: previousState.goals,
       setupTier: previousState.setupTier,
-      habits: previousState.habits.length > 0 ? previousState.habits : INITIAL_ONBOARDING_STATE.habits,
+      habits: seededHabits,
       daysTotal: previousState.daysTotal ?? INITIAL_ONBOARDING_STATE.daysTotal,
+      templateSlug: seededTemplateSlug,
     };
     setState(seeded);
     setSeededFromPrevious(true);
@@ -111,19 +137,6 @@ export default function OnboardingPage() {
       setState((s) => ({ ...s, displayName: user.displayName }));
     }
   }, [user, state.displayName, seededFromPrevious]);
-
-  // Populate default habits when no habits set
-  useEffect(() => {
-    if (state.habits.length === 0) {
-      setState((s) => ({
-        ...s,
-        habits: STANDARD_HABITS.map((h) => ({
-          ...h,
-          isActive: true,
-        })),
-      }));
-    }
-  }, [state.habits.length]);
 
   // Restore chosen theme on page load (e.g. after refresh mid-onboarding)
   useEffect(() => {
@@ -152,41 +165,89 @@ export default function OnboardingPage() {
     setState((s) => ({ ...s, ...partial }));
   }, []);
 
-  // Original 75 HARD is a fixed 75-day commitment by definition, so the
-  // duration step is hidden for that tier. Both next/back skip past it.
-  const next = useCallback(() => {
-    setStepIndex((i) => {
-      let nextIdx = Math.min(i + 1, ONBOARDING_STEPS.length - 1);
-      if (
-        ONBOARDING_STEPS[nextIdx] === "duration" &&
-        state.setupTier === "original"
-      ) {
-        nextIdx = Math.min(nextIdx + 1, ONBOARDING_STEPS.length - 1);
-      }
-      return nextIdx;
+  // Built-in templates (75 HARD, 30-Day Yoga) hide the duration step and
+  // pin daysTotal to the template's value. AI-generated and unknown slugs
+  // resolve to `null` here so they fall through to the user-chosen
+  // duration — `getTemplateBySlug` would silently default to 75 HARD and
+  // make a personalized 30-day plan look like a strict 75-day challenge.
+  const selectedTemplate = isKnownTemplate(state.templateSlug)
+    ? getTemplateBySlug(state.templateSlug)
+    : null;
+  // Custom path skips the template step entirely — the build-your-own
+  // habits are seeded at the path picker, so there's nothing to choose.
+  const skipsTemplate = state.entryPath === "custom";
+  const skipsDuration = !!selectedTemplate?.lockedDuration;
+
+  // Indices of steps that are currently skipped by the flow. Both the
+  // dot navigator and `goToIndex` consult this so a user can never land
+  // on a step the forward flow would have stepped past anyway.
+  const disabledStepIndices = useMemo(() => {
+    const set = new Set<number>();
+    ONBOARDING_STEPS.forEach((step, idx) => {
+      if (step === "template" && skipsTemplate) set.add(idx);
+      if (step === "duration" && skipsDuration) set.add(idx);
     });
-    if (state.setupTier === "original" && state.daysTotal !== 75) {
-      setState((s) => ({ ...s, daysTotal: 75 }));
+    return set;
+  }, [skipsTemplate, skipsDuration]);
+
+  // Helper to advance state. Co-locating the `maxReachedIndex` bump with
+  // the `setStepIndex` call avoids the cascading render the
+  // react-hooks/set-state-in-effect lint rule would flag if we did it in
+  // an effect on `[stepIndex]`.
+  const setStepBoth = useCallback((newIdx: number) => {
+    setStepIndex(newIdx);
+    setMaxReachedIndex((prev) => Math.max(prev, newIdx));
+  }, []);
+
+  const next = useCallback(() => {
+    let nextIdx = Math.min(stepIndex + 1, ONBOARDING_STEPS.length - 1);
+    if (ONBOARDING_STEPS[nextIdx] === "template" && skipsTemplate) {
+      nextIdx = Math.min(nextIdx + 1, ONBOARDING_STEPS.length - 1);
     }
-  }, [state.setupTier, state.daysTotal]);
+    if (ONBOARDING_STEPS[nextIdx] === "duration" && skipsDuration) {
+      nextIdx = Math.min(nextIdx + 1, ONBOARDING_STEPS.length - 1);
+    }
+    setStepBoth(nextIdx);
+    if (
+      selectedTemplate?.lockedDuration &&
+      state.daysTotal !== selectedTemplate.daysTotal
+    ) {
+      setState((s) => ({ ...s, daysTotal: selectedTemplate.daysTotal }));
+    }
+  }, [stepIndex, selectedTemplate, state.daysTotal, skipsTemplate, skipsDuration, setStepBoth]);
 
   const back = useCallback(() => {
-    setStepIndex((i) => {
-      let prevIdx = Math.max(i - 1, 0);
-      if (
-        ONBOARDING_STEPS[prevIdx] === "duration" &&
-        state.setupTier === "original"
-      ) {
-        prevIdx = Math.max(prevIdx - 1, 0);
-      }
-      return prevIdx;
-    });
-  }, [state.setupTier]);
+    let prevIdx = Math.max(stepIndex - 1, 0);
+    if (ONBOARDING_STEPS[prevIdx] === "duration" && skipsDuration) {
+      prevIdx = Math.max(prevIdx - 1, 0);
+    }
+    if (ONBOARDING_STEPS[prevIdx] === "template" && skipsTemplate) {
+      prevIdx = Math.max(prevIdx - 1, 0);
+    }
+    setStepBoth(prevIdx);
+  }, [stepIndex, skipsDuration, skipsTemplate, setStepBoth]);
 
-  const goToStep = useCallback((step: OnboardingStep) => {
-    const idx = ONBOARDING_STEPS.indexOf(step);
-    if (idx >= 0) setStepIndex(idx);
-  }, []);
+  const goToStep = useCallback(
+    (step: OnboardingStep) => {
+      const idx = ONBOARDING_STEPS.indexOf(step);
+      if (idx >= 0) setStepBoth(idx);
+    },
+    [setStepBoth],
+  );
+
+  // Click handler for the StepIndicator dots. Only allow jumping to a
+  // step the user has already reached, AND that the current flow doesn't
+  // skip — otherwise a custom-path user could click the (silent) template
+  // dot or a locked-template user could click the duration dot and land
+  // on a screen the forward flow would never have shown them.
+  const goToIndex = useCallback(
+    (idx: number) => {
+      if (idx > maxReachedIndex) return;
+      if (disabledStepIndices.has(idx)) return;
+      setStepIndex(idx);
+    },
+    [maxReachedIndex, disabledStepIndices],
+  );
 
   const handleComplete = useCallback(async () => {
     if (isSubmitting) return;
@@ -197,9 +258,23 @@ export default function OnboardingPage() {
       setPersonality(state.theme);
       setStoredPersonality(state.theme);
 
-      // Original tier is always 75 days regardless of any custom value the
-      // user picked before flipping back to the original setup.
-      const finalDaysTotal = state.setupTier === "original" ? 75 : state.daysTotal;
+      // Locked-duration built-in templates always use the template's value.
+      // AI-generated and unknown slugs (e.g. "ai-generated:*") fall through
+      // to the user-picked duration and the user-chosen setupTier so we
+      // don't silently coerce a personalized plan into the 75 HARD strict
+      // 75-day shape.
+      const knownTemplate = isKnownTemplate(state.templateSlug)
+        ? getTemplateBySlug(state.templateSlug)
+        : null;
+      const finalDaysTotal = knownTemplate?.lockedDuration
+        ? knownTemplate.daysTotal
+        : state.daysTotal;
+      const finalSetupTier: "original" | "added" =
+        knownTemplate == null
+          ? state.setupTier
+          : knownTemplate.strictMode
+            ? "original"
+            : "added";
 
       // Local mode has no friend graph and nothing leaves the device, so
       // "friends"/"public" visibility is meaningless. Pin to "private" on
@@ -217,11 +292,12 @@ export default function OnboardingPage() {
           state.healthConditions.length > 0 ? state.healthConditions : undefined,
         healthAdvisoryAcknowledged: state.healthAdvisoryAcknowledged,
         goals: state.goals.length > 0 ? state.goals : undefined,
-        setupTier: state.setupTier,
+        setupTier: finalSetupTier,
         habits: state.habits.filter((h) => h.isActive),
         startDate: state.startDate,
         visibility: submittedVisibility,
         daysTotal: finalDaysTotal,
+        templateSlug: state.templateSlug,
       } as const;
 
       if (isGuest) {
@@ -231,7 +307,8 @@ export default function OnboardingPage() {
       }
 
       posthog.capture("onboarding_completed", {
-        setup_tier: state.setupTier,
+        setup_tier: finalSetupTier,
+        template_slug: state.templateSlug,
         theme: state.theme,
         active_habit_count: state.habits.filter((h) => h.isActive).length,
         visibility: submittedVisibility,
@@ -268,6 +345,30 @@ export default function OnboardingPage() {
     }
   }, [isResolved, isGuest, isLocalOptedIn, user, router]);
 
+  const handleAiProposal = useCallback(
+    (proposal: {
+      title: string;
+      daysTotal: number;
+      habits: OnboardingState["habits"];
+      strictMode: boolean;
+    }) => {
+      const aiSlug = `ai-generated:${Date.now()}`;
+      // Belt-and-suspenders: the chat panel already sets isActive, but
+      // RoutineProposal.habits doesn't carry it as a contract, so re-affirm
+      // here before the review-step filter drops any habit that arrived
+      // without the flag.
+      setState((s) => ({
+        ...s,
+        templateSlug: aiSlug,
+        habits: proposal.habits.map((h) => ({ ...h, isActive: true })),
+        daysTotal: proposal.daysTotal,
+        setupTier: proposal.strictMode ? "original" : "added",
+      }));
+      goToStep("review");
+    },
+    [goToStep],
+  );
+
   if (!isResolved || (!isGuest && user === undefined)) {
     return (
       <div className="space-y-6">
@@ -288,8 +389,14 @@ export default function OnboardingPage() {
       <StepIndicator
         steps={ONBOARDING_STEPS}
         currentIndex={stepIndex}
+        maxReachedIndex={maxReachedIndex}
+        disabledIndices={disabledStepIndices}
+        onStepClick={goToIndex}
       />
 
+      {currentStep === "path" && (
+        <OnboardingPathSelect state={state} updateState={updateState} onNext={next} />
+      )}
       {currentStep === "welcome" && (
         <OnboardingWelcome state={state} updateState={updateState} onNext={next} />
       )}
@@ -299,8 +406,20 @@ export default function OnboardingPage() {
       {currentStep === "theme" && (
         <OnboardingTheme state={state} updateState={updateState} onNext={next} onBack={back} />
       )}
-      {currentStep === "tier" && (
-        <OnboardingTierSelect state={state} updateState={updateState} onNext={next} onBack={back} />
+      {currentStep === "template" && state.entryPath === "ai" && (
+        <OnboardingAiStep
+          state={state}
+          onBack={back}
+          onApplyProposal={handleAiProposal}
+        />
+      )}
+      {currentStep === "template" && state.entryPath !== "ai" && (
+        <OnboardingBrowsePopular
+          state={state}
+          updateState={updateState}
+          onNext={next}
+          onBack={back}
+        />
       )}
       {currentStep === "duration" && (
         <OnboardingDuration state={state} updateState={updateState} onNext={next} onBack={back} />

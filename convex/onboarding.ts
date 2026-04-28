@@ -29,6 +29,8 @@ export const completeOnboarding = mutation({
     startDate: v.string(),
     visibility: v.union(v.literal("private"), v.literal("friends"), v.literal("public")),
     daysTotal: v.number(),
+    // Routine catalog slug picked during onboarding (e.g. "original-75-hard").
+    templateSlug: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -64,6 +66,7 @@ export const completeOnboarding = mutation({
       restartCount: 0,
       setupTier: args.setupTier,
       daysTotal,
+      templateSlug: args.templateSlug,
     });
 
     // Insert all habit definitions
@@ -95,6 +98,7 @@ export const completeOnboarding = mutation({
         goals: args.goals,
         healthAdvisoryAcknowledged: args.healthAdvisoryAcknowledged,
         setupTier: args.setupTier,
+        templateSlug: args.templateSlug,
       },
       preferences: {
         ...user.preferences,
@@ -194,6 +198,8 @@ export const getPreviousOnboardingState = query({
       setupTier,
       habits,
       daysTotal: latestFailed?.daysTotal ?? 75,
+      templateSlug:
+        latestFailed?.templateSlug ?? user.onboarding.templateSlug ?? null,
     };
   },
 });

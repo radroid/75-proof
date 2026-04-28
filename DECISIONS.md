@@ -183,3 +183,44 @@ Lower-priority findings (NICE-TO-HAVE) were noted but not addressed in this PR:
 - [ ] PWA install prompt appears (on supported platforms) after second dashboard visit
 - [ ] Notification permission prompt appears, granting it stores a localStorage flag
 - [ ] Clear localStorage → app reverts to landing
+
+---
+
+# Routine Catalog + LLM Personalization — Decision Log
+
+Branch: `claude/refine-local-plan-Zjpds`. Replaces the binary "Original 75 HARD vs Fully customize" tier step with a routine catalog + opt-in AI chat. v1 ships scaffolding only — full curated catalog and chat polish land later.
+
+## Catalog architecture
+
+**Decision:** Static seed list in `lib/routine-templates.ts` is the source of truth at v1; the new `routineTemplates` Convex table exists but is read with a static fallback when empty. v2's deep-research ingestion pipeline will populate the table; the dormant `seedTemplates` internalAction in `convex/routineTemplates.ts` shows the upsert pattern.
+**Why:** Two templates don't need a DB. Shipping the table + index now means the catalog migration in v2 is purely additive and doesn't require a schema change.
+
+## Vector index ships dead
+
+**Decision:** `routineTemplates.by_embedding` is registered with `dimensions: 1536` (OpenAI `text-embedding-3-small`) and `filterFields: ["category"]`, but no code populates `embedding` or queries the index in v1.
+**Why:** Registering it now pins the dimension to whatever provider we're already wiring up for the chat (`@ai-sdk/openai`), so when the catalog grows past keyword filtering we just backfill embeddings — no schema change, no provider swap.
+
+## AI SDK + OpenRouter (chat) / OpenAI (embeddings)
+
+**Decision:** Vercel AI SDK (`ai`) with `@openrouter/ai-sdk-provider` for chat (default `anthropic/claude-sonnet-4-5`, override via `OPENROUTER_CHAT_MODEL`) and `@ai-sdk/openai` for embeddings.
+**Why:** OpenRouter lets us swap chat models without code changes. Embeddings stay on OpenAI for stable index dimensions. The action runs in Convex's V8 runtime (no `"use node"`) because the AI SDK only needs `fetch`. Env vars set via `npx convex env set OPENROUTER_API_KEY <key>`; an unset key returns a deterministic stub so the UI works in dev.
+
+## setupTier kept, derived from template.strictMode
+
+**Decision:** The `setupTier` enum (`original | added`) is no longer user-facing — it's derived from `template.strictMode` on submit and persisted alongside `templateSlug` for back-compat with legacy reads (`getPreviousOnboardingState`, themed dashboards, the local-store mirror).
+**Why:** Keeps existing prod data and read sites valid without a write migration; adds `templateSlug` as the new canonical identifier.
+
+## LLM proposal sentinel
+
+**Decision:** The model wraps structured routine proposals in a fenced ```json``` block prefixed by the literal string `<<ROUTINE_PROPOSAL>>`. `parseProposal()` looks for the last sentinel + the next fence.
+**Why:** Prose mentions of `{...}` (or "I'd recommend a JSON-like structure...") would otherwise be misclassified as proposals. The sentinel is plain text so it survives any markdown-renderer mangling, and "last sentinel wins" handles the revise-on-critique case.
+
+## Chat is signed-in only
+
+**Decision:** The `personalize.chat` action requires `ctx.auth.getUserIdentity()`; the chat CTA on the template-select page is hidden for guests (local mode).
+**Why:** OpenRouter cost + rate-limit accountability needs a Convex identity. Local-mode users still get the static catalog.
+
+## Feature flag default: off
+
+**Decision:** Chat is gated behind `NEXT_PUBLIC_LLM_PERSONALIZE === "1"`, default off in this PR.
+**Why:** Lets us ship the catalog refactor + Convex action wiring without exposing the chat path until the prompt has been hand-tested with a real key.

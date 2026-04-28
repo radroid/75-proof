@@ -118,6 +118,7 @@ export interface PreviousOnboardingState {
     icon?: string;
   }>;
   daysTotal: number;
+  templateSlug: string | null;
 }
 
 /**
@@ -183,6 +184,7 @@ export function getPreviousOnboardingState(
     setupTier,
     habits,
     daysTotal: latest?.daysTotal ?? 75,
+    templateSlug: latest?.templateSlug ?? user.onboarding.templateSlug ?? null,
   };
 }
 
