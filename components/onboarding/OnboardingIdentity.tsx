@@ -52,11 +52,14 @@ export function OnboardingIdentity({
   const remaining = MAX_LEN - value.length;
 
   const setStatement = (next: string) => {
-    updateState({ identityStatement: next.slice(0, MAX_LEN) });
+    updateState({
+      identityStatement: next.slice(0, MAX_LEN),
+      identityTouched: true,
+    });
   };
 
   const skip = () => {
-    updateState({ identityStatement: "" });
+    updateState({ identityStatement: "", identityTouched: true });
     onNext();
   };
 

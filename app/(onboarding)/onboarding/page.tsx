@@ -318,6 +318,17 @@ export default function OnboardingPage() {
       const submittedVisibility = isGuest ? ("private" as const) : state.visibility;
 
       const trimmedIdentity = state.identityStatement.trim();
+      // Three-way payload mirroring `completeOnboarding`'s contract:
+      //   - non-empty trimmed string → write/overwrite
+      //   - `null` → explicit clear (user touched the step and emptied it,
+      //     e.g. tapped Skip from a re-onboarding seed)
+      //   - `undefined` → leave any previously-stored value untouched
+      const identityStatementArg: string | null | undefined =
+        trimmedIdentity.length > 0
+          ? trimmedIdentity
+          : state.identityTouched
+            ? null
+            : undefined;
       const args = {
         displayName: state.displayName,
         timezone: state.timezone,
@@ -332,8 +343,7 @@ export default function OnboardingPage() {
         visibility: submittedVisibility,
         daysTotal: finalDaysTotal,
         templateSlug: state.templateSlug,
-        identityStatement:
-          trimmedIdentity.length > 0 ? trimmedIdentity : undefined,
+        identityStatement: identityStatementArg,
       } as const;
 
       if (isGuest) {
@@ -400,7 +410,11 @@ export default function OnboardingPage() {
         daysTotal: proposal.daysTotal,
         setupTier: proposal.strictMode ? "original" : "added",
       }));
-      goToStep("review");
+      // The AI path skips goals/theme/duration/habits, so the natural next
+      // stop after the proposal is the identity step. Jumping straight to
+      // review here would silently bypass the identity capture and leave
+      // AI users without an authored "I'm becoming…" line on the dashboard.
+      goToStep("identity");
     },
     [goToStep],
   );

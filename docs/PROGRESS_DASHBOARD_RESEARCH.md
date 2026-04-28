@@ -82,7 +82,7 @@ Four parallel research streams converged on the same handful of conclusions. The
 
 ### 2.2 Aggregating heterogeneous habits
 
-- The dominant successful pattern is Apple's rings model: **each habit normalises to 0–100% of *its own* daily target, and the dashboard headline is the average** across active habits. Works for binary tasks (`completed ? 100% : 0%`) and counters (`min(value/target, 1) × 100%`). ([Apple HIG Activity Rings](https://developers.apple.com/design/human-interface-guidelines/components/status/activity-rings/))
+- The dominant successful pattern is Apple's rings model: **each habit normalizes to 0–100% of *its own* daily target, and the dashboard headline is the average** across active habits. Works for binary tasks (`completed ? 100% : 0%`) and counters (`min(value/target, 1) × 100%`). ([Apple HIG Activity Rings](https://developers.apple.com/design/human-interface-guidelines/components/status/activity-rings/))
 - **Don't sum raw counts across habit types.** A user with "10 pages reading" + "64 oz water" should not see "74" anywhere. The dimensional confusion is exactly what the current dashboard does.
 - **Composite weighted scores (Loop, WHOOP, Oura)** work *only* when the formula is forgiving (exponential smoothing → recent days dominate, single zero day barely moves the needle) **and** the user can tap-through to "why is this number what it is." Opaque scores erode trust.
 - **For ≤4 habits**: stack as rings or tiles. For ≥5: sparkline-per-habit list (Streaks/Strides pattern) under a single normalized headline.

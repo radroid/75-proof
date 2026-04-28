@@ -663,15 +663,13 @@ export default function ProgressPage() {
           />
 
           {/* Headline metrics — 30-day rate + streak chip */}
-          {(
-            <HeadlineMetrics
-              rate={rolling30.rate}
-              consideredDays={rolling30.consideredDays}
-              windowDays={ROLLING_WINDOW}
-              currentStreak={currentStreak}
-              bestStreak={lifetimeStats?.longestStreak ?? 0}
-            />
-          )}
+          <HeadlineMetrics
+            rate={rolling30.rate}
+            consideredDays={rolling30.consideredDays}
+            windowDays={ROLLING_WINDOW}
+            currentStreak={currentStreak}
+            bestStreak={lifetimeStats?.longestStreak ?? 0}
+          />
 
           {/* Friends ribbon — kindness signals only. Hidden in local mode and
               when the user has no friends. */}

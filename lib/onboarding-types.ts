@@ -50,6 +50,14 @@ export interface OnboardingState {
    * `users.identityStatement` at completion. Empty string = unset.
    */
   identityStatement: string;
+  /**
+   * Tracks whether the user explicitly interacted with the identity step
+   * (typed/picked a suggestion, or used Skip). Distinguishes "user
+   * deliberately cleared it" from "user never reached the step" so
+   * re-onboarding can clear a previously-saved value when the wizard
+   * intentionally empties it. Not persisted server-side.
+   */
+  identityTouched: boolean;
 }
 
 export const DURATION_PRESETS = [30, 60, 75, 90] as const;
@@ -81,6 +89,7 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   templateSlug: DEFAULT_TEMPLATE_SLUG,
   entryPath: null,
   identityStatement: "",
+  identityTouched: false,
 };
 
 export const ONBOARDING_STEPS = [

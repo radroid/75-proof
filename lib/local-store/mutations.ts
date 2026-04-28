@@ -40,7 +40,12 @@ export interface CompleteOnboardingArgs {
   visibility: "private" | "friends" | "public";
   daysTotal: number;
   templateSlug?: string;
-  identityStatement?: string;
+  /**
+   * `undefined` leaves any previously-stored value untouched; an explicit
+   * `null` (or empty/whitespace string) clears it; a non-empty string sets
+   * it. Mirrors the Convex `completeOnboarding` contract.
+   */
+  identityStatement?: string | null;
 }
 
 function genId(table: string): string {
@@ -121,12 +126,16 @@ export function completeOnboarding(args: CompleteOnboardingArgs): string {
     user.displayName = args.displayName;
     user.currentChallengeId = challengeId;
     user.onboardingComplete = true;
-    const trimmedIdentity =
-      typeof args.identityStatement === "string"
-        ? args.identityStatement.trim().slice(0, 140)
-        : "";
-    if (trimmedIdentity.length > 0) {
-      user.identityStatement = trimmedIdentity;
+    if (args.identityStatement !== undefined) {
+      const trimmedIdentity =
+        typeof args.identityStatement === "string"
+          ? args.identityStatement.trim().slice(0, 140)
+          : "";
+      if (trimmedIdentity.length > 0) {
+        user.identityStatement = trimmedIdentity;
+      } else {
+        delete user.identityStatement;
+      }
     }
     user.onboarding = {
       completedAt: new Date().toISOString(),
