@@ -16,8 +16,6 @@ The goal of this redesign:
 2. Replace vanity tiles with metrics that have evidence behind them.
 3. Sprinkle in *tasteful*, evidence-based friend signals on the personal dashboard, while keeping the full Friends tab — not a leaderboard transplant.
 
-This document captures the research foundation. Implementation should not start until the open questions at the end are resolved.
-
 ---
 
 ## 1. Current state — what's actually in the codebase

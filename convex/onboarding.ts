@@ -217,6 +217,9 @@ export const getPreviousOnboardingState = query({
       daysTotal: latestFailed?.daysTotal ?? 75,
       templateSlug:
         latestFailed?.templateSlug ?? user.onboarding.templateSlug ?? null,
+      // PD-8: surface the previously-saved identity statement so the
+      // re-onboarding flow can pre-fill the field instead of asking again.
+      identityStatement: user.identityStatement ?? null,
     };
   },
 });

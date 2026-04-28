@@ -408,8 +408,16 @@ export default function ProgressPage() {
   // just the gating subset.
   const todayStats = useMemo(() => {
     if (currentDay < 1) return { done: 0, total: 0 };
+    // While Convex queries are still in-flight (`undefined` from `useQuery`)
+    // we must not flash the legacy "0 of 7 done" — the new-system user would
+    // see a misleading legacy snapshot before their habit data hydrates.
+    // Treat any undefined as "loading" and render a neutral 0/0 until both
+    // queries resolve (`null` or an array).
+    if (activeHabitDefs === undefined || activeHabitEntries === undefined) {
+      return { done: 0, total: 0 };
+    }
     // New-system path: per-habit entries.
-    if (activeHabitDefs && activeHabitEntries && activeHabitDefs.length > 0) {
+    if (activeHabitDefs.length > 0) {
       const todayEntries = activeHabitEntries.filter(
         (e) => e.dayNumber === currentDay,
       );
@@ -457,7 +465,15 @@ export default function ProgressPage() {
     const slug = challenge?.templateSlug;
     if (slug && isKnownTemplate(slug)) return getTemplateBySlug(slug).title;
     if (slug?.startsWith("ai-generated:")) return "your routine";
-    if (slug?.startsWith("popular:")) return "your routine";
+    if (slug?.startsWith("popular:")) {
+      // Some popular-routine slugs alias a catalog template (e.g.
+      // `popular:original-75-hard`) — prefer the catalog title so the
+      // identity-card / upcoming-challenge copy stays specific instead of
+      // collapsing every popular pick to "your routine".
+      const inner = slug.slice("popular:".length);
+      if (isKnownTemplate(inner)) return getTemplateBySlug(inner).title;
+      return "your routine";
+    }
     return isActiveHabitTracker ? "habit tracker" : "your challenge";
   }, [challenge?.templateSlug, isActiveHabitTracker]);
 

@@ -93,10 +93,6 @@ export function Confetti({ isActive, duration = 3000 }: ConfettiProps) {
     return () => clearTimeout(timer);
   }, [isActive, duration]);
 
-  // SSR-safe portal: only render on the client where `document` exists.
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
-
   const particles = React.useMemo(
     () => (activation > 0 ? generateParticles(50) : []),
     // Fresh particle set per activation; `running` flipping back to false
@@ -104,7 +100,9 @@ export function Confetti({ isActive, duration = 3000 }: ConfettiProps) {
     [activation],
   );
 
-  if (!mounted) return null;
+  // SSR-safe portal: bail out when running on the server where `document`
+  // doesn't exist. A typeof-check is enough — no extra render pass needed.
+  if (typeof document === "undefined") return null;
 
   return createPortal(
     <AnimatePresence>

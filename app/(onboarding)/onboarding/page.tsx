@@ -127,6 +127,7 @@ export default function OnboardingPage() {
       habits: seededHabits,
       daysTotal: previousState.daysTotal ?? INITIAL_ONBOARDING_STATE.daysTotal,
       templateSlug: seededTemplateSlug,
+      identityStatement: previousState.identityStatement ?? "",
     };
     setState(seeded);
     setSeededFromPrevious(true);
