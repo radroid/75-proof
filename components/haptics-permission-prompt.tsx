@@ -40,8 +40,32 @@ export function HapticsPermissionPrompt() {
     if (!isIOSDevice()) return;
     if (hasBeenPromptedForHaptics()) return;
 
-    const t = window.setTimeout(() => setOpen(true), INITIAL_DELAY_MS);
-    return () => window.clearTimeout(t);
+    // Re-check at fire time, not just at mount. The user could open
+    // Settings during the 4.5s delay and toggle haptics there — that
+    // counts as having decided, so we shouldn't surface the prompt
+    // afterward.
+    const t = window.setTimeout(() => {
+      if (hasBeenPromptedForHaptics()) return;
+      setOpen(true);
+    }, INITIAL_DELAY_MS);
+
+    // Cross-tab: if another tab marks the user as prompted (e.g. they
+    // accepted/declined in another window, or a future Settings change
+    // marks prompted), close any prompt this tab might have already
+    // surfaced. `storage` only fires in *other* tabs, which is exactly
+    // the case we care about.
+    const onStorage = () => {
+      if (hasBeenPromptedForHaptics()) {
+        window.clearTimeout(t);
+        setOpen(false);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.clearTimeout(t);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   const handleEnable = () => {
