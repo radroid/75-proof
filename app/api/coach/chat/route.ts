@@ -1,53 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
+import { after, NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
+import { runConvex } from "@/lib/convex-http";
 
 export const runtime = "nodejs";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
-/**
- * Build a Convex HTTP client and, if the caller is signed in via Clerk,
- * attach their JWT so server-side queries/actions resolve identity. The
- * coach endpoint is open to guests, so we always return a client — auth
- * just may be unset.
- */
-async function makeAuthedConvex(convexUrl: string): Promise<ConvexHttpClient> {
-  const convex = new ConvexHttpClient(convexUrl);
-  try {
-    const { getToken } = await auth();
-    const token = await getToken({ template: "convex" });
-    if (token) convex.setAuth(token);
-  } catch {
-    // Clerk unavailable / not signed in — fine, continue as guest.
-  }
-  return convex;
-}
-
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_CHARS = 4000;
 const TOP_K = 5;
 const VECTOR_SEARCH_TIMEOUT_MS = 15_000;
+const MEMORY_FETCH_TIMEOUT_MS = 5_000;
+const THREAD_APPEND_TIMEOUT_MS = 10_000;
+const MEMORY_DISTILL_TIMEOUT_MS = 30_000;
 
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new Error(`${label} timed out after ${ms}ms`)),
-      ms,
-    );
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (err) => {
-        clearTimeout(timer);
-        reject(err);
-      },
-    );
-  });
+/**
+ * Best-effort fetch of a Clerk JWT minted from the "convex" template, so
+ * server-side queries/actions resolve identity. The coach endpoint is open
+ * to guests, so we return null on failure instead of throwing — auth-only
+ * mutations (memory writes, thread persistence) silently no-op for guests.
+ */
+async function getConvexAuthToken(): Promise<string | null> {
+  try {
+    const { getToken } = await auth();
+    const token = await getToken({ template: "convex" });
+    return token ?? null;
+  } catch {
+    return null;
+  }
 }
 
 const CATEGORIES = new Set([
@@ -240,10 +220,10 @@ export async function POST(req: NextRequest) {
     score: number;
   };
 
-  // One Convex client for the request — authed if Clerk has a session,
-  // unauthed otherwise. The vector search action is open; the memory
-  // and thread mutations require auth and silently no-op for guests.
-  const convex = await makeAuthedConvex(convexUrl);
+  // Mint a Clerk-issued Convex JWT once per request — null for guests.
+  // The vector search action is open; the memory + thread mutations
+  // require auth and silently no-op for guests.
+  const token = await getConvexAuthToken();
 
   let retrieved: Retrieved[] = [];
   let retrievalFailed = false;
@@ -251,16 +231,13 @@ export async function POST(req: NextRequest) {
 
   if (queryText) {
     try {
-      const result = (await withTimeout(
-        convex.action(api.popularRoutines.vectorSearch, {
-          query: queryText,
-          limit: TOP_K,
-          category,
-        }),
-        VECTOR_SEARCH_TIMEOUT_MS,
-        "vector search",
-      )) as Retrieved[];
-      retrieved = result;
+      retrieved = await runConvex<Retrieved[]>(
+        convexUrl,
+        "action",
+        "popularRoutines:vectorSearch",
+        { query: queryText, limit: TOP_K, category },
+        { timeoutMs: VECTOR_SEARCH_TIMEOUT_MS, token },
+      );
     } catch (err) {
       // Log full error server-side; only surface a generic message to the client.
       console.error("[coach/chat] vector search failed", err);
@@ -274,7 +251,13 @@ export async function POST(req: NextRequest) {
   // Guests + opted-out users get null and no facts are injected.
   let memoryFacts: string[] = [];
   try {
-    const mem = await convex.query(api.coach.getMemory, {});
+    const mem = await runConvex<{ enabled: boolean; facts: string[] } | null>(
+      convexUrl,
+      "query",
+      "coach:getMemory",
+      {},
+      { timeoutMs: MEMORY_FETCH_TIMEOUT_MS, token },
+    );
     if (mem?.enabled) memoryFacts = mem.facts;
   } catch (err) {
     // Non-fatal — coach still works without memory.
@@ -285,7 +268,8 @@ export async function POST(req: NextRequest) {
   if (!apiKey) {
     const assistantText = stubResponse(queryText, retrieved);
     await persistAndDistill({
-      convex,
+      convexUrl,
+      token,
       threadId: body.threadId,
       messages,
       assistantText,
@@ -314,7 +298,8 @@ export async function POST(req: NextRequest) {
     });
     const assistantText = result.text ?? "";
     await persistAndDistill({
-      convex,
+      convexUrl,
+      token,
       threadId: body.threadId,
       messages,
       assistantText,
@@ -347,44 +332,62 @@ export async function POST(req: NextRequest) {
  * Both calls require auth — they no-op silently for guests.
  */
 async function persistAndDistill(args: {
-  convex: ConvexHttpClient;
+  convexUrl: string;
+  token: string | null;
   threadId: string | undefined;
   messages: ChatMessage[];
   assistantText: string;
 }): Promise<void> {
-  const { convex, threadId, messages, assistantText } = args;
+  const { convexUrl, token, threadId, messages, assistantText } = args;
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
   if (!lastUser) return;
+  // Both downstream calls require auth and silently no-op for guests on
+  // the Convex side. Skip the round-trips entirely so guest traffic
+  // doesn't hammer Convex with calls that always reject.
+  if (!token) return;
 
   if (threadId) {
     try {
-      await convex.mutation(api.coach.appendMessages, {
-        threadId: threadId as Id<"coachThreads">,
-        messages: [
-          { role: "user", content: lastUser.content },
-          { role: "assistant", content: assistantText },
-        ],
-      });
+      await runConvex<null>(
+        convexUrl,
+        "mutation",
+        "coach:appendMessages",
+        {
+          threadId,
+          messages: [
+            { role: "user", content: lastUser.content },
+            { role: "assistant", content: assistantText },
+          ],
+        },
+        { timeoutMs: THREAD_APPEND_TIMEOUT_MS, token },
+      );
     } catch (err) {
       // Common cause: guest (no auth) or thread doesn't belong to user.
       console.error("[coach/chat] thread persist failed", err);
     }
   }
 
-  // Memory writer runs in the background. We don't await — the chat
-  // response shouldn't block on distillation. The action itself
+  // Memory writer runs after the response is sent so the chat response
+  // isn't blocked on distillation. `after()` (vs `void promise.catch(...)`)
+  // is the supported way to do this in serverless — it uses waitUntil
+  // under the hood so the worker isn't torn down mid-request, which would
+  // otherwise drop the distill write intermittently. The action itself
   // exits quickly when memory is disabled, so guests skip cleanly.
   const fullMessages: ChatMessage[] = [
     ...messages,
     { role: "assistant", content: assistantText },
   ];
-  void convex
-    .action(api.coachActions.distillMemoryFromChat, {
-      messages: fullMessages,
-    })
-    .catch((err) => {
+  after(() =>
+    runConvex<null>(
+      convexUrl,
+      "action",
+      "coachActions:distillMemoryFromChat",
+      { messages: fullMessages },
+      { timeoutMs: MEMORY_DISTILL_TIMEOUT_MS, token },
+    ).catch((err) => {
       console.error("[coach/chat] memory distill failed", err);
-    });
+    }),
+  );
 }
 
 function buildSystemPrompt(

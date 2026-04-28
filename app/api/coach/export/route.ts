@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
 import { auth } from "@clerk/nextjs/server";
-import { api } from "@/convex/_generated/api";
+import { runConvex } from "@/lib/convex-http";
 
 export const runtime = "nodejs";
+
+const SNAPSHOT_TIMEOUT_MS = 30_000;
 
 /**
  * C-5: Downloadable coach context bundle.
@@ -33,9 +34,6 @@ export async function GET() {
     return NextResponse.json({ error: "Convex token unavailable" }, { status: 500 });
   }
 
-  const convex = new ConvexHttpClient(convexUrl);
-  convex.setAuth(token);
-
   let snapshot: {
     memory: unknown;
     threads: unknown;
@@ -43,12 +41,18 @@ export async function GET() {
     truncation: unknown;
   };
   try {
-    snapshot = (await convex.action(api.coach.exportSnapshot, {})) as {
+    snapshot = await runConvex<{
       memory: unknown;
       threads: unknown;
       audit: unknown;
       truncation: unknown;
-    };
+    }>(
+      convexUrl,
+      "action",
+      "coach:exportSnapshot",
+      {},
+      { timeoutMs: SNAPSHOT_TIMEOUT_MS, token },
+    );
   } catch (err) {
     console.error("[coach/export] snapshot failed", err);
     return NextResponse.json(
