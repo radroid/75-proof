@@ -18,8 +18,11 @@ import { toast } from "sonner";
 import { EmojiPicker } from "./emoji-picker";
 import { haptic } from "@/lib/haptics";
 
-type FeedItem = {
+export type FeedItem = {
   _id: string;
+  // Exposed so consumers (e.g. the per-friend capsule filter on Progress)
+  // can group/filter feed items without relying on `user.displayName`.
+  userId: Id<"users">;
   type: "day_completed" | "challenge_started" | "challenge_completed" | "challenge_failed" | "milestone";
   message: string;
   createdAt: string;

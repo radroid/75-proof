@@ -1,19 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FriendProgressCard } from "./friend-progress-card";
 import { WeeklyLeaderboard } from "./weekly-leaderboard";
 import { TodayPulse } from "./today-pulse";
-import { UserPlus, Check, Clock, Users } from "lucide-react";
-import { toast } from "sonner";
-import posthog from "posthog-js";
+import { FriendSearch } from "./friend-search";
+import { Users } from "lucide-react";
 
 interface FriendsListProps {
   friendProgress: Array<{
@@ -30,64 +23,19 @@ interface FriendsListProps {
       completedToday: boolean | null;
     }> | null;
   }> | undefined;
+  /**
+   * When true, the inline search input at the top is omitted — used on the
+   * new Progress page where a more prominent "Add a friend" block lives in
+   * the Requests section instead. Defaults to `false` so existing call
+   * sites keep their search affordance.
+   */
+  hideSearch?: boolean;
 }
 
-export function FriendsList({ friendProgress }: FriendsListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedTerm, setDebouncedTerm] = useState("");
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedTerm(searchTerm), 300);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const searchResults = useQuery(
-    api.friends.searchUsers,
-    debouncedTerm.length >= 2 ? { searchTerm: debouncedTerm } : "skip"
-  );
-
-  const targetIds = useMemo(
-    () => searchResults?.map((u) => u._id) ?? [],
-    [searchResults]
-  );
-
-  const relationshipStatuses = useQuery(
-    api.friends.getRelationshipStatuses,
-    targetIds.length > 0 ? { targetUserIds: targetIds } : "skip"
-  );
-
+export function FriendsList({ friendProgress, hideSearch = false }: FriendsListProps) {
   return (
     <div className="space-y-6">
-      {/* Search */}
-      <Input
-        type="search"
-        placeholder="Search for friends by name..."
-        aria-label="Search for friends"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="h-11 md:h-9"
-      />
-
-      {/* Search results */}
-      {searchResults && searchResults.length > 0 && debouncedTerm.length >= 2 && (
-        <Card>
-          <CardContent className="p-0 divide-y divide-border">
-            {searchResults.map((user) => (
-              <SearchResultRow
-                key={user._id}
-                user={user}
-                status={relationshipStatuses?.[user._id] ?? "none"}
-              />
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {searchResults && searchResults.length === 0 && debouncedTerm.length >= 2 && (
-        <p className="text-sm text-muted-foreground text-center py-4">
-          No users found matching &ldquo;{debouncedTerm}&rdquo;
-        </p>
-      )}
+      {!hideSearch && <FriendSearch variant="compact" />}
 
       {/* Today's pulse + weekly leaderboard (hidden when no friends) */}
       <TodayPulse />
@@ -116,81 +64,6 @@ export function FriendsList({ friendProgress }: FriendsListProps) {
               <FriendProgressCard key={fp.user._id} friend={fp} />
             ))}
           </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function SearchResultRow({
-  user,
-  status,
-}: {
-  user: { _id: Id<"users">; displayName: string; avatarUrl?: string };
-  status: "friends" | "request_sent" | "request_received" | "blocked" | "none";
-}) {
-  const sendRequest = useMutation(api.friends.sendFriendRequest);
-  const acceptRequest = useMutation(api.friends.acceptFriendRequest);
-  const pendingRequests = useQuery(api.friends.getPendingRequests);
-  const [loading, setLoading] = useState(false);
-
-  const handleSend = async () => {
-    setLoading(true);
-    try {
-      await sendRequest({ toUserId: user._id });
-      posthog.capture("friend_request_sent");
-      toast.success("Friend request sent!");
-    } catch {
-      toast.error("Could not send request");
-    }
-    setLoading(false);
-  };
-
-  const handleAccept = async () => {
-    const req = pendingRequests?.find((r) => r.user?._id === user._id);
-    if (!req) return;
-    setLoading(true);
-    try {
-      await acceptRequest({ friendshipId: req.request._id });
-      toast.success("Friend request accepted!");
-    } catch {
-      toast.error("Failed to accept request");
-    }
-    setLoading(false);
-  };
-
-  return (
-    <div className="flex items-center justify-between gap-3 p-3 min-h-[56px]">
-      <div className="flex items-center gap-3 min-w-0 flex-1">
-        <Avatar className="h-9 w-9 shrink-0">
-          <AvatarImage src={user.avatarUrl} alt={user.displayName} />
-          <AvatarFallback className="text-xs">
-            {user.displayName.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <p className="font-medium text-sm truncate">{user.displayName}</p>
-      </div>
-      <div className="shrink-0">
-        {status === "friends" && (
-          <Button variant="outline" size="sm" disabled className="min-h-[44px]">
-            <Check className="mr-1 h-3 w-3" /> Friends
-          </Button>
-        )}
-        {status === "request_sent" && (
-          <Button variant="outline" size="sm" disabled className="min-h-[44px]">
-            <Clock className="mr-1 h-3 w-3" /> Pending
-          </Button>
-        )}
-        {status === "request_received" && (
-          <Button size="sm" onClick={handleAccept} disabled={loading} className="min-h-[44px]">
-            <Check className="mr-1 h-3 w-3" /> Accept
-          </Button>
-        )}
-        {status === "blocked" && null}
-        {status === "none" && (
-          <Button size="sm" onClick={handleSend} disabled={loading} className="min-h-[44px]">
-            <UserPlus className="mr-1 h-3 w-3" /> Add
-          </Button>
         )}
       </div>
     </div>

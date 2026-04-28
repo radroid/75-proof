@@ -99,6 +99,10 @@ export const getFriendsFeed = query({
           const activityUser = await ctx.db.get(activity.userId);
           friendActivities.push({
             ...activity,
+            // Surface the userId so consumers (e.g. the per-friend capsule
+            // filter on Progress) can group/filter rows without relying on
+            // the user's mutable display name.
+            userId: activity.userId,
             user: activityUser
               ? {
                   displayName: activityUser.displayName,

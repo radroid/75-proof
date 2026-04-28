@@ -11,7 +11,6 @@ import { PageContainer } from "@/components/layout/page-container";
 import { MotionList, MotionListItem } from "@/components/ui/motion";
 import { StatSkeleton, HeroSkeleton } from "@/components/ui/skeleton-enhanced";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -64,7 +63,11 @@ import { CalendarGrid } from "@/components/progress/calendar-grid";
 import { HabitHeatmap } from "@/components/progress/habit-heatmap";
 import { PerHabitList } from "@/components/progress/per-habit-list";
 import { FriendsRibbon } from "@/components/progress/friends-ribbon";
-import { ActivityFeed } from "@/components/friends/activity-feed";
+import { FriendsSection } from "@/components/progress/friends-section";
+import { ActivitySection } from "@/components/progress/activity-section";
+import { RequestsSection } from "@/components/progress/requests-section";
+import { IncomingNudges } from "@/components/friends/incoming-nudges";
+import { useFriends } from "@/hooks/use-friends";
 import {
   getTemplateBySlug,
   isKnownTemplate,
@@ -105,24 +108,6 @@ type ChallengeRowView = {
   isHabitTracker?: boolean;
   failedOnDay?: number;
   templateSlug?: string;
-};
-
-type FeedItemView = {
-  _id: string;
-  type:
-    | "day_completed"
-    | "challenge_started"
-    | "challenge_completed"
-    | "challenge_failed"
-    | "milestone";
-  message: string;
-  createdAt: string;
-  dayNumber?: number;
-  backfilled?: boolean;
-  // ActivityFeed's prop accepts `null` but not `undefined`. Personal-feed
-  // rows from Convex don't carry a `user`; we always attach one before
-  // passing in, so this stays `... | null` (never undefined).
-  user: { displayName: string; avatarUrl?: string } | null;
 };
 
 type LegacyDayLog = {
@@ -213,20 +198,16 @@ export default function ProgressPage() {
     ? localActiveHabitEntries
     : convexActiveHabitEntries) as HabitEntryView[] | undefined;
 
-  // Activity feed (Phase 2 of Friends merge — Tab on Progress). Merges the
-  // user's own activity in with the friends feed so reactions on their own
-  // posts ("2 cheers on your Day 7 milestone") show up alongside friends'
-  // updates. Server queries stay split because `getPersonalFeed` doesn't
-  // join the user record (it's the same user every row) and `getFriendsFeed`
-  // already filters by visibility + blocks.
-  const friendsFeed = useQuery(
-    api.feed.getFriendsFeed,
-    isGuest ? "skip" : undefined,
-  );
-  const personalFeedRaw = useQuery(
-    api.feed.getPersonalFeed,
-    isGuest ? "skip" : undefined,
-  );
+  // Friend graph + feed for the FRIENDS PROGRESS / ACTIVITY / REQUESTS
+  // sections (research §4 Phase 3). Local-mode users skip — they have no
+  // friend graph and the Convex queries would fire without auth.
+  const {
+    friends,
+    pendingRequests,
+    sentRequests,
+    friendProgress,
+    friendsFeed,
+  } = useFriends({ enabled: !isGuest });
 
   // Legacy dailyLogs — kept for the day-by-day history's polymorphic
   // legacy/new-system rendering. Not used elsewhere.
@@ -244,8 +225,6 @@ export default function ProgressPage() {
     useState<Id<"challenges"> | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
-  const [activeTab, setActiveTab] = useState<"stats" | "activity">("stats");
-
   const activeChallenge = challenges?.find((c) => c.status === "active");
   const effectiveHistoryId = isGuest
     ? localChallenge?._id
@@ -506,11 +485,6 @@ export default function ProgressPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, challenge, isActiveHabitTracker, isGuest]);
 
-  const handleTabChange = useCallback((value: string) => {
-    setActiveTab(value as "stats" | "activity");
-    posthog.capture("progress_tab_switched", { tab: value });
-  }, []);
-
   const handleLogTap = useCallback(() => {
     posthog.capture("progress_to_log_tap");
   }, []);
@@ -518,34 +492,6 @@ export default function ProgressPage() {
   const handleRibbonImpression = useCallback(() => {
     posthog.capture("progress_friends_ribbon_view");
   }, []);
-
-  // Merged activity feed: user's own activity items shaped to match the
-  // friends-feed item type, then concatenated and sorted desc by createdAt.
-  // `getPersonalFeed` rows don't carry a `user` object, so we attach one
-  // from the current user record. Backfilled rows are filtered to match
-  // `getFriendsFeed`'s contract (those are reconciliation artifacts, not
-  // moments worth surfacing in the feed).
-  const mergedActivityFeed = useMemo<FeedItemView[] | undefined>(() => {
-    if (friendsFeed === undefined && personalFeedRaw === undefined)
-      return undefined;
-    const friendItems = (friendsFeed ?? []) as FeedItemView[];
-    // Personal-feed rows are raw `Doc<"activityFeed">` shapes (no `user` join).
-    // Cast through unknown because we're explicitly attaching `user` below.
-    type PersonalRaw = Omit<FeedItemView, "user">;
-    const rawPersonal = (personalFeedRaw ?? []) as unknown as PersonalRaw[];
-    const myItems: FeedItemView[] = rawPersonal
-      .filter((a) => !a.backfilled)
-      .map((a) => ({
-        ...a,
-        user: {
-          displayName: userView?.displayName ?? "You",
-          avatarUrl: userView?.avatarUrl,
-        },
-      }));
-    return [...friendItems, ...myItems].sort((a, b) =>
-      a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0,
-    );
-  }, [friendsFeed, personalFeedRaw, userView]);
 
   // ── Loading / empty ────────────────────────────────────────
   // Distinguish loading (`undefined`) from "no active challenge" (`null`):
@@ -629,17 +575,22 @@ export default function ProgressPage() {
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="w-full sm:max-w-sm h-11 sm:h-9 mb-6 md:mb-10">
-          <TabsTrigger value="stats" className="flex-1">
-            Stats
-          </TabsTrigger>
-          <TabsTrigger value="activity" className="flex-1">
-            Activity
-          </TabsTrigger>
-        </TabsList>
+      {/* Incoming nudge banner — surfaces fresh "Maya nudged you 👊"
+          messages. Lives at the top of Progress now that there's no
+          standalone Friends route. Local-mode users have no nudges. */}
+      {!isGuest && <IncomingNudges />}
 
-        <TabsContent value="stats" className="space-y-8 md:space-y-12">
+      <section
+        aria-labelledby="this-week-heading"
+        className="space-y-8 md:space-y-12"
+      >
+        <h2
+          id="this-week-heading"
+          className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-2"
+        >
+          This Week
+        </h2>
+        <div className="space-y-8 md:space-y-12">
           {/* Identity card — hero */}
           <IdentityCard
             userStatement={userView?.identityStatement ?? null}
@@ -1024,19 +975,22 @@ export default function ProgressPage() {
               </div>
             )}
           </div>
-        </TabsContent>
+        </div>
+      </section>
 
-        <TabsContent value="activity" className="mt-2">
-          {isGuest ? (
-            <EmptyState
-              title="Sign up to see friend activity"
-              description="The activity feed shows your friends' wins as they happen."
-            />
-          ) : (
-            <ActivityFeed feed={mergedActivityFeed} />
-          )}
-        </TabsContent>
-      </Tabs>
+      {!isGuest && (
+        <>
+          <FriendsSection friendProgress={friendProgress as any} />
+          <ActivitySection
+            friendsFeed={friendsFeed as any}
+            friends={friends as any}
+          />
+          <RequestsSection
+            pendingRequests={pendingRequests as any}
+            sentRequests={sentRequests as any}
+          />
+        </>
+      )}
     </PageContainer>
   );
 }
