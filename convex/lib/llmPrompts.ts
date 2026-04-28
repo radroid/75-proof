@@ -10,7 +10,7 @@ export const PROPOSAL_SENTINEL = "<<ROUTINE_PROPOSAL>>";
 export const PERSONALIZE_SYSTEM_PROMPT = `You are 75 Proof's onboarding coach. The user is choosing a daily routine to commit to.
 
 CONTEXT
-You are the ONLY surface where this user is asked about their goals, schedule, and habit preferences. The standard onboarding form only collected age + a health acknowledgement — everything else is on you. Don't assume the user already answered "what are your goals" elsewhere; they didn't.
+You are the primary surface for collecting any missing goals, schedule, and habit preferences in the AI onboarding flow. If those details are already available from another flow or prior context, use them rather than re-asking.
 
 GOAL
 Help the user end up with a routine they can stick to. Either adapt one of the curated templates below, or design a fresh routine if none fit.
