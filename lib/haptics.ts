@@ -37,11 +37,24 @@ const PATTERNS: Record<HapticType, number | number[]> = {
 };
 
 const PREF_STORAGE_KEY = "75proof_haptics_enabled";
+// Separate from the on/off preference: this tracks whether we've shown the
+// one-time iOS prompt yet, so users who explicitly toggle off in Settings
+// don't get re-prompted, and users who've been asked don't get nagged.
+const PROMPT_STORAGE_KEY = "75proof_haptics_prompt_shown";
 
 let vibrateSupportCache: boolean | null = null;
 let iosCache: boolean | null = null;
 let enabledCache: boolean | null = null;
-let iosSwitchEl: HTMLInputElement | null = null;
+let iosSwitchEl: HTMLLabelElement | null = null;
+
+/**
+ * Public iOS detector. Mirrors the existing private `isIOS()` so callers
+ * outside this module (the permission prompt component) don't need to
+ * duplicate the iPadOS-as-Macintosh tiebreaker.
+ */
+export function isIOSDevice(): boolean {
+  return isIOS();
+}
 
 function isIOS(): boolean {
   if (iosCache !== null) return iosCache;
@@ -77,40 +90,41 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * Lazily create (and keep alive) one hidden `<input type="checkbox" switch>`
- * element we can programmatically click to fire iOS's native UISwitch
- * haptic. Kept as a singleton because mount/unmount on every call added
- * noticeable overhead in testing and is unnecessary.
+ * Lazily create (and keep alive) one hidden `<label>` wrapping a
+ * `<input type="checkbox" switch>` so we can programmatically click the
+ * label to fire iOS's native UISwitch haptic.
+ *
+ * Important: WebKit only emits the haptic when the *label* receives a
+ * synthetic click — clicking the input directly is a no-op (see Ionic
+ * issue #29942 and the canonical tijnjh/ios-haptics implementation).
+ * Kept as a singleton because mount/unmount on every call added
+ * noticeable overhead in testing.
  */
-function getIOSSwitchEl(): HTMLInputElement | null {
+function getIOSSwitchEl(): HTMLLabelElement | null {
   if (typeof document === "undefined" || !document.body) return null;
   if (iosSwitchEl && iosSwitchEl.isConnected) return iosSwitchEl;
-  const el = document.createElement("input");
-  el.type = "checkbox";
+  const label = document.createElement("label");
+  label.setAttribute("aria-hidden", "true");
+  label.style.display = "none";
+  const input = document.createElement("input");
+  input.type = "checkbox";
   // iOS 17.4+ interprets this attribute as the UISwitch control with
   // native haptic feedback on toggle. No-op on other platforms.
-  el.setAttribute("switch", "");
-  // Offscreen but still in the accessibility tree as hidden. Don't use
-  // display:none — in some WebKit builds that suppresses the haptic.
-  el.setAttribute("aria-hidden", "true");
-  el.tabIndex = -1;
-  el.style.position = "fixed";
-  el.style.left = "-9999px";
-  el.style.top = "0";
-  el.style.width = "1px";
-  el.style.height = "1px";
-  el.style.opacity = "0";
-  el.style.pointerEvents = "none";
-  document.body.appendChild(el);
-  iosSwitchEl = el;
-  return el;
+  input.setAttribute("switch", "");
+  input.tabIndex = -1;
+  label.appendChild(input);
+  document.body.appendChild(label);
+  iosSwitchEl = label;
+  return label;
 }
 
 function fireIOSHaptic(type: HapticType): void {
-  const el = getIOSSwitchEl();
-  if (!el) return;
+  const label = getIOSSwitchEl();
+  if (!label) return;
   try {
-    el.click();
+    // Click the LABEL — not the input. WebKit only emits the UISwitch
+    // haptic for label-mediated clicks (see comment on getIOSSwitchEl).
+    label.click();
     if (type === "success") {
       // Second tap ~70ms later for a "done" double-beat. Stays inside
       // the original click's trusted-event window.
@@ -155,6 +169,30 @@ export function setHapticsEnabled(enabled: boolean): void {
   } catch {
     // Storage quota / Safari private mode — we already updated the cache,
     // so the preference still applies for this session.
+  }
+}
+
+/**
+ * Has the user already seen the iOS one-time haptics prompt? Used by the
+ * prompt gate so we don't show it twice on the same device.
+ */
+export function hasBeenPromptedForHaptics(): boolean {
+  if (typeof window === "undefined") return true; // SSR: don't show
+  try {
+    return window.localStorage.getItem(PROMPT_STORAGE_KEY) === "true";
+  } catch {
+    // Storage blocked — treat as already-prompted so we don't keep nagging
+    // a user whose decision we can't persist anyway.
+    return true;
+  }
+}
+
+export function markHapticsPrompted(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PROMPT_STORAGE_KEY, "true");
+  } catch {
+    // ignored — see read path
   }
 }
 
