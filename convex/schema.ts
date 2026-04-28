@@ -342,6 +342,40 @@ export default defineSchema({
       filterFields: ["category"],
     }),
 
+  // Catalog of 80+ widely-followed routines from the deep-research report
+  // (POPULAR_ROUTINES.md), embedded for the AI Coach's RAG over user
+  // intents. Distinct from `routineTemplates` — those are instantiable
+  // habit definitions; these are descriptive entries for chat retrieval.
+  popularRoutines: defineTable({
+    slug: v.string(),
+    title: v.string(),
+    category: v.union(
+      v.literal("fitness"),
+      v.literal("skill-building"),
+      v.literal("productivity"),
+      v.literal("personal-development")
+    ),
+    summary: v.string(),
+    whatItIs: v.string(),
+    duration: v.string(),
+    trackingChecklist: v.array(v.string()),
+    whyItMatters: v.string(),
+    caveat: v.optional(v.string()),
+    tags: v.array(v.string()),
+    sourceUrl: v.optional(v.string()),
+    // Concatenated text used to build the embedding — stored so we can
+    // detect drift and re-embed only when the source content changes.
+    embeddingText: v.optional(v.string()),
+    embedding: v.optional(v.array(v.float64())),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_category", ["category"])
+    .vectorIndex("by_embedding", {
+      vectorField: "embedding",
+      dimensions: 1536,
+      filterFields: ["category"],
+    }),
+
   // Connected health devices
   connectedDevices: defineTable({
     userId: v.id("users"),

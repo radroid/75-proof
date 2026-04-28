@@ -20,6 +20,7 @@ import type { OnboardingState, OnboardingStep } from "@/lib/onboarding-types";
 import { formatEndDate } from "@/lib/day-utils";
 import { useGuest } from "@/components/guest-provider";
 import { getTemplateBySlug, isKnownTemplate } from "@/lib/routine-templates";
+import { POPULAR_ROUTINES_SEED } from "@/convex/lib/popularRoutinesSeed";
 
 interface Props {
   state: OnboardingState;
@@ -43,11 +44,7 @@ export function OnboardingReview({
   const hardCount = activeHabits.filter((h) => h.isHard).length;
   const themeName = themeMetadata[state.theme]?.name ?? state.theme;
   const isCatalogTemplate = isKnownTemplate(state.templateSlug);
-  const templateLabel = isCatalogTemplate
-    ? getTemplateBySlug(state.templateSlug).title
-    : state.templateSlug.startsWith("ai-generated:")
-      ? "AI-generated routine"
-      : "Custom routine";
+  const templateLabel = resolveTemplateLabel(state.templateSlug, isCatalogTemplate);
 
   return (
     <motion.div
@@ -84,7 +81,13 @@ export function OnboardingReview({
         <SummaryRow
           label="Routine"
           value={templateLabel}
-          onEdit={() => onGoToStep("template")}
+          onEdit={() =>
+            // The custom path skips the template step entirely (the
+            // build-your-own seeds are set at the path picker), so route
+            // its Edit button to the habits step instead — that's where
+            // a custom user actually shapes their routine.
+            onGoToStep(state.entryPath === "custom" ? "habits" : "template")
+          }
         />
 
         {/* Challenge length + computed end date */}
@@ -247,4 +250,15 @@ function SummaryRow({
       </button>
     </div>
   );
+}
+
+function resolveTemplateLabel(slug: string, isCatalog: boolean): string {
+  if (isCatalog) return getTemplateBySlug(slug).title;
+  if (slug.startsWith("ai-generated:")) return "AI-generated routine";
+  if (slug.startsWith("popular:")) {
+    const popularSlug = slug.slice("popular:".length);
+    const found = POPULAR_ROUTINES_SEED.find((r) => r.slug === popularSlug);
+    return found?.title ?? "Popular routine";
+  }
+  return "Custom routine";
 }
