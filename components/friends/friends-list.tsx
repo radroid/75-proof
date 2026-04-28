@@ -1,6 +1,7 @@
 "use client";
 
-import { Id } from "@/convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
+import { api } from "@/convex/_generated/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { FriendProgressCard } from "./friend-progress-card";
 import { WeeklyLeaderboard } from "./weekly-leaderboard";
@@ -8,21 +9,13 @@ import { TodayPulse } from "./today-pulse";
 import { FriendSearch } from "./friend-search";
 import { Users } from "lucide-react";
 
-interface FriendsListProps {
-  friendProgress: Array<{
-    user: { _id: Id<"users">; displayName: string; avatarUrl?: string };
-    challenge: { currentDay: number | null; startDate: string };
-    todayComplete: boolean | null;
-    coStreak?: number;
-    habits?: Array<{
-      _id: string;
-      name: string;
-      icon?: string;
-      category?: string;
-      isHard: boolean;
-      completedToday: boolean | null;
-    }> | null;
-  }> | undefined;
+// Single source of truth — derived from the Convex query so backend
+// shape changes propagate through to consumers at compile time.
+export type FriendProgressList =
+  FunctionReturnType<typeof api.feed.getFriendProgress>;
+
+export interface FriendsListProps {
+  friendProgress: FriendProgressList | undefined;
   /**
    * When true, the inline search input at the top is omitted — used on the
    * new Progress page where a more prominent "Add a friend" block lives in
@@ -60,9 +53,11 @@ export function FriendsList({ friendProgress, hideSearch = false }: FriendsListP
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {friendProgress.map((fp) => (
-              <FriendProgressCard key={fp.user._id} friend={fp} />
-            ))}
+            {friendProgress
+              .filter((fp): fp is NonNullable<typeof fp> => fp !== null)
+              .map((fp) => (
+                <FriendProgressCard key={fp.user._id} friend={fp} />
+              ))}
           </div>
         )}
       </div>

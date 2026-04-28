@@ -1,31 +1,32 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { FunctionReturnType } from "convex/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Id } from "@/convex/_generated/dataModel";
-import { ActivityFeed, type FeedItem } from "@/components/friends/activity-feed";
+import { api } from "@/convex/_generated/api";
+import { ActivityFeed } from "@/components/friends/activity-feed";
 import posthog from "posthog-js";
 
 const COLLAPSED_LIMIT = 5;
 
-interface FriendOption {
-  _id: Id<"users">;
-  displayName: string;
-  avatarUrl?: string;
-}
+// Derived from the Convex queries `useFriends()` exposes — keeps the
+// section in lockstep with the hook so backend shape changes show up
+// at the page boundary as type errors instead of silent drift.
+type FriendsList = FunctionReturnType<typeof api.friends.getFriends>;
+type FriendsFeed = FunctionReturnType<typeof api.feed.getFriendsFeed>;
 
 interface Props {
-  friendsFeed: FeedItem[] | undefined;
+  friendsFeed: FriendsFeed | undefined;
   /**
-   * The user's accepted friends — drives the capsule row. Same shape as
-   * `useFriends().friends` returns. When `undefined` we render the feed
-   * without capsules (loading state). When empty, `<ActivityFeed>` already
-   * shows an "Add friends to see their progress here" empty state.
+   * The user's accepted friends — drives the capsule row. When `undefined`
+   * we render the feed without capsules (loading state). When empty,
+   * `<ActivityFeed>` already shows an "Add friends to see their progress
+   * here" empty state.
    */
-  friends: FriendOption[] | undefined;
+  friends: FriendsList | undefined;
 }
 
 /**
@@ -38,6 +39,14 @@ export function ActivitySection({ friendsFeed, friends }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState(false);
 
+  // Convex returns `Array<T | null>` when one side of a join is missing —
+  // strip the nulls once so the JSX below can treat each entry as a real
+  // friend record.
+  const friendOptions = useMemo(
+    () => (friends ?? []).filter((f): f is NonNullable<typeof f> => f !== null),
+    [friends],
+  );
+
   const toggle = (friendId: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -48,7 +57,7 @@ export function ActivitySection({ friendsFeed, friends }: Props) {
       }
       posthog.capture("activity_filter_toggled", {
         selected_count: next.size,
-        friend_count: friends?.length ?? 0,
+        friend_count: friendOptions.length,
       });
       return next;
     });
@@ -59,7 +68,7 @@ export function ActivitySection({ friendsFeed, friends }: Props) {
     setSelected(new Set());
     posthog.capture("activity_filter_toggled", {
       selected_count: 0,
-      friend_count: friends?.length ?? 0,
+      friend_count: friendOptions.length,
     });
   };
 
@@ -82,7 +91,7 @@ export function ActivitySection({ friendsFeed, friends }: Props) {
 
   // Hide the capsule row entirely when the user has no friends — the feed
   // already renders its own empty state in that case.
-  const showCapsules = (friends?.length ?? 0) > 0;
+  const showCapsules = friendOptions.length > 0;
   const everyoneActive = selected.size === 0;
 
   return (
@@ -106,7 +115,7 @@ export function ActivitySection({ friendsFeed, friends }: Props) {
             active={everyoneActive}
             onClick={clearFilter}
           />
-          {friends!.map((f) => (
+          {friendOptions.map((f) => (
             <FilterCapsule
               key={f._id}
               label={f.displayName}

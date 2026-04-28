@@ -1,23 +1,10 @@
 "use client";
 
-import { Id } from "@/convex/_generated/dataModel";
+import type { ComponentProps } from "react";
 import { FriendsList } from "@/components/friends/friends-list";
 
 interface Props {
-  friendProgress: Array<{
-    user: { _id: Id<"users">; displayName: string; avatarUrl?: string };
-    challenge: { currentDay: number | null; startDate: string };
-    todayComplete: boolean | null;
-    coStreak?: number;
-    habits?: Array<{
-      _id: string;
-      name: string;
-      icon?: string;
-      category?: string;
-      isHard: boolean;
-      completedToday: boolean | null;
-    }> | null;
-  }> | undefined;
+  friendProgress: ComponentProps<typeof FriendsList>["friendProgress"];
 }
 
 /**

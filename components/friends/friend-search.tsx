@@ -54,6 +54,20 @@ export function FriendSearch({ variant = "compact" }: Props) {
     targetIds.length > 0 ? { targetUserIds: targetIds } : "skip",
   );
 
+  // Single subscription for the whole result set (was: one per row,
+  // which created N identical queries and a race in the Accept handler
+  // — `status` could already be `request_received` while the row's
+  // own query was still unresolved). Build a `userId → friendshipId`
+  // map and hand the relevant id down to each row.
+  const pendingRequests = useQuery(api.friends.getPendingRequests);
+  const pendingByUserId = useMemo(() => {
+    const map = new Map<string, Id<"friendships">>();
+    for (const r of pendingRequests ?? []) {
+      if (r.user?._id) map.set(String(r.user._id), r.request._id);
+    }
+    return map;
+  }, [pendingRequests]);
+
   const isExpanded = variant === "expanded";
 
   return (
@@ -84,6 +98,8 @@ export function FriendSearch({ variant = "compact" }: Props) {
                 key={user._id}
                 user={user}
                 status={relationshipStatuses?.[user._id] ?? "none"}
+                acceptFriendshipId={pendingByUserId.get(String(user._id))}
+                pendingRequestsLoaded={pendingRequests !== undefined}
               />
             ))}
           </CardContent>
@@ -102,13 +118,22 @@ export function FriendSearch({ variant = "compact" }: Props) {
 function SearchResultRow({
   user,
   status,
+  acceptFriendshipId,
+  pendingRequestsLoaded,
 }: {
   user: { _id: Id<"users">; displayName: string; avatarUrl?: string };
   status: "friends" | "request_sent" | "request_received" | "blocked" | "none";
+  /**
+   * Pre-resolved friendship id for the inbound request (if any). Hoisted
+   * to the parent so we run one `getPendingRequests` subscription per
+   * search instead of one per row.
+   */
+  acceptFriendshipId?: Id<"friendships">;
+  /** True once the parent's `getPendingRequests` query has resolved. */
+  pendingRequestsLoaded: boolean;
 }) {
   const sendRequest = useMutation(api.friends.sendFriendRequest);
   const acceptRequest = useMutation(api.friends.acceptFriendRequest);
-  const pendingRequests = useQuery(api.friends.getPendingRequests);
   const [loading, setLoading] = useState(false);
 
   const handleSend = async () => {
@@ -124,11 +149,10 @@ function SearchResultRow({
   };
 
   const handleAccept = async () => {
-    const req = pendingRequests?.find((r) => r.user?._id === user._id);
-    if (!req) return;
+    if (!acceptFriendshipId) return;
     setLoading(true);
     try {
-      await acceptRequest({ friendshipId: req.request._id });
+      await acceptRequest({ friendshipId: acceptFriendshipId });
       toast.success("Friend request accepted!");
     } catch {
       toast.error("Failed to accept request");
@@ -159,7 +183,16 @@ function SearchResultRow({
           </Button>
         )}
         {status === "request_received" && (
-          <Button size="sm" onClick={handleAccept} disabled={loading} className="min-h-[44px]">
+          <Button
+            size="sm"
+            onClick={handleAccept}
+            // Disable until the pending-requests lookup has resolved AND
+            // we actually have a friendshipId to act on. Without this
+            // gate the user could tap Accept on a row whose backing
+            // request hadn't loaded yet, which silently no-op'd before.
+            disabled={loading || !pendingRequestsLoaded || !acceptFriendshipId}
+            className="min-h-[44px]"
+          >
             <Check className="mr-1 h-3 w-3" /> Accept
           </Button>
         )}

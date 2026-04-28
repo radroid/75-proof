@@ -493,6 +493,25 @@ export default function ProgressPage() {
     posthog.capture("progress_friends_ribbon_view");
   }, []);
 
+  // Social block — friends progress, activity feed, and inbound/outbound
+  // requests. Rendered for any signed-in user regardless of challenge
+  // state (CodeRabbit: signed-in users with no current challenge or with
+  // a future-start should still be able to manage relationships and see
+  // nudges). Local-mode users have no friend graph, so they never see
+  // it. The IncomingNudges banner ships with this block so a fresh nudge
+  // surfaces even when the user has no active challenge.
+  const socialSections = !isGuest ? (
+    <>
+      <IncomingNudges />
+      <FriendsSection friendProgress={friendProgress} />
+      <ActivitySection friendsFeed={friendsFeed} friends={friends} />
+      <RequestsSection
+        pendingRequests={pendingRequests}
+        sentRequests={sentRequests}
+      />
+    </>
+  ) : null;
+
   // ── Loading / empty ────────────────────────────────────────
   // Distinguish loading (`undefined`) from "no active challenge" (`null`):
   // Convex's `useQuery` returns `undefined` while in flight, and the empty
@@ -530,21 +549,29 @@ export default function ProgressPage() {
         <p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground mt-2">
           Start a challenge to see your progress here.
         </p>
+        {socialSections}
       </PageContainer>
     );
   }
 
   // Future-start: render the upcoming-challenge placeholder rather than
-  // stat sections that would all be empty pre-Day-1.
+  // stat sections that would all be empty pre-Day-1. Social sections still
+  // render below so the user can manage friends/requests/nudges while
+  // they wait for Day 1.
   const todayStr = getTodayInTimezone(getUserTimezone());
   const phase = describeChallengePhase(challenge.startDate, todayStr);
   if (phase.kind === "future") {
     return (
-      <ChallengeUpcoming
-        startDate={challenge.startDate}
-        phase={phase}
-        routineLabel={routineLabel}
-      />
+      <>
+        <ChallengeUpcoming
+          startDate={challenge.startDate}
+          phase={phase}
+          routineLabel={routineLabel}
+        />
+        {socialSections && (
+          <PageContainer className="mt-8">{socialSections}</PageContainer>
+        )}
+      </>
     );
   }
 
@@ -575,10 +602,9 @@ export default function ProgressPage() {
         </p>
       </div>
 
-      {/* Incoming nudge banner — surfaces fresh "Maya nudged you 👊"
-          messages. Lives at the top of Progress now that there's no
-          standalone Friends route. Local-mode users have no nudges. */}
-      {!isGuest && <IncomingNudges />}
+      {/* Incoming nudge banner moved into `socialSections` below so it
+          renders consistently across all return paths (no-challenge,
+          future-start, active). */}
 
       <section
         aria-labelledby="this-week-heading"
@@ -978,19 +1004,7 @@ export default function ProgressPage() {
         </div>
       </section>
 
-      {!isGuest && (
-        <>
-          <FriendsSection friendProgress={friendProgress as any} />
-          <ActivitySection
-            friendsFeed={friendsFeed as any}
-            friends={friends as any}
-          />
-          <RequestsSection
-            pendingRequests={pendingRequests as any}
-            sentRequests={sentRequests as any}
-          />
-        </>
-      )}
+      {socialSections}
     </PageContainer>
   );
 }

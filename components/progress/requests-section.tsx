@@ -1,27 +1,18 @@
 "use client";
 
-import { Id } from "@/convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
+import { api } from "@/convex/_generated/api";
 import { RequestsTab } from "@/components/friends/requests-tab";
 import { FriendSearch } from "@/components/friends/friend-search";
 
-type RequestWithUser = {
-  request: {
-    _id: Id<"friendships">;
-    userId: Id<"users">;
-    friendId: Id<"users">;
-    status: string;
-    createdAt: string;
-  };
-  user: {
-    _id: Id<"users">;
-    displayName: string;
-    avatarUrl?: string;
-  } | null;
-};
+// Derived from the Convex queries `useFriends()` exposes — see the
+// matching pattern in `activity-section.tsx`.
+type PendingRequests = FunctionReturnType<typeof api.friends.getPendingRequests>;
+type SentRequests = FunctionReturnType<typeof api.friends.getSentRequests>;
 
 interface Props {
-  pendingRequests: RequestWithUser[] | undefined;
-  sentRequests: RequestWithUser[] | undefined;
+  pendingRequests: PendingRequests | undefined;
+  sentRequests: SentRequests | undefined;
 }
 
 /**
