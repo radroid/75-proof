@@ -410,7 +410,7 @@
 /* ==========================================
    GLOBAL LAYOUT TOKENS
    Shared across themes. Bottom nav height is the pill
-   nav (56px) + its bottom offset (2rem = 32px). Components
+   nav (66px) + its bottom offset (1.25rem = 20px). Components
    that pin to the bottom on mobile should reserve this space
    plus the device safe-area inset.
    ========================================== */

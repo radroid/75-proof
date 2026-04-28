@@ -296,11 +296,10 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
       <nav
         ref={navRef}
         aria-label="Primary"
-        // The pill widens with item count: the 4-item guest variant
-        // caps at 360px so icons stay roomy; the 5-item authed variant
-        // (Today/Progress/Coach/Friends/Settings) gets up to 420px so
-        // labels don't crowd. Deriving from `navItems.length` keeps the
-        // two variants from drifting if either gains or loses a tab.
+        // The pill widens with item count: the 4-item variant caps at
+        // 380px so icons stay roomy; a 5-item variant gets up to 440px
+        // so labels don't crowd. Deriving from `navItems.length` keeps
+        // the two variants from drifting if either gains or loses a tab.
         className="flex justify-around items-center mx-auto w-full relative"
         style={{
           maxWidth: navItems.length >= 5 ? 440 : 380,
