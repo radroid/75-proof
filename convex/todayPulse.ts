@@ -1,12 +1,30 @@
 import { query } from "./_generated/server";
 import { getAuthenticatedUserOrNull } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
+import { HABIT_CATEGORY_LABELS } from "./lib/habitCategories";
 
-const CATEGORY_META: Record<string, { label: string; icon: string }> = {
-  fitness: { label: "Fitness", icon: "dumbbell" },
-  nutrition: { label: "Nutrition", icon: "apple" },
-  mind: { label: "Mind", icon: "book-open" },
+// Icons stay local because the wire format is a string name (resolved
+// to a lucide icon on the client), while the React renderer in
+// DynamicDailyChecklist holds the icons as ReactNodes.
+const CATEGORY_ICONS: Record<string, string> = {
+  fitness: "dumbbell",
+  nutrition: "apple",
+  mind: "book-open",
+  wellness: "sparkles",
+  "skill-building": "brain",
+  productivity: "layout-grid",
+  discipline: "layout-grid",
+  "personal-development": "sparkles",
+  other: "layout-grid",
 };
+
+function categoryLabel(category: string): string {
+  // todayPulse historically capitalized the labels (e.g. "Fitness"); the
+  // shared source stores lower-case so the UI can transform per context.
+  // Capitalize the first letter to preserve the prior pulse rendering.
+  const base = HABIT_CATEGORY_LABELS[category] ?? category;
+  return base.charAt(0).toUpperCase() + base.slice(1);
+}
 
 type PulseRow = {
   category: string;
@@ -234,8 +252,8 @@ export const getTodayPulse = query({
     const categories: PulseRow[] = Object.entries(categoryCounts)
       .map(([category, completed]) => ({
         category,
-        label: CATEGORY_META[category]?.label ?? category,
-        icon: CATEGORY_META[category]?.icon ?? "circle",
+        label: categoryLabel(category),
+        icon: CATEGORY_ICONS[category] ?? "circle",
         completed,
       }))
       .sort((a, b) => b.completed - a.completed);

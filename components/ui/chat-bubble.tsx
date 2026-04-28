@@ -97,17 +97,28 @@ export function MarkdownInline({
             // default, but the model can still produce a markdown link
             // whose href is `javascript:`, `data:`, or another unsafe
             // scheme. Whitelist the protocols we want to ship as live
-            // links and downgrade everything else to a plain styled span
-            // — the link text is preserved either way.
-            const safeHref =
-              typeof href === "string" && /^(https?:|mailto:|\/)/i.test(href)
-                ? href
-                : undefined;
+            // links and render anything else as a plain `<span>` — that
+            // way assistive tech doesn't announce a "link" with no
+            // target, and the bubble doesn't show an underlined affordance
+            // the user can't actually follow.
+            const isSafe =
+              typeof href === "string" && /^(https?:|mailto:|\/)/i.test(href);
+            if (!isSafe) {
+              return (
+                <span
+                  className={cn(
+                    isUser ? "text-primary-foreground" : "text-foreground",
+                  )}
+                >
+                  {children}
+                </span>
+              );
+            }
             return (
               <a
-                href={safeHref}
-                target={safeHref ? "_blank" : undefined}
-                rel={safeHref ? "noopener noreferrer" : undefined}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
                 className={cn(
                   "underline underline-offset-2",
                   isUser

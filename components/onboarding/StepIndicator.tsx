@@ -54,8 +54,13 @@ export function StepIndicator({
       >
         {steps.map((step, i) => {
           const isCurrent = i === currentIndex;
-          const isVisited = i < currentIndex;
           const isDisabled = disabledIndices?.has(i) ?? false;
+          // "Visited" derives from the reach ceiling, not the current
+          // index — after a back-jump, steps in (currentIndex, ceiling]
+          // are still revisitable, so they should look filled-in like
+          // the steps already behind us, not muted like never-reached
+          // future steps.
+          const isVisited = !isCurrent && i <= ceiling && !isDisabled;
           const isReachable =
             onStepClick != null && i <= ceiling && !isDisabled;
           const dot = (

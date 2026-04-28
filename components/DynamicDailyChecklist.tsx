@@ -14,6 +14,10 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useGuest } from "@/components/guest-provider";
 import { markDayComplete as localMarkDayComplete } from "@/lib/local-store/mutations";
+import {
+  HABIT_CATEGORY_LABELS,
+  HABIT_CATEGORY_ORDER,
+} from "@/convex/lib/habitCategories";
 
 interface DynamicDailyChecklistProps {
   challengeId: Id<"challenges">;
@@ -24,27 +28,23 @@ interface DynamicDailyChecklistProps {
   userTimezone?: string;
 }
 
-// Single source of truth for habit categories. Order is the array order;
-// adding or moving a category only requires editing this list. Keep in
-// sync with the routine-template category union in `convex/schema.ts`
-// (discipline / wellness / fitness / mind / custom) and the popular
-// catalog's habit categories (skill-building / productivity /
-// personal-development).
-const CATEGORY_META = [
-  { key: "fitness", label: "fitness", icon: <Dumbbell className="h-4 w-4" /> },
-  { key: "nutrition", label: "nutrition", icon: <Apple className="h-4 w-4" /> },
-  { key: "mind", label: "mind", icon: <Brain className="h-4 w-4" /> },
-  { key: "wellness", label: "wellness", icon: <Sparkles className="h-4 w-4" /> },
-  { key: "skill-building", label: "skill", icon: <Brain className="h-4 w-4" /> },
-  { key: "productivity", label: "productivity", icon: <LayoutGrid className="h-4 w-4" /> },
-  { key: "discipline", label: "discipline", icon: <LayoutGrid className="h-4 w-4" /> },
-  { key: "personal-development", label: "personal", icon: <Sparkles className="h-4 w-4" /> },
-  { key: "other", label: "other", icon: <LayoutGrid className="h-4 w-4" /> },
-] as const;
-
-const categoryMeta: Record<string, { label: string; icon: React.ReactNode }> =
-  Object.fromEntries(CATEGORY_META.map((c) => [c.key, c]));
-const categoryOrder: readonly string[] = CATEGORY_META.map((c) => c.key);
+// Per-category icon mapping. Labels and ordering live in
+// `convex/lib/habitCategories.ts` so the Convex `todayPulse` query and
+// this component can't drift on which categories exist or what they're
+// called. Icons stay local because the renderers disagree on type — the
+// React UI wants a `ReactNode`, while the Convex query has to ship a
+// string icon name across the wire.
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  fitness: <Dumbbell className="h-4 w-4" />,
+  nutrition: <Apple className="h-4 w-4" />,
+  mind: <Brain className="h-4 w-4" />,
+  wellness: <Sparkles className="h-4 w-4" />,
+  "skill-building": <Brain className="h-4 w-4" />,
+  productivity: <LayoutGrid className="h-4 w-4" />,
+  discipline: <LayoutGrid className="h-4 w-4" />,
+  "personal-development": <Sparkles className="h-4 w-4" />,
+  other: <LayoutGrid className="h-4 w-4" />,
+};
 const FALLBACK_ICON = <LayoutGrid className="h-4 w-4" />;
 
 export function DynamicDailyChecklist({
@@ -140,8 +140,8 @@ export function DynamicDailyChecklist({
   // Render known categories in their canonical order, then any unknown
   // ones (e.g. user-typed custom categories) appended alphabetically so
   // habits never silently disappear from the list.
-  const knownInOrder = categoryOrder.filter((c) => grouped.has(c));
-  const knownSet = new Set(categoryOrder);
+  const knownInOrder = HABIT_CATEGORY_ORDER.filter((c) => grouped.has(c));
+  const knownSet = new Set(HABIT_CATEGORY_ORDER);
   const extras = Array.from(grouped.keys())
     .filter((c) => !knownSet.has(c))
     .sort();
@@ -174,10 +174,10 @@ export function DynamicDailyChecklist({
               <div className="flex items-center justify-between mb-1 pb-3 border-b border-border">
                 <div className="flex items-center gap-2.5">
                   <span className={cn("transition-colors", catComplete ? "text-success" : "text-muted-foreground")}>
-                    {categoryMeta[category]?.icon ?? FALLBACK_ICON}
+                    {CATEGORY_ICONS[category] ?? FALLBACK_ICON}
                   </span>
                   <h3 className="text-xs font-medium uppercase tracking-[0.08em] sm:tracking-[0.15em] text-muted-foreground">
-                    {categoryMeta[category]?.label ?? category.replace(/-/g, " ")}
+                    {HABIT_CATEGORY_LABELS[category] ?? category.replace(/-/g, " ")}
                   </h3>
                 </div>
                 {catComplete && (
