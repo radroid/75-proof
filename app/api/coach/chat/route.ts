@@ -19,43 +19,38 @@ async function runConvexAction<T>(
   baseUrl: string,
   path: string,
   args: Record<string, unknown>,
+  timeoutMs: number,
 ): Promise<T> {
-  const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/api/action`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path, args, format: "json" }),
-  });
-  if (!res.ok) {
-    throw new Error(
-      `Convex action ${path} failed: HTTP ${res.status} ${await res.text().catch(() => "")}`.trim(),
-    );
+  // AbortController so the outbound fetch is actually cancelled on timeout —
+  // a Promise.race-style local timeout would let the request keep running on
+  // workerd, racking up CPU time and load on Convex.
+  const controller = new AbortController();
+  const timer = setTimeout(
+    () => controller.abort(new Error(`Convex action ${path} timed out after ${timeoutMs}ms`)),
+    timeoutMs,
+  );
+  try {
+    const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/api/action`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path, args, format: "json" }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new Error(
+        `Convex action ${path} failed: HTTP ${res.status} ${await res.text().catch(() => "")}`.trim(),
+      );
+    }
+    const body = (await res.json()) as
+      | { status: "success"; value: T }
+      | { status: "error"; errorMessage: string; errorData?: unknown };
+    if (body.status === "error") {
+      throw new Error(`Convex action ${path} returned error: ${body.errorMessage}`);
+    }
+    return body.value;
+  } finally {
+    clearTimeout(timer);
   }
-  const body = (await res.json()) as
-    | { status: "success"; value: T }
-    | { status: "error"; errorMessage: string; errorData?: unknown };
-  if (body.status === "error") {
-    throw new Error(`Convex action ${path} returned error: ${body.errorMessage}`);
-  }
-  return body.value;
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new Error(`${label} timed out after ${ms}ms`)),
-      ms,
-    );
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (err) => {
-        clearTimeout(timer);
-        reject(err);
-      },
-    );
-  });
 }
 
 const CATEGORIES = new Set([
@@ -242,15 +237,12 @@ export async function POST(req: NextRequest) {
 
   if (queryText) {
     try {
-      const result = (await withTimeout(
-        runConvexAction<Retrieved[]>(convexUrl, "popularRoutines:vectorSearch", {
-          query: queryText,
-          limit: TOP_K,
-          category,
-        }),
+      const result = await runConvexAction<Retrieved[]>(
+        convexUrl,
+        "popularRoutines:vectorSearch",
+        { query: queryText, limit: TOP_K, category },
         VECTOR_SEARCH_TIMEOUT_MS,
-        "vector search",
-      )) as Retrieved[];
+      );
       retrieved = result;
     } catch (err) {
       // Log full error server-side; only surface a generic message to the client.
