@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "@/convex/_generated/api";
 
 export const runtime = "nodejs";
 
@@ -10,6 +8,36 @@ const MAX_MESSAGES = 30;
 const MAX_MESSAGE_CHARS = 4000;
 const TOP_K = 5;
 const VECTOR_SEARCH_TIMEOUT_MS = 15_000;
+
+// Call a Convex action via its HTTP `/api/action` endpoint instead of the
+// `convex/browser` client. The client transitively pulls in `ws`, `bufferutil`,
+// and `node-gyp-build`, none of which load on Cloudflare Workers — bundling
+// them broke the entire route module so production requests crashed before
+// POST ever ran ("ComponentMod.handler is not a function"). A direct fetch
+// keeps this route Workers-safe.
+async function runConvexAction<T>(
+  baseUrl: string,
+  path: string,
+  args: Record<string, unknown>,
+): Promise<T> {
+  const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/api/action`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path, args, format: "json" }),
+  });
+  if (!res.ok) {
+    throw new Error(
+      `Convex action ${path} failed: HTTP ${res.status} ${await res.text().catch(() => "")}`.trim(),
+    );
+  }
+  const body = (await res.json()) as
+    | { status: "success"; value: T }
+    | { status: "error"; errorMessage: string; errorData?: unknown };
+  if (body.status === "error") {
+    throw new Error(`Convex action ${path} returned error: ${body.errorMessage}`);
+  }
+  return body.value;
+}
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -213,10 +241,9 @@ export async function POST(req: NextRequest) {
   let retrievalError: string | undefined;
 
   if (queryText) {
-    const convex = new ConvexHttpClient(convexUrl);
     try {
       const result = (await withTimeout(
-        convex.action(api.popularRoutines.vectorSearch, {
+        runConvexAction<Retrieved[]>(convexUrl, "popularRoutines:vectorSearch", {
           query: queryText,
           limit: TOP_K,
           category,
