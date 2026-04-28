@@ -14,8 +14,8 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { haptic } from "@/lib/haptics";
 
-const INDICATOR_WIDTH = 68;
-const INDICATOR_HEIGHT = 46;
+const INDICATOR_WIDTH = 72;
+const INDICATOR_HEIGHT = 54;
 // Pointer must move this many pixels before we treat the gesture as a drag.
 // Smaller than 8 made stationary taps misfire as drags on jittery touch
 // digitizers; larger than ~10 felt sluggish on a deliberate slow drag.
@@ -296,14 +296,13 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
       <nav
         ref={navRef}
         aria-label="Primary"
-        // The pill widens with item count: the 4-item guest variant
-        // caps at 360px so icons stay roomy; the 5-item authed variant
-        // (Today/Progress/Coach/Friends/Settings) gets up to 420px so
-        // labels don't crowd. Deriving from `navItems.length` keeps the
-        // two variants from drifting if either gains or loses a tab.
+        // The pill widens with item count: the 4-item variant caps at
+        // 380px so icons stay roomy; a 5-item variant gets up to 440px
+        // so labels don't crowd. Deriving from `navItems.length` keeps
+        // the two variants from drifting if either gains or loses a tab.
         className="flex justify-around items-center mx-auto w-full relative"
         style={{
-          maxWidth: navItems.length >= 5 ? 420 : 360,
+          maxWidth: navItems.length >= 5 ? 440 : 380,
           height: "var(--bottom-nav-height)",
           background: "var(--nav-bg)",
           borderRadius: "var(--nav-radius)",
