@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { useGuest } from "@/components/guest-provider";
 import { LocalSettingsPage } from "@/components/local-settings";
+import { CoachPrivacySettings } from "@/components/coach/CoachPrivacySettings";
 import { sharedUserProfileProps, userButtonPopoverElements } from "@/lib/clerk-appearance";
 import { usePushSubscription } from "@/components/pwa/use-push-subscription";
 import { haptic, isHapticsEnabled, setHapticsEnabled } from "@/lib/haptics";
@@ -758,6 +759,9 @@ export default function SettingsPage() {
               </p>
             </CardContent>
           </Card>
+        </MotionItem>
+        <MotionItem>
+          <CoachPrivacySettings />
         </MotionItem>
       </Section>
 

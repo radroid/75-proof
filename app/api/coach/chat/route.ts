@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 export const runtime = "nodejs";
 
@@ -8,48 +9,75 @@ const MAX_MESSAGES = 30;
 const MAX_MESSAGE_CHARS = 4000;
 const TOP_K = 5;
 const VECTOR_SEARCH_TIMEOUT_MS = 15_000;
+const MEMORY_FETCH_TIMEOUT_MS = 5_000;
+const THREAD_APPEND_TIMEOUT_MS = 10_000;
+const MEMORY_DISTILL_TIMEOUT_MS = 30_000;
 
-// Call a Convex action via its HTTP `/api/action` endpoint instead of the
-// `convex/browser` client. The client transitively pulls in `ws`, `bufferutil`,
-// and `node-gyp-build`, none of which load on Cloudflare Workers — bundling
-// them broke the entire route module so production requests crashed before
-// POST ever ran ("ComponentMod.handler is not a function"). A direct fetch
-// keeps this route Workers-safe.
-async function runConvexAction<T>(
+// Call Convex via its HTTP API (`/api/query`, `/api/mutation`, `/api/action`)
+// instead of `ConvexHttpClient` from `convex/browser`. The client transitively
+// pulls in `ws`, `bufferutil`, and `node-gyp-build`, none of which load on
+// Cloudflare Workers — bundling them broke the entire route module so
+// production requests crashed before POST ever ran ("ComponentMod.handler is
+// not a function"). A direct fetch keeps this route Workers-safe.
+async function runConvex<T>(
   baseUrl: string,
+  kind: "query" | "mutation" | "action",
   path: string,
   args: Record<string, unknown>,
-  timeoutMs: number,
+  opts: { timeoutMs: number; token?: string | null },
 ): Promise<T> {
   // AbortController so the outbound fetch is actually cancelled on timeout —
   // a Promise.race-style local timeout would let the request keep running on
   // workerd, racking up CPU time and load on Convex.
   const controller = new AbortController();
   const timer = setTimeout(
-    () => controller.abort(new Error(`Convex action ${path} timed out after ${timeoutMs}ms`)),
-    timeoutMs,
+    () =>
+      controller.abort(
+        new Error(`Convex ${kind} ${path} timed out after ${opts.timeoutMs}ms`),
+      ),
+    opts.timeoutMs,
   );
   try {
-    const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/api/action`, {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (opts.token) headers["Authorization"] = `Bearer ${opts.token}`;
+    const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/api/${kind}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ path, args, format: "json" }),
       signal: controller.signal,
     });
     if (!res.ok) {
       throw new Error(
-        `Convex action ${path} failed: HTTP ${res.status} ${await res.text().catch(() => "")}`.trim(),
+        `Convex ${kind} ${path} failed: HTTP ${res.status} ${await res.text().catch(() => "")}`.trim(),
       );
     }
     const body = (await res.json()) as
       | { status: "success"; value: T }
       | { status: "error"; errorMessage: string; errorData?: unknown };
     if (body.status === "error") {
-      throw new Error(`Convex action ${path} returned error: ${body.errorMessage}`);
+      throw new Error(`Convex ${kind} ${path} returned error: ${body.errorMessage}`);
     }
     return body.value;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/**
+ * Best-effort fetch of a Clerk JWT minted from the "convex" template, so
+ * server-side queries/actions resolve identity. The coach endpoint is open
+ * to guests, so we return null on failure instead of throwing — auth-only
+ * mutations (memory writes, thread persistence) silently no-op for guests.
+ */
+async function getConvexAuthToken(): Promise<string | null> {
+  try {
+    const { getToken } = await auth();
+    const token = await getToken({ template: "convex" });
+    return token ?? null;
+  } catch {
+    return null;
   }
 }
 
@@ -161,7 +189,15 @@ export async function POST(req: NextRequest) {
   let body: {
     messages?: ChatMessage[];
     category?: string;
+    threadId?: string;
   };
+
+  // Convex IDs are opaque base32-ish strings. We don't need to fully
+  // round-trip via the SDK to validate — a quick character-class check
+  // catches the obvious garbage (slashes, spaces, JSON chars) before we
+  // hit the mutation. The mutation still verifies ownership.
+  const isPlausibleConvexId = (s: unknown): s is string =>
+    typeof s === "string" && s.length > 0 && s.length <= 64 && /^[A-Za-z0-9_]+$/.test(s);
   try {
     body = await req.json();
   } catch {
@@ -194,6 +230,10 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+  }
+
+  if (body.threadId !== undefined && !isPlausibleConvexId(body.threadId)) {
+    return NextResponse.json({ error: "Invalid threadId" }, { status: 400 });
   }
 
   const category =
@@ -231,19 +271,24 @@ export async function POST(req: NextRequest) {
     score: number;
   };
 
+  // Mint a Clerk-issued Convex JWT once per request — null for guests.
+  // The vector search action is open; the memory + thread mutations
+  // require auth and silently no-op for guests.
+  const token = await getConvexAuthToken();
+
   let retrieved: Retrieved[] = [];
   let retrievalFailed = false;
   let retrievalError: string | undefined;
 
   if (queryText) {
     try {
-      const result = await runConvexAction<Retrieved[]>(
+      retrieved = await runConvex<Retrieved[]>(
         convexUrl,
+        "action",
         "popularRoutines:vectorSearch",
         { query: queryText, limit: TOP_K, category },
-        VECTOR_SEARCH_TIMEOUT_MS,
+        { timeoutMs: VECTOR_SEARCH_TIMEOUT_MS, token },
       );
-      retrieved = result;
     } catch (err) {
       // Log full error server-side; only surface a generic message to the client.
       console.error("[coach/chat] vector search failed", err);
@@ -253,10 +298,35 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // C-1: Pull persisted memory facts so the model knows the user.
+  // Guests + opted-out users get null and no facts are injected.
+  let memoryFacts: string[] = [];
+  try {
+    const mem = await runConvex<{ enabled: boolean; facts: string[] } | null>(
+      convexUrl,
+      "query",
+      "coach:getMemory",
+      {},
+      { timeoutMs: MEMORY_FETCH_TIMEOUT_MS, token },
+    );
+    if (mem?.enabled) memoryFacts = mem.facts;
+  } catch (err) {
+    // Non-fatal — coach still works without memory.
+    console.error("[coach/chat] memory fetch failed", err);
+  }
+
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
+    const assistantText = stubResponse(queryText, retrieved);
+    await persistAndDistill({
+      convexUrl,
+      token,
+      threadId: body.threadId,
+      messages,
+      assistantText,
+    });
     return NextResponse.json({
-      assistantText: stubResponse(queryText, retrieved),
+      assistantText,
       retrieved,
       retrievalFailed,
       retrievalError,
@@ -269,7 +339,7 @@ export async function POST(req: NextRequest) {
   const model =
     process.env.OPENROUTER_CHAT_MODEL ?? "anthropic/claude-sonnet-4.5";
 
-  const system = buildSystemPrompt(retrieved, category);
+  const system = buildSystemPrompt(retrieved, category, memoryFacts);
 
   try {
     const result = await generateText({
@@ -277,8 +347,16 @@ export async function POST(req: NextRequest) {
       system,
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
     });
+    const assistantText = result.text ?? "";
+    await persistAndDistill({
+      convexUrl,
+      token,
+      threadId: body.threadId,
+      messages,
+      assistantText,
+    });
     return NextResponse.json({
-      assistantText: result.text ?? "",
+      assistantText,
       retrieved,
       retrievalFailed,
       retrievalError,
@@ -299,6 +377,61 @@ export async function POST(req: NextRequest) {
   }
 }
 
+/**
+ * After a successful chat round, optionally persist the user/assistant
+ * pair to a thread (C-2) and fire-and-forget the memory writer (C-1).
+ * Both calls require auth — they no-op silently for guests.
+ */
+async function persistAndDistill(args: {
+  convexUrl: string;
+  token: string | null;
+  threadId: string | undefined;
+  messages: ChatMessage[];
+  assistantText: string;
+}): Promise<void> {
+  const { convexUrl, token, threadId, messages, assistantText } = args;
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  if (!lastUser) return;
+
+  if (threadId) {
+    try {
+      await runConvex<null>(
+        convexUrl,
+        "mutation",
+        "coach:appendMessages",
+        {
+          threadId,
+          messages: [
+            { role: "user", content: lastUser.content },
+            { role: "assistant", content: assistantText },
+          ],
+        },
+        { timeoutMs: THREAD_APPEND_TIMEOUT_MS, token },
+      );
+    } catch (err) {
+      // Common cause: guest (no auth) or thread doesn't belong to user.
+      console.error("[coach/chat] thread persist failed", err);
+    }
+  }
+
+  // Memory writer runs in the background. We don't await — the chat
+  // response shouldn't block on distillation. The action itself
+  // exits quickly when memory is disabled, so guests skip cleanly.
+  const fullMessages: ChatMessage[] = [
+    ...messages,
+    { role: "assistant", content: assistantText },
+  ];
+  void runConvex<null>(
+    convexUrl,
+    "action",
+    "coachActions:distillMemoryFromChat",
+    { messages: fullMessages },
+    { timeoutMs: MEMORY_DISTILL_TIMEOUT_MS, token },
+  ).catch((err) => {
+    console.error("[coach/chat] memory distill failed", err);
+  });
+}
+
 function buildSystemPrompt(
   retrieved: Array<{
     slug: string;
@@ -313,7 +446,15 @@ function buildSystemPrompt(
     tags: string[];
   }>,
   category: string | undefined,
+  memoryFacts: string[] = [],
 ): string {
+  const memoryBlock =
+    memoryFacts.length > 0
+      ? `\n\nUSER MEMORY (durable facts persisted across sessions — use to personalise without re-asking)\n${memoryFacts
+          .map((f, i) => `${i + 1}. ${f}`)
+          .join("\n")}`
+      : "";
+
   const catLine = category
     ? `The user is browsing the "${category}" category. Bias your suggestions toward routines in that category, but feel free to mention adjacent ones if a stack would help.`
     : `The user has not picked a category yet. If their intent is unclear, ask one short question to narrow it down before recommending.`;
@@ -349,7 +490,7 @@ STYLE
 - Don't lecture. No "Great question!" openers.
 
 RETRIEVED ROUTINES
-${context}`;
+${context}${memoryBlock}`;
 }
 
 function stubResponse(
