@@ -259,10 +259,15 @@ export default function DashboardLayout({
     }
   }, [isResolved, isSignedIn, isLocalOptedIn, pathname, router]);
 
+  // Local-mode mobile nav. Settings replaces Coach because (a) the local
+  // user can already reach Coach from the desktop sidebar / Path-pick
+  // tile during onboarding, and (b) a settings entry-point is the only
+  // way for a guest to reset their data and re-onboard from the app
+  // shell. The Sparkles import stays in scope for the desktop sidebar.
   const guestMobileItems = [
     { label: "Today", href: "/dashboard", icon: LayoutDashboard },
     { label: "Progress", href: "/dashboard/progress", icon: TrendingUp },
-    { label: "Coach", href: "/dashboard/coach", icon: Sparkles },
+    { label: "Settings", href: "/dashboard/settings", icon: Settings },
     { label: "Sign Up", href: "#", icon: LogIn, action: promptSignup },
   ];
 
