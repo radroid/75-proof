@@ -45,6 +45,11 @@ export interface OnboardingState {
    */
   templateSlug: string;
   entryPath: EntryPath;
+  /**
+   * PD-8: user-authored "I'm becoming…" statement. Persisted on
+   * `users.identityStatement` at completion. Empty string = unset.
+   */
+  identityStatement: string;
 }
 
 export const DURATION_PRESETS = [30, 60, 75, 90] as const;
@@ -75,6 +80,7 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   daysTotal: 75,
   templateSlug: DEFAULT_TEMPLATE_SLUG,
   entryPath: null,
+  identityStatement: "",
 };
 
 export const ONBOARDING_STEPS = [
@@ -85,6 +91,7 @@ export const ONBOARDING_STEPS = [
   "template",
   "duration",
   "habits",
+  "identity",
   "review",
 ] as const;
 

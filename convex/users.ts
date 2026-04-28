@@ -123,6 +123,33 @@ export const updateUser = mutation({
   },
 });
 
+// PD-8: identity statement set/unset. Trim, cap at 140 chars; pass `null` or
+// empty string to clear. Stored on `users.identityStatement`; the Progress
+// identity card prefers it over generated formation-stage copy.
+export const setIdentityStatement = mutation({
+  args: { statement: v.union(v.string(), v.null()) },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) throw new Error("User not found");
+
+    const trimmed =
+      typeof args.statement === "string" ? args.statement.trim() : "";
+    if (trimmed.length > 140) {
+      throw new Error("Identity statement must be 140 characters or fewer.");
+    }
+
+    await ctx.db.patch(user._id, {
+      identityStatement: trimmed.length === 0 ? undefined : trimmed,
+    });
+  },
+});
+
 export const setCurrentChallenge = mutation({
   args: {
     challengeId: v.optional(v.id("challenges")),

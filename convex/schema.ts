@@ -45,6 +45,10 @@ export default defineSchema({
       // "original-75-hard", "30-day-yoga"). Optional for legacy users.
       templateSlug: v.optional(v.string()),
     })),
+    // PD-8: User-authored identity statement, harvested in onboarding and
+    // editable later. The Progress identity card prefers this over the
+    // generated formation-stage copy when present. Capped at 140 chars.
+    identityStatement: v.optional(v.string()),
     // C-1: Persistent coach memory. Opt-in (default off). Capped at ~2KB.
     // Facts are short, lossy, CLAUDE.md-style — durable preferences,
     // schedule constraints, things that worked, things that didn't. The

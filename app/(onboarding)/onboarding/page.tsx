@@ -32,6 +32,7 @@ import { OnboardingBrowsePopular } from "@/components/onboarding/OnboardingBrows
 import { OnboardingAiStep } from "@/components/onboarding/OnboardingAiStep";
 import { OnboardingDuration } from "@/components/onboarding/OnboardingDuration";
 import { OnboardingHabitConfig } from "@/components/onboarding/OnboardingHabitConfig";
+import { OnboardingIdentity } from "@/components/onboarding/OnboardingIdentity";
 import { OnboardingReview } from "@/components/onboarding/OnboardingReview";
 import { HeroSkeleton } from "@/components/ui/skeleton-enhanced";
 import posthog from "posthog-js";
@@ -315,6 +316,7 @@ export default function OnboardingPage() {
       // hidden in this PR).
       const submittedVisibility = isGuest ? ("private" as const) : state.visibility;
 
+      const trimmedIdentity = state.identityStatement.trim();
       const args = {
         displayName: state.displayName,
         timezone: state.timezone,
@@ -329,6 +331,8 @@ export default function OnboardingPage() {
         visibility: submittedVisibility,
         daysTotal: finalDaysTotal,
         templateSlug: state.templateSlug,
+        identityStatement:
+          trimmedIdentity.length > 0 ? trimmedIdentity : undefined,
       } as const;
 
       if (isGuest) {
@@ -466,6 +470,9 @@ export default function OnboardingPage() {
       )}
       {currentStep === "habits" && (
         <OnboardingHabitConfig state={state} updateState={updateState} onNext={next} onBack={back} />
+      )}
+      {currentStep === "identity" && (
+        <OnboardingIdentity state={state} updateState={updateState} onNext={next} onBack={back} />
       )}
       {currentStep === "review" && (
         <OnboardingReview

@@ -31,6 +31,9 @@ export const completeOnboarding = mutation({
     daysTotal: v.number(),
     // Routine catalog slug picked during onboarding (e.g. "original-75-hard").
     templateSlug: v.optional(v.string()),
+    // PD-8: optional identity statement ("you're becoming a runner"). Trimmed
+    // empty string is treated the same as omitted.
+    identityStatement: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -87,10 +90,17 @@ export const completeOnboarding = mutation({
     }
 
     // Update user profile + onboarding data
+    const trimmedIdentity =
+      typeof args.identityStatement === "string"
+        ? args.identityStatement.trim().slice(0, 140)
+        : "";
     await ctx.db.patch(user._id, {
       displayName: args.displayName,
       currentChallengeId: challengeId,
       onboardingComplete: true,
+      ...(trimmedIdentity.length > 0
+        ? { identityStatement: trimmedIdentity }
+        : {}),
       onboarding: {
         completedAt: new Date().toISOString(),
         ageRange: args.ageRange,

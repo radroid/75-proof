@@ -59,6 +59,7 @@ export interface LocalUser {
   onboardingComplete?: boolean;
   hasSeenTutorial?: boolean;
   onboarding?: LocalUserOnboarding;
+  identityStatement?: string;
 }
 
 export interface LocalChallenge {
