@@ -1,10 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
+import { auth } from "@clerk/nextjs/server";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 
 export const runtime = "nodejs";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
+
+/**
+ * Build a Convex HTTP client and, if the caller is signed in via Clerk,
+ * attach their JWT so server-side queries/actions resolve identity. The
+ * coach endpoint is open to guests, so we always return a client — auth
+ * just may be unset.
+ */
+async function makeAuthedConvex(convexUrl: string): Promise<ConvexHttpClient> {
+  const convex = new ConvexHttpClient(convexUrl);
+  try {
+    const { getToken } = await auth();
+    const token = await getToken({ template: "convex" });
+    if (token) convex.setAuth(token);
+  } catch {
+    // Clerk unavailable / not signed in — fine, continue as guest.
+  }
+  return convex;
+}
 
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_CHARS = 4000;
@@ -138,7 +158,15 @@ export async function POST(req: NextRequest) {
   let body: {
     messages?: ChatMessage[];
     category?: string;
+    threadId?: string;
   };
+
+  // Convex IDs are opaque base32-ish strings. We don't need to fully
+  // round-trip via the SDK to validate — a quick character-class check
+  // catches the obvious garbage (slashes, spaces, JSON chars) before we
+  // hit the mutation. The mutation still verifies ownership.
+  const isPlausibleConvexId = (s: unknown): s is string =>
+    typeof s === "string" && s.length > 0 && s.length <= 64 && /^[A-Za-z0-9_]+$/.test(s);
   try {
     body = await req.json();
   } catch {
@@ -171,6 +199,10 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+  }
+
+  if (body.threadId !== undefined && !isPlausibleConvexId(body.threadId)) {
+    return NextResponse.json({ error: "Invalid threadId" }, { status: 400 });
   }
 
   const category =
@@ -208,12 +240,16 @@ export async function POST(req: NextRequest) {
     score: number;
   };
 
+  // One Convex client for the request — authed if Clerk has a session,
+  // unauthed otherwise. The vector search action is open; the memory
+  // and thread mutations require auth and silently no-op for guests.
+  const convex = await makeAuthedConvex(convexUrl);
+
   let retrieved: Retrieved[] = [];
   let retrievalFailed = false;
   let retrievalError: string | undefined;
 
   if (queryText) {
-    const convex = new ConvexHttpClient(convexUrl);
     try {
       const result = (await withTimeout(
         convex.action(api.popularRoutines.vectorSearch, {
@@ -234,10 +270,28 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // C-1: Pull persisted memory facts so the model knows the user.
+  // Guests + opted-out users get null and no facts are injected.
+  let memoryFacts: string[] = [];
+  try {
+    const mem = await convex.query(api.coach.getMemory, {});
+    if (mem?.enabled) memoryFacts = mem.facts;
+  } catch (err) {
+    // Non-fatal — coach still works without memory.
+    console.error("[coach/chat] memory fetch failed", err);
+  }
+
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
+    const assistantText = stubResponse(queryText, retrieved);
+    await persistAndDistill({
+      convex,
+      threadId: body.threadId,
+      messages,
+      assistantText,
+    });
     return NextResponse.json({
-      assistantText: stubResponse(queryText, retrieved),
+      assistantText,
       retrieved,
       retrievalFailed,
       retrievalError,
@@ -250,7 +304,7 @@ export async function POST(req: NextRequest) {
   const model =
     process.env.OPENROUTER_CHAT_MODEL ?? "anthropic/claude-sonnet-4.5";
 
-  const system = buildSystemPrompt(retrieved, category);
+  const system = buildSystemPrompt(retrieved, category, memoryFacts);
 
   try {
     const result = await generateText({
@@ -258,8 +312,15 @@ export async function POST(req: NextRequest) {
       system,
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
     });
+    const assistantText = result.text ?? "";
+    await persistAndDistill({
+      convex,
+      threadId: body.threadId,
+      messages,
+      assistantText,
+    });
     return NextResponse.json({
-      assistantText: result.text ?? "",
+      assistantText,
       retrieved,
       retrievalFailed,
       retrievalError,
@@ -280,6 +341,52 @@ export async function POST(req: NextRequest) {
   }
 }
 
+/**
+ * After a successful chat round, optionally persist the user/assistant
+ * pair to a thread (C-2) and fire-and-forget the memory writer (C-1).
+ * Both calls require auth — they no-op silently for guests.
+ */
+async function persistAndDistill(args: {
+  convex: ConvexHttpClient;
+  threadId: string | undefined;
+  messages: ChatMessage[];
+  assistantText: string;
+}): Promise<void> {
+  const { convex, threadId, messages, assistantText } = args;
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  if (!lastUser) return;
+
+  if (threadId) {
+    try {
+      await convex.mutation(api.coach.appendMessages, {
+        threadId: threadId as Id<"coachThreads">,
+        messages: [
+          { role: "user", content: lastUser.content },
+          { role: "assistant", content: assistantText },
+        ],
+      });
+    } catch (err) {
+      // Common cause: guest (no auth) or thread doesn't belong to user.
+      console.error("[coach/chat] thread persist failed", err);
+    }
+  }
+
+  // Memory writer runs in the background. We don't await — the chat
+  // response shouldn't block on distillation. The action itself
+  // exits quickly when memory is disabled, so guests skip cleanly.
+  const fullMessages: ChatMessage[] = [
+    ...messages,
+    { role: "assistant", content: assistantText },
+  ];
+  void convex
+    .action(api.coachActions.distillMemoryFromChat, {
+      messages: fullMessages,
+    })
+    .catch((err) => {
+      console.error("[coach/chat] memory distill failed", err);
+    });
+}
+
 function buildSystemPrompt(
   retrieved: Array<{
     slug: string;
@@ -294,7 +401,15 @@ function buildSystemPrompt(
     tags: string[];
   }>,
   category: string | undefined,
+  memoryFacts: string[] = [],
 ): string {
+  const memoryBlock =
+    memoryFacts.length > 0
+      ? `\n\nUSER MEMORY (durable facts persisted across sessions — use to personalise without re-asking)\n${memoryFacts
+          .map((f, i) => `${i + 1}. ${f}`)
+          .join("\n")}`
+      : "";
+
   const catLine = category
     ? `The user is browsing the "${category}" category. Bias your suggestions toward routines in that category, but feel free to mention adjacent ones if a stack would help.`
     : `The user has not picked a category yet. If their intent is unclear, ask one short question to narrow it down before recommending.`;
@@ -330,7 +445,7 @@ STYLE
 - Don't lecture. No "Great question!" openers.
 
 RETRIEVED ROUTINES
-${context}`;
+${context}${memoryBlock}`;
 }
 
 function stubResponse(

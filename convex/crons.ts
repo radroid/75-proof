@@ -23,4 +23,15 @@ crons.interval(
   internal.reminders.dispatchDueReminders
 );
 
+// Daily TTL purge for coach memory + threads (C-1, C-2). Users opt in
+// to memory and can opt out of TTL per-account; the default retention
+// is 90 days. The mutation is bounded by `batchSize` so each firing
+// stays inside Convex's transaction limits.
+crons.interval(
+  "purge expired coach memory and threads",
+  { hours: 24 },
+  internal.coach.purgeExpired,
+  { batchSize: 50 },
+);
+
 export default crons;

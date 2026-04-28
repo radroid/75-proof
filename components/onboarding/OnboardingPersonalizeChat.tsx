@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useMutation } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Loader2, RotateCcw, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { ChatBubble } from "@/components/ui/chat-bubble";
 import { usePersonalizeChat } from "@/lib/llm-personalize";
 import type { OnboardingHabit } from "@/lib/onboarding-types";
 import { PROPOSAL_SENTINEL } from "@/convex/lib/llmPrompts";
+import { api } from "@/convex/_generated/api";
 
 interface Props {
   selectedTemplateSlug: string;
@@ -47,6 +49,10 @@ export function OnboardingPersonalizeChat({
     usePersonalizeChat(selectedTemplateSlug);
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  // C-2: when the user accepts the AI-built routine, capture the
+  // onboarding chat as a coach thread so the conversation is preserved.
+  // Fire-and-forget — failure here must not block onboarding.
+  const createThread = useMutation(api.coach.createThread);
 
   // Auto-scroll the transcript to the latest message whenever something new
   // arrives (user turn, assistant turn, or pending indicator). Without this
@@ -77,6 +83,26 @@ export function OnboardingPersonalizeChat({
       sortOrder: h.sortOrder ?? i + 1,
       icon: h.icon,
     }));
+
+    // Auto-promote the onboarding chat into a coach thread. Skip if
+    // there's no exchange yet (defensive — applying without messages
+    // would mean a stub-mode proposal). Strip the sentinel + JSON
+    // proposal block from assistant turns so the persisted transcript
+    // matches what the user actually saw, not the raw payload.
+    if (messages.length > 0) {
+      void createThread({
+        title: `Onboarding: ${proposal.title}`.slice(0, 80),
+        source: "onboarding",
+        initialMessages: messages.map((m) => ({
+          role: m.role,
+          content:
+            m.role === "assistant" ? stripSentinelBlock(m.content) : m.content,
+        })),
+      }).catch((err) => {
+        console.error("[onboarding] thread persist failed", err);
+      });
+    }
+
     onApplyProposal({
       title: proposal.title,
       daysTotal: proposal.daysTotal,

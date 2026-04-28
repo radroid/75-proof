@@ -9,6 +9,8 @@
  */
 
 import type * as challenges from "../challenges.js";
+import type * as coach from "../coach.js";
+import type * as coachActions from "../coachActions.js";
 import type * as crons from "../crons.js";
 import type * as dailyLogs from "../dailyLogs.js";
 import type * as feed from "../feed.js";
@@ -43,6 +45,8 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   challenges: typeof challenges;
+  coach: typeof coach;
+  coachActions: typeof coachActions;
   crons: typeof crons;
   dailyLogs: typeof dailyLogs;
   feed: typeof feed;
