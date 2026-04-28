@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { normalizeIdentityStatement } from "./lib/identityStatement";
 
 const habitValidator = v.object({
   name: v.string(),
@@ -31,6 +32,11 @@ export const completeOnboarding = mutation({
     daysTotal: v.number(),
     // Routine catalog slug picked during onboarding (e.g. "original-75-hard").
     templateSlug: v.optional(v.string()),
+    // PD-8: optional identity statement ("you're becoming a runner"). Pass
+    // `null` to explicitly clear; omit the field entirely to leave any
+    // previously-stored value untouched. Empty/whitespace strings normalize
+    // to "clear" too.
+    identityStatement: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -86,11 +92,22 @@ export const completeOnboarding = mutation({
       });
     }
 
-    // Update user profile + onboarding data
+    // Update user profile + onboarding data. Identity statement: `undefined`
+    // means the wizard didn't touch the field — leave it alone. Anything else
+    // (string or explicit `null`) flows through normalize; `cleared` writes
+    // `undefined` to remove any prior value (mirroring `setIdentityStatement`).
+    const identityPatch: { identityStatement?: string } =
+      args.identityStatement === undefined
+        ? {}
+        : (() => {
+            const n = normalizeIdentityStatement(args.identityStatement);
+            return { identityStatement: n.cleared ? undefined : n.value };
+          })();
     await ctx.db.patch(user._id, {
       displayName: args.displayName,
       currentChallengeId: challengeId,
       onboardingComplete: true,
+      ...identityPatch,
       onboarding: {
         completedAt: new Date().toISOString(),
         ageRange: args.ageRange,
@@ -200,6 +217,9 @@ export const getPreviousOnboardingState = query({
       daysTotal: latestFailed?.daysTotal ?? 75,
       templateSlug:
         latestFailed?.templateSlug ?? user.onboarding.templateSlug ?? null,
+      // PD-8: surface the previously-saved identity statement so the
+      // re-onboarding flow can pre-fill the field instead of asking again.
+      identityStatement: user.identityStatement ?? null,
     };
   },
 });

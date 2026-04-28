@@ -119,6 +119,8 @@ export interface PreviousOnboardingState {
   }>;
   daysTotal: number;
   templateSlug: string | null;
+  /** PD-8: previously-saved identity statement; null when never set. */
+  identityStatement: string | null;
 }
 
 /**
@@ -185,6 +187,7 @@ export function getPreviousOnboardingState(
     habits,
     daysTotal: latest?.daysTotal ?? 75,
     templateSlug: latest?.templateSlug ?? user.onboarding.templateSlug ?? null,
+    identityStatement: user.identityStatement ?? null,
   };
 }
 

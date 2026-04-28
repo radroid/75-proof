@@ -30,6 +30,7 @@ const STEP_LABELS: Record<OnboardingStep, string> = {
   template: "Routine",
   duration: "Duration",
   habits: "Habits",
+  identity: "Identity",
   review: "Review",
 };
 

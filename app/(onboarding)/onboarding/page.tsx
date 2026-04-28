@@ -32,6 +32,7 @@ import { OnboardingBrowsePopular } from "@/components/onboarding/OnboardingBrows
 import { OnboardingAiStep } from "@/components/onboarding/OnboardingAiStep";
 import { OnboardingDuration } from "@/components/onboarding/OnboardingDuration";
 import { OnboardingHabitConfig } from "@/components/onboarding/OnboardingHabitConfig";
+import { OnboardingIdentity } from "@/components/onboarding/OnboardingIdentity";
 import { OnboardingReview } from "@/components/onboarding/OnboardingReview";
 import { HeroSkeleton } from "@/components/ui/skeleton-enhanced";
 import posthog from "posthog-js";
@@ -126,6 +127,7 @@ export default function OnboardingPage() {
       habits: seededHabits,
       daysTotal: previousState.daysTotal ?? INITIAL_ONBOARDING_STATE.daysTotal,
       templateSlug: seededTemplateSlug,
+      identityStatement: previousState.identityStatement ?? "",
     };
     setState(seeded);
     setSeededFromPrevious(true);
@@ -315,6 +317,18 @@ export default function OnboardingPage() {
       // hidden in this PR).
       const submittedVisibility = isGuest ? ("private" as const) : state.visibility;
 
+      const trimmedIdentity = state.identityStatement.trim();
+      // Three-way payload mirroring `completeOnboarding`'s contract:
+      //   - non-empty trimmed string → write/overwrite
+      //   - `null` → explicit clear (user touched the step and emptied it,
+      //     e.g. tapped Skip from a re-onboarding seed)
+      //   - `undefined` → leave any previously-stored value untouched
+      const identityStatementArg: string | null | undefined =
+        trimmedIdentity.length > 0
+          ? trimmedIdentity
+          : state.identityTouched
+            ? null
+            : undefined;
       const args = {
         displayName: state.displayName,
         timezone: state.timezone,
@@ -329,6 +343,7 @@ export default function OnboardingPage() {
         visibility: submittedVisibility,
         daysTotal: finalDaysTotal,
         templateSlug: state.templateSlug,
+        identityStatement: identityStatementArg,
       } as const;
 
       if (isGuest) {
@@ -395,7 +410,11 @@ export default function OnboardingPage() {
         daysTotal: proposal.daysTotal,
         setupTier: proposal.strictMode ? "original" : "added",
       }));
-      goToStep("review");
+      // The AI path skips goals/theme/duration/habits, so the natural next
+      // stop after the proposal is the identity step. Jumping straight to
+      // review here would silently bypass the identity capture and leave
+      // AI users without an authored "I'm becoming…" line on the dashboard.
+      goToStep("identity");
     },
     [goToStep],
   );
@@ -466,6 +485,9 @@ export default function OnboardingPage() {
       )}
       {currentStep === "habits" && (
         <OnboardingHabitConfig state={state} updateState={updateState} onNext={next} onBack={back} />
+      )}
+      {currentStep === "identity" && (
+        <OnboardingIdentity state={state} updateState={updateState} onNext={next} onBack={back} />
       )}
       {currentStep === "review" && (
         <OnboardingReview

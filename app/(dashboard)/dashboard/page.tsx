@@ -12,6 +12,16 @@ import { PageContainer } from "@/components/layout/page-container";
 import { HeroSkeleton, ChecklistSkeleton } from "@/components/ui/skeleton-enhanced";
 import { MotionItem } from "@/components/ui/motion";
 import { Rocket } from "lucide-react";
+import { ChallengeUpcoming } from "@/components/challenge-upcoming";
+import {
+  describeChallengePhase,
+  getTodayInTimezone,
+  getUserTimezone,
+} from "@/lib/day-utils";
+import {
+  getTemplateBySlug,
+  isKnownTemplate,
+} from "@/lib/routine-templates";
 import { useThemePersonality } from "@/components/theme-provider";
 import { useGuest } from "@/components/guest-provider";
 import { useLocalHydrationComplete } from "@/lib/local-store/hooks";
@@ -74,6 +84,23 @@ export default function DashboardPage() {
     // local data; this is a type-system-only widening.)
     const guestUser = demoUser as unknown as Doc<"users">;
     const guestChallenge = demoChallenge as unknown as Doc<"challenges">;
+    const guestTodayStr = getTodayInTimezone(getUserTimezone());
+    const guestPhase = describeChallengePhase(
+      guestChallenge.startDate,
+      guestTodayStr,
+    );
+    if (guestPhase.kind === "future") {
+      return (
+        <>
+          <NotificationPromptGate />
+          <ChallengeUpcoming
+            startDate={guestChallenge.startDate}
+            phase={guestPhase}
+            routineLabel={resolveRoutineLabel(guestChallenge.templateSlug)}
+          />
+        </>
+      );
+    }
     return (
       <>
         <NotificationPromptGate />
@@ -175,9 +202,32 @@ function ActiveChallenge({
     );
   }
 
+  // Future start date: render the upcoming-challenge placeholder instead of
+  // the themed dashboard. Logging the day's habits before Day 1 doesn't make
+  // sense — the day-keyed Convex queries would write to dayNumber 0 / -N.
+  const todayStr = getTodayInTimezone(getUserTimezone());
+  const phase = describeChallengePhase(challenge.startDate, todayStr);
+  if (phase.kind === "future") {
+    return (
+      <ChallengeUpcoming
+        startDate={challenge.startDate}
+        phase={phase}
+        routineLabel={resolveRoutineLabel(challenge.templateSlug)}
+      />
+    );
+  }
+
   const ThemedDashboard = dashboardComponents[personality];
 
   return <ThemedDashboard user={user} challenge={challenge} />;
+}
+
+function resolveRoutineLabel(slug: string | undefined): string | null {
+  if (!slug) return null;
+  if (isKnownTemplate(slug)) return getTemplateBySlug(slug).title;
+  if (slug.startsWith("ai-generated:")) return "AI-generated routine";
+  if (slug.startsWith("popular:")) return "your routine";
+  return null;
 }
 
 function NoActiveChallenge() {

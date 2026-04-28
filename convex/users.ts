@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalQuery } from "./_generated/server";
 import { Doc } from "./_generated/dataModel";
+import { normalizeIdentityStatement } from "./lib/identityStatement";
 
 export const getCurrentUser = query({
   args: {},
@@ -120,6 +121,28 @@ export const updateUser = mutation({
     if (args.preferences !== undefined) updates.preferences = args.preferences;
 
     await ctx.db.patch(user._id, updates);
+  },
+});
+
+// PD-8: identity statement set/unset. Trim, cap at 140 chars; pass `null` or
+// empty string to clear. Stored on `users.identityStatement`; the Progress
+// identity card prefers it over generated formation-stage copy.
+export const setIdentityStatement = mutation({
+  args: { statement: v.union(v.string(), v.null()) },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) throw new Error("User not found");
+
+    const normalized = normalizeIdentityStatement(args.statement);
+    await ctx.db.patch(user._id, {
+      identityStatement: normalized.cleared ? undefined : normalized.value,
+    });
   },
 });
 
