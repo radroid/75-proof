@@ -1,8 +1,8 @@
 # Progress Dashboard Redesign — Research & Design Brief
 
-> Status: Draft 1 (2026-04-28). Authored to drive the `feat/progress-dashboard-redesign` branch.
-> Audience: implementer of the Progress page (and a future Friends-merge step).
-> This is a research synthesis, not an implementation plan. Open questions are flagged with **🟡 OPEN**.
+> Status: Draft 2 (2026-04-28) — open questions resolved, scope set for `feat/progress-dashboard-redesign`. Branch ships **both** Phase 1 (friends ribbon on Progress) and Phase 2 (Activity tab on Progress).
+> Audience: implementer of the Progress page.
+> This is a research synthesis + scope contract, not an implementation plan. Decisions log in §10; deferred items in §11.
 
 ---
 
@@ -278,9 +278,9 @@ Two modes, branched on `challenge.isHabitTracker`:
 - missed = ghost cell, not destructive red
 - future = empty muted cell
 
-**Open-ended (habit tracker):** GitHub-style year heatmap. Color-encodes a single value: per-day completion-rate (0/25/50/75/100%, five-step ramp). Sparse data caveat: **🟡 OPEN: do users with <30 days of data get the bounded-grid treatment instead of a mostly-empty year heatmap?**
+**Open-ended (habit tracker):** GitHub-style year heatmap *once the user has ≥90 days of data*. Color-encodes a single value: per-day completion-rate (0/25/50/75/100%, five-step ramp). Below 90 days, fall back to a bounded grid sized to the user's history (`max(currentDay + 7, 30)`-cell grid, same visual treatment as the fixed-length grid) so the dashboard isn't mostly empty.
 
-Friend dots on the same calendar — small, optional, opt-in — are a research-validated touch (ambient co-presence). **🟡 OPEN: scope — ship in v1 or v2?** Likely v2 (data-cost on the query).
+Friend dots on the same calendar — small, optional, opt-in — deferred to v2 (data-cost on the query).
 
 ### 3.5 Per-habit drill-down (replaces the lifetime-totals row)
 
@@ -298,25 +298,26 @@ Sparkline-per-habit list, 30-day rolling rate per habit:
 - The "improving" / "declining" annotation comes from a simple linear regression on the 30-day window (cheap to compute).
 - Surfaces the *real* signal users want: "which habits am I dropping?"
 
-### 3.6 Photos section — gated by routine
+### 3.6 Photos section — removed in v1
 
-Only render the photos block when the active routine has a photo task (`habitDefinitions` row whose `name` matches "progress photo" pattern, or — more robustly — a new `category: "photo"` convention). Otherwise hide entirely. **🟡 OPEN: best detection mechanism — habit category, habit icon string, or a flag on the template?**
+The dedicated Progress Photos gallery is being **removed** from the Progress page. If a routine wants to track a daily photo (e.g., 75 Hard), it should be a regular task-type habit on `habitDefinitions` that the user ticks off — same as any other habit, no special UI. We'll revisit a gallery view later if there's a real demand. ([Backlog item](#backlog))
 
 ### 3.7 Day-by-day history
 
-Keep largely as-is. The polymorphic legacy/new-system rendering already works (`isHistoryNewSystem`). One change: rename "No data" badge to "Rest day" when the day is in the past *and* the user has paused the challenge or the day is tagged as a freeze. **🟡 OPEN: do we track explicit freeze/rest days? If not, this is a future schema addition.**
+Keep largely as-is. The polymorphic legacy/new-system rendering already works (`isHistoryNewSystem`). Pause/rest-day tracking is deferred to a separate feature ([backlog](#backlog)) — until that lands, missed days continue to render with the existing neutral "No data" / "Partial" treatment.
 
 ---
 
-## 4. Friends merge — staged, not big-bang
+## 4. Friends merge — Phase 1 + Phase 2 in this PR
 
-The user wants to eventually merge Friends into Progress while keeping the Friends tab live for now. Suggested staging:
+Decision: this PR ships **both** the friends ribbon on Progress *and* the activity feed pulled into a Progress tab. Friends tab stays live as the management surface.
 
-- **Phase 1 (this PR)**: ship the Friends ribbon described in §3.3 on the Progress page. Friends tab continues to host the full activity feed, friend list, requests, and nudges. The dashboard treatment is *additive*; nothing is removed from `/dashboard/friends`.
-- **Phase 2 (next PR)**: pull the activity feed into a third tab on Progress (Today / Stats / Activity), so the personal page becomes the social hub for the user-flavored, quiet stuff. Friends tab stays for the *management* surface (requests, search, block, sharing prefs).
-- **Phase 3**: collapse Friends tab into a settings-style management page reachable from Progress. Bottom-nav slot frees up for something else (Coach is already there).
+- **Phase 1 (this PR)**: friends ribbon on the Progress page (§3.3). Anonymized aggregate, featured co-streak, cheers inbox glance. Kindness only.
+- **Phase 2 (this PR)**: Progress page gains tabs — **Stats** (default; the §3 layout) and **Activity** (the friends activity feed currently at `/dashboard/friends` → Activity tab). The Activity tab on Progress reuses the existing `ActivityFeed` component reading from `api.feed.getFriendsFeed`.
+- **Friends tab kept live**: it continues to host the friends list (with progress cards), requests, nudges, sharing settings — i.e., the *management* surface. Activity tab on Friends becomes a reciprocal alias for the same feed (or we remove it from Friends since it's now on Progress; pick during implementation based on which feels less duplicative).
+- **Phase 3 (future)**: collapse Friends tab into a settings-style management page reachable from Progress. Free up the bottom-nav slot. Out of scope for this PR.
 
-This avoids the leaderboard-on-personal-page anti-pattern: Phase 1 only adds *kindness* signals to the personal page; rank/competitive features (if any) stay on the Friends tab forever, opt-in.
+This avoids the leaderboard-on-personal-page anti-pattern: rank/competitive features (if any are ever added) stay opt-in on the Friends management surface.
 
 ---
 
@@ -335,41 +336,27 @@ The identity card was the highest-leverage and least-shipped pattern in the rese
 - `weakestHabit` — lowest-completion non-paused habit
 - `coachMemory.facts` — *if user opted in* (`users.coachMemory.enabled`), the coach has distilled durable facts the dashboard could surface ("you said morning workouts work for you — and you've completed mornings 5/7 days this week"). Strong personalization without re-asking; gate on `enabled` flag.
 
-**Template library by stage and category** (5–8 per slot, randomly rotated weekly):
+**Scope decision (v1):** ship **formation-stage templates only** (days 1–30). Almost no user has crossed into consolidation or maintenance yet — adding those library tiers as cohorts age is cheap and can be done with telemetry rather than guesswork.
+
+**v1 template library** (formation-stage; ~5–8 per slot, randomly rotated weekly):
 
 ```
-[FORMATION · days 1–14, all categories]
+[FORMATION · days 1–7, all categories]
+"You showed up. That's the whole game on Day {currentDay}."
+"{currentDay} days in. The hardest part is convincing yourself it's possible — you just did."
+"Most people quit before Day 7. You're not most people."
+
+[FORMATION · days 7–14, all categories]
 "You're making it past the hardest part. {currentDay} days down."
 "Two weeks of evidence: you're someone who shows up."
 "You've already done this {currentDay} times. That's the proof."
 
-[FORMATION · day 14–30, with a strong habit]
-"You ran {topHabit.streak} days in a row. That's not a streak — that's a pattern."
+[FORMATION · days 14–30, with a strong habit]
+"You did {topHabit.name} {topHabit.streak} days in a row. That's not a streak — that's a pattern."
 "{topHabit.name} is starting to look like who you are."
 
-[CONSOLIDATION · days 30–90, fitness category]
-"You're becoming someone who trains. {rolling30Rate}% of the last 30 days, no excuses."
-"Three of every four days, you train. That sticks."
-
-[CONSOLIDATION · skill-building]
-"You've practiced {topHabit.name} on {rolling30Rate}% of days this month. Skill compounds — and you're compounding."
-
-[CONSOLIDATION · productivity]
-"You're protecting the work. {rolling30Rate}% of days, deep work happened."
-
-[CONSOLIDATION · personal-development]
-"You're someone who {routineActionVerb}. This week: {weekDots} ({rolling7Rate}%)."
-  - meditator → "meditates"
-  - journaler → "journals"
-  - reader → "reads"
-  - sober-curious → "stays clear-headed"
-
-[MAINTENANCE · day 90+]
-"Six months of {routineLabel}. You don't need a streak — this is who you are now."
-"You've recovered from {missCount} missed days without a two-day gap. That's the skill."
-
-[FIXED-LENGTH · all stages]
-"{currentDay} of {daysTotal}. {pctRemainingFraction} more, and the version of you on Day {daysTotal} is waiting."
+[FIXED-LENGTH · formation, all stages]
+"{currentDay} of {daysTotal}. The version of you on Day {daysTotal} is waiting."
 ```
 
 Implementation notes:
@@ -377,7 +364,9 @@ Implementation notes:
 - Templates live in `lib/identity-cards.ts` as data, not LLM-generated. Cheap, deterministic, easy to A/B.
 - Stale-copy guard: rate-limit identical phrasing to ≤1× per 14 days per user; rotate within the same eligible bucket.
 - Failsafe: if no template matches the user's state, fall back to a generic "Day {currentDay} of your {routineLabel}" line. Never blank.
-- 🟡 **OPEN**: do we want the user to write their own ("You're becoming a runner")? Coach onboarding could harvest this; defer to v2.
+- Consolidation (30–90) and maintenance (90+) template libraries → [backlog](#backlog).
+- Coach-memory-driven personalization → [backlog](#backlog).
+- User-authored identity statement ("you're becoming a runner" set during onboarding) → [backlog](#backlog).
 
 ---
 
@@ -441,28 +430,48 @@ Before implementing, define what "working" looks like. Suggested PostHog events 
 
 ---
 
-## 10. Questions to answer before implementation (🟡 OPEN list)
+## 10. Decisions log (was: open questions)
 
-These are the gaps that would make me uncomfortable starting to code today. Resolve before writing the implementation plan.
+All resolved. Summary of how each open question was answered, in order:
 
-1. **Identity-card copy generation** — confirm the template library in §5 is the chosen approach (vs LLM-generated). I recommend templates: deterministic, auditable, A/B-testable.
-2. ~~**Inline logging on Progress vs link-out to `/dashboard**`~~ — **resolved**: read-only snapshot, link out to `/dashboard`. The themed dashboards there are the logging surface.
-3. **Photos detection** — habit category string, icon string match, or a new flag on `habitDefinitions`? Adding a flag is cleanest but requires migration.
-4. **Sparse heatmap fallback** — at what data threshold do we switch from year-heatmap to a bounded grid for habit-tracker users? <30 days? <90?
-5. **Stage-aware dashboards** (§2.9) — v1 or just structure-it-for-later? Recommend the latter: ship one dashboard with stage-aware copy in the identity card; defer per-stage layouts until we have telemetry.
-6. ~~**Default sharing prefs for new users**~~ — **resolved in §2.7**. Defaults are all-true; recommendation is consumer-side framing (don't render `false` as a negative), no schema change.
-7. **Friend dots on the calendar** — query cost is non-trivial. Defer to v2.
-8. **"Cheers" inbox glance** — new query or compose? Recommendation: compose for v1.
-9. **Routine-category-driven social intensity** (quiet/accountable/competitive) — schema field, or inferred from `popularRoutines.category`? Inferred is cheaper for v1.
-10. **Fixed-vs-open-ended branching** — is `challenge.isHabitTracker` the right single signal, or also `daysTotal > 180`? Confirm with a quick `popularRoutines` audit.
-11. **Goodhart hygiene on rolling 30-day rate** — does it drop to 0% if the user pauses for vacation? Pause-aware denominator requires explicit pause tracking, which we may not have today.
-12. **Dual-mode users** (one challenge in fixed mode, another archived) — confirm headline scopes to active challenge.
-13. **Coach memory hookup** — if `coachMemory.enabled`, can the identity card pull from `coachMemory.facts` for personalisation? Requires a server-side merge or surfacing facts to the page; defer to v2 with a feature flag if interesting.
-14. **Friends merge phasing** (§4) — does the user want Phase 1 (ribbon on Progress) only, or both Phase 1 and 2 (activity feed on Progress as a tab) in this PR?
+1. ✅ **Identity-card copy** — static template library (§5), formation-stage only for v1.
+2. ✅ **Inline logging on Progress** — read-only snapshot; logging stays on `/dashboard`.
+3. ✅ **Photos** — removed from Progress entirely. If a routine wants a daily photo, it's a regular task-type habit. Backlog item to revisit if real demand surfaces.
+4. ✅ **Sparse heatmap fallback** — switch to bounded grid when user has <90 days of history.
+5. ✅ **Stage-aware dashboards** — ship Stage 1 (formation, days 1–30) only. Add consolidation/maintenance template tiers as cohorts age into them.
+6. ✅ **Default sharing prefs** — keep schema/defaults as-is; render `todayComplete: false` as neutral absence on consumers, never as a "didn't finish" badge. (§2.7)
+7. ✅ **Friend dots on calendar** — deferred to v2.
+8. ✅ **"Cheers" inbox glance** — compose client-side from existing `feedReactions` + `activityFeed` for v1; promote to a dedicated `getRecentReactionsForMe` Convex query if telemetry shows it's hot.
+9. ✅ **Routine-category social intensity** — inferred from `popularRoutines.category` for v1 (no schema change). Explicit per-user/per-challenge override → backlog.
+10. ✅ **Fixed-vs-open-ended branching** — primary signal is `challenge.isHabitTracker`. Belt-and-braces fallback: also treat `daysTotal > 180` as open-ended-feeling for headline-treatment purposes (no countdown). Implementer's call to refine if a 365-day "year of yoga" template makes this the wrong heuristic.
+11. ✅ **Goodhart hygiene / pause-aware rate** — pause tracking is a separate feature → backlog. Until then, rolling 30-day rate is computed naïvely (missed days count as misses).
+12. ⚠️ **Dual-mode users** — handle inline if cheap; otherwise → backlog. Headline must scope to the *active* challenge regardless.
+13. ✅ **Coach memory hookup** — interesting; deferred to v2/backlog.
+14. ✅ **Friends merge phasing** — both Phase 1 (ribbon) and Phase 2 (Activity tab on Progress) in this PR. (§4)
 
 ---
 
-## 11. Sources
+## 11. Backlog (post-v1)
+
+Items deferred from this PR. Listed in rough priority order; not committed-to.
+
+- **Pause / rest-day tracking** — schema flag on `habitEntries` or `challenges`; UI affordance to mark a day as paused; rolling-rate denominator excludes paused days; day-by-day history renames "No data" to "Rest day" for paused rows. (Resolves OPEN #11.)
+- **Friend dots on the calendar** — small avatar marks on days a friend also completed. Ambient co-presence pattern from Apple Sharing. Query cost needs benchmarking. (Resolves OPEN #7.)
+- **Consolidation-stage template library** (days 30–90) — adds per-category identity-card copy. (Resolves OPEN #5 stage-2.)
+- **Maintenance-stage template library** (day 90+) — variance / recovery / "you're a {x} now" copy. (Resolves OPEN #5 stage-3.)
+- **Coach-memory-driven personalization on the identity card** — pull from `users.coachMemory.facts` when `enabled === true` to make the card hyper-personal ("you said morning workouts work for you — and you've completed mornings 5/7 days this week"). Feature-flag, gate on opt-in. (Resolves OPEN #13.)
+- **User-authored identity statement** — let user write or pick their own ("I'm becoming a runner") during onboarding; prefer over generated copy when present. Coach onboarding could harvest it.
+- **Per-user / per-routine social-intensity override** — schema field on `users.preferences` or `challenges` to override the inferred quiet/accountable/competitive default. (Resolves OPEN #9 stage-2.)
+- **Split `showCompletionStatus` → `showWins` + `showMisses`** — make the asymmetric default explicit in the schema (defaults: wins on, misses off). Migration of existing rows required. (Refinement of §2.7.)
+- **Progress photo gallery** — re-introduce the photo gallery view if user demand returns. Likely as a separate `/dashboard/photos` route, not on Progress, gated by routine photo-task presence.
+- **Dedicated `getRecentReactionsForMe` Convex query** — promote the v1 client-side compose (OPEN #8) to a server query if it gets hit on every Progress page load.
+- **Dual-mode lifetime-vs-active scoping** — explicit headline-vs-history scope toggle if §10 #12 isn't addressed in v1.
+- **Phase 3 of Friends merge** — collapse the Friends bottom-nav slot into a Settings-style management surface reachable from Progress. (Continuation of §4.)
+- **Per-stage layouts (not just per-stage copy)** — distinct Progress dashboard layouts for formation/consolidation/maintenance, driven by user stage telemetry.
+
+---
+
+## 12. Sources
 
 The research underlying this doc came from four parallel agent runs. Sources cited inline above; consolidated bibliography:
 
