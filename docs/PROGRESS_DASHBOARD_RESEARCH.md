@@ -26,10 +26,10 @@ This document captures the research foundation. Implementation should not start 
 
 ### Data model (`convex/schema.ts`)
 
-- **`challenges`**: `userId`, `startDate`, `currentDay`, `status` ∈ {active, completed, failed}, `daysTotal?` (absent on legacy → defaults to 75), `isHabitTracker?` (true → open-ended, no end date), `templateSlug?`, `visibility` ∈ {private, friends, public}, `failedOnDay?`, `restartCount?`.
-- **`habitDefinitions`** (per challenge): `name`, `blockType` ∈ {task, counter}, `target?` + `unit?` (counters only), `isHard` (binding rule: hard habits gate completion), `isActive`, `sortOrder`, `category?`, `icon?`.
-- **`habitEntries`** (per habit per day): `completed: boolean`, `value?: number` (counters).
-- **`dailyLogs`** (legacy 75-Hard-only): the workout1/workout2/water/reading/diet/noAlcohol/photo schema. Some users still on this; new flows use `habitDefinitions` + `habitEntries`. `isHistoryNewSystem` in `progress/page.tsx` already detects which.
+- `**challenges`**: `userId`, `startDate`, `currentDay`, `status` ∈ {active, completed, failed}, `daysTotal?` (absent on legacy → defaults to 75), `isHabitTracker?` (true → open-ended, no end date), `templateSlug?`, `visibility` ∈ {private, friends, public}, `failedOnDay?`, `restartCount?`.
+- `**habitDefinitions**` (per challenge): `name`, `blockType` ∈ {task, counter}, `target?` + `unit?` (counters only), `isHard` (binding rule: hard habits gate completion), `isActive`, `sortOrder`, `category?`, `icon?`.
+- `**habitEntries**` (per habit per day): `completed: boolean`, `value?: number` (counters).
+- `**dailyLogs**` (legacy 75-Hard-only): the workout1/workout2/water/reading/diet/noAlcohol/photo schema. Some users still on this; new flows use `habitDefinitions` + `habitEntries`. `isHistoryNewSystem` in `progress/page.tsx` already detects which.
 - **Friend graph**: `friendships`, `activityFeed` (types: day_completed, challenge_started, challenge_completed, challenge_failed, milestone), `nudges`, `feedReactions` (emoji cheers).
 - **Sharing prefs** on user: `preferences.sharing` ∈ {showStreak, showDayNumber, showCompletionStatus, showHabits} — already gates what `getFriendProgress` returns.
 - **Catalog**: `popularRoutines` (descriptive, RAG fodder for the coach) and `routineTemplates` (instantiable, with `habits: [{name, blockType, target, unit, isHard, category, icon}]`).
@@ -44,13 +44,15 @@ This document captures the research foundation. Implementation should not start 
 
 ### What the current Progress page renders (and the problems with each)
 
-| Section | Issue |
-|---|---|
-| 6-tile stat grid (Days Completed, Best Streak, Attempt #, Workouts, Water, Reading) | Last three are `dailyLogs`-only; meaningless for non-75-Hard routines. Best Streak is from `getLifetimeStats` and is the only generic one. |
-| Progress photos gallery | Only relevant when the active routine includes a photo task. Currently shown unconditionally. |
-| 75-day calendar grid | Hardcodes `daysTotal ?? 75` → for a 30-day yoga template the grid math implicitly works, but visual treatment doesn't adapt. Habit-tracker mode renders `currentDay + 7` cells, growing forever. |
-| Day-by-day history | Renders both legacy (`dailyLogs`) and new (`habitDefinitions`) shapes side-by-side via `isHistoryNewSystem`. Works, but is the only good part. |
-| Friend signals | None. |
+
+| Section                                                                             | Issue                                                                                                                                                                                            |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 6-tile stat grid (Days Completed, Best Streak, Attempt #, Workouts, Water, Reading) | Last three are `dailyLogs`-only; meaningless for non-75-Hard routines. Best Streak is from `getLifetimeStats` and is the only generic one.                                                       |
+| Progress photos gallery                                                             | Only relevant when the active routine includes a photo task. Currently shown unconditionally.                                                                                                    |
+| 75-day calendar grid                                                                | Hardcodes `daysTotal ?? 75` → for a 30-day yoga template the grid math implicitly works, but visual treatment doesn't adapt. Habit-tracker mode renders `currentDay + 7` cells, growing forever. |
+| Day-by-day history                                                                  | Renders both legacy (`dailyLogs`) and new (`habitDefinitions`) shapes side-by-side via `isHistoryNewSystem`. Works, but is the only good part.                                                   |
+| Friend signals                                                                      | None.                                                                                                                                                                                            |
+
 
 The only stat card that survives a routine change is **Best Streak**. Everything else needs to bind to abstractions, not concrete habit names.
 
@@ -60,16 +62,18 @@ The only stat card that survives a routine change is **Best Streak**. Everything
 
 Four parallel research streams converged on the same handful of conclusions. The table below is the consensus; the sub-sections expand each row with supporting citations.
 
-| Conclusion | Personal-metrics stream | Behavioral-psych stream | UX-pattern stream | Social stream |
-|---|---|---|---|---|
-| Streaks must be paired with completion-rate, not stand alone | ✅ | ✅ (Lally 2010: missing one day doesn't matter) | ✅ (Duolingo's grey flame is a credible threat, not a punishment) | ✅ (40% of streak-breakers churn within 2 weeks) |
-| Heterogeneous habits → normalize each to "% of own target," then average | ✅ (Apple rings model, Loop habit score) | n/a | ✅ (HIG explicitly: rings are peer goals) | n/a |
-| Open-ended ≠ fixed-length: dashboards should branch | ✅ | ✅ (Locke & Latham: bounded, time-limited goals are most effective; open-ended needs identity framing) | ✅ (Day-N-of-M progress bar vs heatmap) | n/a |
-| Identity language ("you're becoming…") beats raw counts | ✅ | ✅ (Atomic Habits + SDT competence) | ✅ (Duolingo "you've learned 47 words" cards) | n/a |
-| Kindness signals (kudos, high-fives) > rank/leaderboard for retention | n/a | ✅ (extrinsic gamification reduces intrinsic motivation — Hanus & Fox 2015) | ✅ (Apple Sharing tab pattern) | ✅ (Strava kudos drive measurable behavior change; Duolingo Friend Streak +22%) |
-| Lurkers (~80% of social users) need passive ambient signals, not asks | n/a | n/a | ✅ (Apple's friend-rings strip) | ✅ (ambient awareness literature; "5 friends are on Day 12 today") |
-| Default-effect is powerful and dangerous: opt-out for wins, off-by-default for misses | n/a | n/a | n/a | ✅ (96% vs 48% participation; defaults shape trust) |
-| Domain matters: fitness tolerates competition; wellbeing/meditation collapses under it | n/a | n/a | n/a | ✅ (mindfulness research; Duolingo league anxiety) |
+
+| Conclusion                                                                             | Personal-metrics stream                 | Behavioral-psych stream                                                                               | UX-pattern stream                                                | Social stream                                                                  |
+| -------------------------------------------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Streaks must be paired with completion-rate, not stand alone                           | ✅                                       | ✅ (Lally 2010: missing one day doesn't matter)                                                        | ✅ (Duolingo's grey flame is a credible threat, not a punishment) | ✅ (40% of streak-breakers churn within 2 weeks)                                |
+| Heterogeneous habits → normalize each to "% of own target," then average               | ✅ (Apple rings model, Loop habit score) | n/a                                                                                                   | ✅ (HIG explicitly: rings are peer goals)                         | n/a                                                                            |
+| Open-ended ≠ fixed-length: dashboards should branch                                    | ✅                                       | ✅ (Locke & Latham: bounded, time-limited goals are most effective; open-ended needs identity framing) | ✅ (Day-N-of-M progress bar vs heatmap)                           | n/a                                                                            |
+| Identity language ("you're becoming…") beats raw counts                                | ✅                                       | ✅ (Atomic Habits + SDT competence)                                                                    | ✅ (Duolingo "you've learned 47 words" cards)                     | n/a                                                                            |
+| Kindness signals (kudos, high-fives) > rank/leaderboard for retention                  | n/a                                     | ✅ (extrinsic gamification reduces intrinsic motivation — Hanus & Fox 2015)                            | ✅ (Apple Sharing tab pattern)                                    | ✅ (Strava kudos drive measurable behavior change; Duolingo Friend Streak +22%) |
+| Lurkers (~80% of social users) need passive ambient signals, not asks                  | n/a                                     | n/a                                                                                                   | ✅ (Apple's friend-rings strip)                                   | ✅ (ambient awareness literature; "5 friends are on Day 12 today")              |
+| Default-effect is powerful and dangerous: opt-out for wins, off-by-default for misses  | n/a                                     | n/a                                                                                                   | n/a                                                              | ✅ (96% vs 48% participation; defaults shape trust)                             |
+| Domain matters: fitness tolerates competition; wellbeing/meditation collapses under it | n/a                                     | n/a                                                                                                   | n/a                                                              | ✅ (mindfulness research; Duolingo league anxiety)                              |
+
 
 ### 2.1 Streak vs completion rate
 
@@ -89,14 +93,16 @@ Four parallel research streams converged on the same handful of conclusions. The
 
 These are different products. The current single dashboard for both is wrong.
 
-| | Fixed-length (75 Hard, 30-day yoga, Couch-to-5K) | Open-ended (habit tracker, journaling, Huberman, sober-curious) |
-|---|---|---|
-| Headline | "Day 32 of 75" + linear progress bar | Rolling 30-day completion rate |
-| Streak meaning | = challenge progress (often binary all-or-nothing) | One signal of consistency, not the goal |
-| Time grid | Bounded grid, all cells visible | GitHub-style heatmap (year scroll) or current-month |
-| Identity card | "Halfway through 75 Hard" | "You've journaled 4 of every 7 days for 6 months — journaling is who you are now" |
-| Goal-gradient nudge | Steepening progress arc near completion (Kivetz et al. 2006) | Weekly proximal goals manufactured from rhythm |
-| Failure handling | Restart vs continue (75 Hard *requires* restart) | Tombstone day, never a banner |
+
+|                     | Fixed-length (75 Hard, 30-day yoga, Couch-to-5K)             | Open-ended (habit tracker, journaling, Huberman, sober-curious)                   |
+| ------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| Headline            | "Day 32 of 75" + linear progress bar                         | Rolling 30-day completion rate                                                    |
+| Streak meaning      | = challenge progress (often binary all-or-nothing)           | One signal of consistency, not the goal                                           |
+| Time grid           | Bounded grid, all cells visible                              | GitHub-style heatmap (year scroll) or current-month                               |
+| Identity card       | "Halfway through 75 Hard"                                    | "You've journaled 4 of every 7 days for 6 months — journaling is who you are now" |
+| Goal-gradient nudge | Steepening progress arc near completion (Kivetz et al. 2006) | Weekly proximal goals manufactured from rhythm                                    |
+| Failure handling    | Restart vs continue (75 Hard *requires* restart)             | Tombstone day, never a banner                                                     |
+
 
 ### 2.4 Identity vs metrics
 
@@ -125,14 +131,16 @@ For 75 Proof, whose KPI is long-term habit retention not time-in-app today: **ki
 
 ### 2.7 Privacy defaults
 
-| Signal | Recommended default |
-|---|---|
+
+| Signal                                                                      | Recommended default                                    |
+| --------------------------------------------------------------------------- | ------------------------------------------------------ |
 | My completion ping ("Maya finished her morning routine") visible to friends | **opt-out** (on by default for confirmed friends only) |
-| My misses visible to friends | **off by default**, opt-in only |
-| Friend kudos / high-five reception | opt-out |
-| Cross-friend aggregates ("avg friend: 4/7 habits") | always anonymized |
-| Per-routine privacy override | hide-this-entry as a one-tap escape |
-| Anything beyond friend graph (public ranking) | opt-in, off by default |
+| My misses visible to friends                                                | **off by default**, opt-in only                        |
+| Friend kudos / high-five reception                                          | opt-out                                                |
+| Cross-friend aggregates ("avg friend: 4/7 habits")                          | always anonymized                                      |
+| Per-routine privacy override                                                | hide-this-entry as a one-tap escape                    |
+| Anything beyond friend graph (public ranking)                               | opt-in, off by default                                 |
+
 
 The current schema already supports this via `users.preferences.sharing` (showStreak / showDayNumber / showCompletionStatus / showHabits). We don't need a schema change for this part — we need correct defaults + a settings UI that makes them legible.
 
@@ -168,11 +176,13 @@ The current routine catalog (`popularRoutines`) has four categories: `fitness`, 
 
 Lally's habit-formation curve is asymptotic with a ~66-day mean and 18–254 day individual variance. Wendy Wood's research adds that mature habits survive only when context cues remain. This implies the dashboard should *evolve*:
 
-| Stage | Headline | Secondary | Hide |
-|---|---|---|---|
-| Days 1–30 (formation) | Today's prompt + tiny celebration | Cue/anchor reminder, current streak (small) | Aggregate %, comparisons, identity language (premature) |
-| Days 30–90 (consolidation) | Rolling 30-day completion rate | Identity statement, streak (small), context-of-day | Long-term totals (still noisy) |
-| Day 90+ (maintenance) | Identity + recovery metric ("0 two-day gaps in 60 days") | Routine variance, context-change watch | Streak — actively de-emphasize |
+
+| Stage                      | Headline                                                 | Secondary                                          | Hide                                                    |
+| -------------------------- | -------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------- |
+| Days 1–30 (formation)      | Today's prompt + tiny celebration                        | Cue/anchor reminder, current streak (small)        | Aggregate %, comparisons, identity language (premature) |
+| Days 30–90 (consolidation) | Rolling 30-day completion rate                           | Identity statement, streak (small), context-of-day | Long-term totals (still noisy)                          |
+| Day 90+ (maintenance)      | Identity + recovery metric ("0 two-day gaps in 60 days") | Routine variance, context-change watch             | Streak — actively de-emphasize                          |
+
 
 This is more ambition than draft 1 needs to land — but the IA should not preclude it. **🟡 OPEN: scope decision — do we ship stage-aware dashboards in v1, or just structure the components so it's possible later?**
 
@@ -251,6 +261,7 @@ Three components, each load-bearing for a different research finding:
 3. **Cheers/kudos inbox glance**: low-stakes affirmation; tap-through to Friends. Requires extending `feedReactions` queries to "what did people react to of mine in the last 7 days." **🟡 OPEN**: build this as a new query or just count reactions via existing tables?
 
 What's NOT here:
+
 - ❌ No leaderboard.
 - ❌ No friend rank.
 - ❌ No "X did better than you."
@@ -261,6 +272,7 @@ What's NOT here:
 Two modes, branched on `challenge.isHabitTracker`:
 
 **Fixed-length (e.g., 75 Hard):** the existing 75-cell grid, with three cleanly distinct states:
+
 - complete = filled green
 - today-pending = outlined ring (today shouldn't look like yesterday's miss)
 - missed = ghost cell, not destructive red
@@ -313,6 +325,7 @@ This avoids the leaderboard-on-personal-page anti-pattern: Phase 1 only adds *ki
 The identity card was the highest-leverage and least-shipped pattern in the research. Here's a starter library so it's not hand-wavy. Templates are parametrized; values come from existing queries.
 
 **Variables available without new schema:**
+
 - `routineLabel` — from `popularRoutines.title` or template
 - `routineCategory` — `fitness` | `skill-building` | `productivity` | `personal-development`
 - `currentDay`, `daysTotal`, `isHabitTracker` — from challenge
@@ -360,6 +373,7 @@ The identity card was the highest-leverage and least-shipped pattern in the rese
 ```
 
 Implementation notes:
+
 - Templates live in `lib/identity-cards.ts` as data, not LLM-generated. Cheap, deterministic, easy to A/B.
 - Stale-copy guard: rate-limit identical phrasing to ≤1× per 14 days per user; rotate within the same eligible bucket.
 - Failsafe: if no template matches the user's state, fall back to a generic "Day {currentDay} of your {routineLabel}" line. Never blank.
@@ -374,7 +388,7 @@ Easy to forget; cheap to get right early.
 - **Heatmap colour**: don't rely on red-green alone. Five-step ramp should also vary lightness so it works on monochrome and for protanopia/deuteranopia users. The current calendar uses `bg-success` / `bg-destructive/10` / `bg-muted` — already mostly luminance-distinguished; the heatmap should follow.
 - **Streak flame icon**: provide a non-emoji equivalent for screen readers ("Current streak: 12 days, best 23 days"); aria-label the chip, not the icon.
 - **Identity card**: always render the underlying number alongside ("This week, 5 of 7 days · 71%") so the card is informative even when the narrative copy is muted in screen-readers.
-- **`prefers-reduced-motion`**: existing code already respects this for the photo lightbox (`progress/page.tsx:251`). Honour it for ring-fill animations and the per-habit sparkline draw-in.
+- `**prefers-reduced-motion`**: existing code already respects this for the photo lightbox (`progress/page.tsx:251`). Honour it for ring-fill animations and the per-habit sparkline draw-in.
 - **Tap targets**: 44×44pt minimum (already a project convention — `min-h-[44px]` is widespread). Heatmap cells likely fail this on phones. Either make cells expand-on-tap to a detail modal, or accept that the heatmap is overview-only and tap-targets are not promised.
 - **Dark mode**: rings + heatmap need calibrated colour ramps for both schemes. The existing theme system is already dark-mode-aware; reuse `success`/`primary`/`muted-foreground` tokens.
 
@@ -382,14 +396,16 @@ Easy to forget; cheap to get right early.
 
 ## 7. Empty / loading / paused states
 
-| State | Treatment |
-|---|---|
-| Day 0 (just onboarded) | Skip the whole stat grid. Render only: identity card with "Day 0 — let's start" + Today snapshot pointing to `/dashboard`. No streak (it's 0), no completion-rate (no denominator). |
-| Days 1–6 | Show streak; rolling-rate uses `daysSinceStart` as denominator and labels itself "Last {n} days" not "Last 30 days." |
-| First 30-day rate is below 30% | No shame copy. Identity card switches to formation-stage templates. Friends ribbon shows aggregate but skips co-streak (likely 0). |
-| No friends yet | Skip friends ribbon entirely. Don't render an "Add friends" CTA on Progress — it belongs on Friends tab. |
-| Paused / vacation (🟡 OPEN — schema may not support pause flag) | Tombstone affected days; rolling-rate denominator skips paused days; identity card shifts to "you took a break — that's part of the work." |
-| Loading | Skeletonize the identity card (animated gradient block), the headline metric, and the friends aggregate. The day-by-day history already has a working skeleton. |
+
+| State                                                           | Treatment                                                                                                                                                                           |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Day 0 (just onboarded)                                          | Skip the whole stat grid. Render only: identity card with "Day 0 — let's start" + Today snapshot pointing to `/dashboard`. No streak (it's 0), no completion-rate (no denominator). |
+| Days 1–6                                                        | Show streak; rolling-rate uses `daysSinceStart` as denominator and labels itself "Last {n} days" not "Last 30 days."                                                                |
+| First 30-day rate is below 30%                                  | No shame copy. Identity card switches to formation-stage templates. Friends ribbon shows aggregate but skips co-streak (likely 0).                                                  |
+| No friends yet                                                  | Skip friends ribbon entirely. Don't render an "Add friends" CTA on Progress — it belongs on Friends tab.                                                                            |
+| Paused / vacation (🟡 OPEN — schema may not support pause flag) | Tombstone affected days; rolling-rate denominator skips paused days; identity card shifts to "you took a break — that's part of the work."                                          |
+| Loading                                                         | Skeletonize the identity card (animated gradient block), the headline metric, and the friends aggregate. The day-by-day history already has a working skeleton.                     |
+
 
 ---
 
@@ -397,14 +413,16 @@ Easy to forget; cheap to get right early.
 
 Per page render, the dashboard already runs ~6 Convex queries (challenges, logs, photos, lifetime stats, completion map, habit defs, habit entries). Additions in this design:
 
-| New section | Data source | Cost |
-|---|---|---|
-| Rolling-30-day rate | Derive in client from existing `getDayCompletionMap` | Free |
-| Identity card | Same | Free |
-| Today snapshot | Existing data | Free |
-| Friends ribbon (aggregate + co-streak + cheers count) | Existing `getFriendProgress` (already returns `coStreak`, `todayComplete`) | Free for aggregate + co-streak; cheers requires extending or batching `feedReactions` |
-| Per-habit sparkline list | Existing `getAllEntriesForChallenge` + client aggregation | Free |
-| Heatmap (year mode) | New: needs per-day completion across full history; current `getDayCompletionMap` is per-challenge | **Adds** one query for habit-tracker users; bounded by their history length |
+
+| New section                                           | Data source                                                                                       | Cost                                                                                  |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Rolling-30-day rate                                   | Derive in client from existing `getDayCompletionMap`                                              | Free                                                                                  |
+| Identity card                                         | Same                                                                                              | Free                                                                                  |
+| Today snapshot                                        | Existing data                                                                                     | Free                                                                                  |
+| Friends ribbon (aggregate + co-streak + cheers count) | Existing `getFriendProgress` (already returns `coStreak`, `todayComplete`)                        | Free for aggregate + co-streak; cheers requires extending or batching `feedReactions` |
+| Per-habit sparkline list                              | Existing `getAllEntriesForChallenge` + client aggregation                                         | Free                                                                                  |
+| Heatmap (year mode)                                   | New: needs per-day completion across full history; current `getDayCompletionMap` is per-challenge | **Adds** one query for habit-tracker users; bounded by their history length           |
+
 
 **Recommendation**: ship the dashboard without a dedicated cheers query. If `feedReactions` joined to recent `activityFeed.userId == me` is cheap, do it client-side; otherwise add a `getRecentReactionsForMe` query in v2 once telemetry shows it's hit often.
 
@@ -414,10 +432,10 @@ Per page render, the dashboard already runs ~6 Convex queries (challenges, logs,
 
 Before implementing, define what "working" looks like. Suggested PostHog events to add or watch:
 
-- **`progress_page_view`** — already exists? If not, add. Track session duration on Progress.
-- **`progress_to_log_tap`** — taps on the Today snapshot's "Log" link. Indicates the dashboard is driving action.
-- **`progress_friends_ribbon_view`** — ribbon was visible (impression). Compare DAU/WAU between users with friends (ribbon visible) and without.
-- **`identity_card_dismissed`** *(if we add a dismiss)* — signal that the copy is annoying or stale.
+- `**progress_page_view`** — already exists? If not, add. Track session duration on Progress.
+- `**progress_to_log_tap**` — taps on the Today snapshot's "Log" link. Indicates the dashboard is driving action.
+- `**progress_friends_ribbon_view**` — ribbon was visible (impression). Compare DAU/WAU between users with friends (ribbon visible) and without.
+- `**identity_card_dismissed**` *(if we add a dismiss)* — signal that the copy is annoying or stale.
 - **Retention 14/30/60-day** for users on the new dashboard vs old (A/B if possible). Research predicts the new dashboard should improve 30-day retention; if it doesn't, we're wrong about something.
 - **Completion-rate distribution shift** — if removing streak-shame works, we should see fewer "broke streak then quit" patterns (sequences of all-zero days following a long streak).
 
@@ -428,7 +446,7 @@ Before implementing, define what "working" looks like. Suggested PostHog events 
 These are the gaps that would make me uncomfortable starting to code today. Resolve before writing the implementation plan.
 
 1. **Identity-card copy generation** — confirm the template library in §5 is the chosen approach (vs LLM-generated). I recommend templates: deterministic, auditable, A/B-testable.
-2. ~~**Inline logging on Progress vs link-out to `/dashboard`**~~ — **resolved**: read-only snapshot, link out to `/dashboard`. The themed dashboards there are the logging surface.
+2. ~~**Inline logging on Progress vs link-out to `/dashboard**`~~ — **resolved**: read-only snapshot, link out to `/dashboard`. The themed dashboards there are the logging surface.
 3. **Photos detection** — habit category string, icon string match, or a new flag on `habitDefinitions`? Adding a flag is cleanest but requires migration.
 4. **Sparse heatmap fallback** — at what data threshold do we switch from year-heatmap to a bounded grid for habit-tracker users? <30 days? <90?
 5. **Stage-aware dashboards** (§2.9) — v1 or just structure-it-for-later? Recommend the latter: ship one dashboard with stage-aware copy in the identity card; defer per-stage layouts until we have telemetry.
@@ -449,6 +467,7 @@ These are the gaps that would make me uncomfortable starting to code today. Reso
 The research underlying this doc came from four parallel agent runs. Sources cited inline above; consolidated bibliography:
 
 **Personal-metrics & dashboard patterns**
+
 - [Cohorty — Psychology of Streaks](https://blog.cohorty.app/the-psychology-of-streaks-why-they-work-and-when-they-backfire/)
 - [HabitPath — Why Streaks Are Toxic](https://www.habitpath.xyz/blog/why-habit-tracker-streaks-are-toxic)
 - [Loop Habit Tracker FAQ](https://github.com/iSoron/uhabits/discussions/689) — exponential smoothing formula
@@ -463,6 +482,7 @@ The research underlying this doc came from four parallel agent runs. Sources cit
 - [Geckoboard — Vanity Metrics](https://www.geckoboard.com/blog/vanity-metrics-on-your-dashboard-are-they-always-so-bad/)
 
 **Behavioral psychology & habit formation**
+
 - Lally et al. 2010 — "How are habits formed" ([wiley](https://onlinelibrary.wiley.com/doi/10.1002/ejsp.674), [UCL summary](https://www.ucl.ac.uk/news/2009/aug/how-long-does-it-take-form-habit))
 - Locke & Latham 2006 — Goal-Setting Theory ([PDF](https://home.ubalt.edu/tmitch/642/articles%20syllabus/locke%20latham%20new%20dir%20gs%20curr%20dir%20psy%20sci%202006.pdf))
 - Ryan & Deci 2000 — Self-Determination Theory ([PDF](https://selfdeterminationtheory.org/SDT/documents/2000_RyanDeci_SDT.pdf))
@@ -476,6 +496,7 @@ The research underlying this doc came from four parallel agent runs. Sources cit
 - [Smashing Mag — Streak System UX](https://www.smashingmagazine.com/2026/02/designing-streak-system-ux-psychology/)
 
 **Social / friend-driven motivation**
+
 - [ScienceDirect — Kudos make you run!](https://www.sciencedirect.com/science/article/pii/S0378873322000909) — primary Strava research
 - [Duolingo Friend Streak — +22% lift](https://blog.duolingo.com/friend-streak/), [product lessons](https://blog.duolingo.com/product-lessons-friend-streak/)
 - [PMC — Mixed-methods Strava Use](https://pmc.ncbi.nlm.nih.gov/articles/PMC12938745/) — anxiety/hiding-workouts findings
@@ -491,6 +512,7 @@ The research underlying this doc came from four parallel agent runs. Sources cit
 - [Peloton high-fives blog](https://www.onepeloton.com/blog/peloton-motivation-high-fives)
 
 **UX patterns & visualization**
+
 - [Whoop home screen redesign](https://www.whoop.com/us/en/thelocker/the-all-new-whoop-home-screen/)
 - [Duolingo home screen design](https://blog.duolingo.com/new-duolingo-home-screen-design/)
 - [Garmin Connect revamp (DC Rainmaker)](https://www.dcrainmaker.com/2024/01/garmin-connect-through.html)
@@ -500,3 +522,4 @@ The research underlying this doc came from four parallel agent runs. Sources cit
 - [Smashing — empty states in onboarding](https://www.smashingmagazine.com/2017/02/user-onboarding-empty-states-mobile-apps/)
 - [Notion habit tracker templates](https://www.notion.com/templates/category/habit-tracking)
 - [Gridfiti 75 Hard templates](https://gridfiti.com/75-hard-challenge-templates/)
+
