@@ -97,7 +97,13 @@ export function FriendSearch({ variant = "compact" }: Props) {
               <SearchResultRow
                 key={user._id}
                 user={user}
-                status={relationshipStatuses?.[user._id] ?? "none"}
+                // Pass undefined while the relationship-status query is in
+                // flight so the row can suppress its action button until
+                // we actually know whether this person is already a
+                // friend / has a pending request / etc. Defaulting to
+                // "none" used to flash the "Add" button mid-load, which
+                // would 409 on send if the relationship already existed.
+                status={relationshipStatuses?.[user._id]}
                 acceptFriendshipId={pendingByUserId.get(String(user._id))}
                 pendingRequestsLoaded={pendingRequests !== undefined}
               />
@@ -122,7 +128,19 @@ function SearchResultRow({
   pendingRequestsLoaded,
 }: {
   user: { _id: Id<"users">; displayName: string; avatarUrl?: string };
-  status: "friends" | "request_sent" | "request_received" | "blocked" | "none";
+  /**
+   * `undefined` while the relationship-status query is loading — the row
+   * renders no action button in that case. Defaulting to `"none"` used
+   * to flash an Add button that could conflict with an in-flight friend
+   * status the server already knew about.
+   */
+  status:
+    | "friends"
+    | "request_sent"
+    | "request_received"
+    | "blocked"
+    | "none"
+    | undefined;
   /**
    * Pre-resolved friendship id for the inbound request (if any). Hoisted
    * to the parent so we run one `getPendingRequests` subscription per

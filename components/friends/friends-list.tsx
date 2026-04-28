@@ -39,7 +39,18 @@ export function FriendsList({ friendProgress, hideSearch = false }: FriendsListP
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
           Friends&apos; Progress
         </h3>
-        {!friendProgress || friendProgress.length === 0 ? (
+        {friendProgress === undefined ? (
+          // Loading: keep the slot's height stable so the layout doesn't
+          // jolt when the query resolves into an empty state or grid.
+          <div
+            className="grid gap-4 sm:grid-cols-2"
+            role="status"
+            aria-label="Loading friends' progress"
+          >
+            <div className="h-32 rounded-lg bg-muted/40 animate-pulse" />
+            <div className="h-32 rounded-lg bg-muted/40 animate-pulse" />
+          </div>
+        ) : friendProgress.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center py-12 px-6">
               <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
@@ -47,7 +58,13 @@ export function FriendsList({ friendProgress, hideSearch = false }: FriendsListP
                 Add friends to see their progress here.
               </p>
               <p className="text-xs text-muted-foreground/70 mt-1">
-                Use the search above to find people by name.
+                {/* When `hideSearch` is true, the inline search above this
+                    block is hidden (Progress page mounts a dedicated "Add a
+                    friend" search at the bottom instead), so the "Use the
+                    search above" copy would point at nothing. */}
+                {hideSearch
+                  ? "Use the Add a friend search below to send a request."
+                  : "Use the search above to find people by name."}
               </p>
             </CardContent>
           </Card>

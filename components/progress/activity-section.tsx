@@ -48,18 +48,21 @@ export function ActivitySection({ friendsFeed, friends }: Props) {
   );
 
   const toggle = (friendId: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(friendId)) {
-        next.delete(friendId);
-      } else {
-        next.add(friendId);
-      }
-      posthog.capture("activity_filter_toggled", {
-        selected_count: next.size,
-        friend_count: friendOptions.length,
-      });
-      return next;
+    // Compute the next selection outside `setSelected` so the updater
+    // stays pure. React StrictMode (and future concurrent renders)
+    // can invoke a state-updater more than once for the same dispatch,
+    // which would double-fire the analytics event if the capture lived
+    // inside the closure.
+    const next = new Set(selected);
+    if (next.has(friendId)) {
+      next.delete(friendId);
+    } else {
+      next.add(friendId);
+    }
+    setSelected(next);
+    posthog.capture("activity_filter_toggled", {
+      selected_count: next.size,
+      friend_count: friendOptions.length,
     });
   };
 
