@@ -45,9 +45,86 @@ export default defineSchema({
       // "original-75-hard", "30-day-yoga"). Optional for legacy users.
       templateSlug: v.optional(v.string()),
     })),
+    // C-1: Persistent coach memory. Opt-in (default off). Capped at ~2KB.
+    // Facts are short, lossy, CLAUDE.md-style — durable preferences,
+    // schedule constraints, things that worked, things that didn't. The
+    // writer prompt is responsible for redacting display name, email,
+    // and other free-text identifiers before it lands here.
+    coachMemory: v.optional(v.object({
+      enabled: v.boolean(),
+      // Days before TTL purge. 90 = default; ttlOptOut bypasses purge.
+      ttlDays: v.number(),
+      ttlOptOut: v.boolean(),
+      // Distilled facts as a flat array of short strings. Capped at
+      // ~2KB total in the writer; UI shows them as a list.
+      facts: v.array(v.string()),
+      // ms since epoch — used by the TTL cron and surfaced in the UI
+      // as "last updated".
+      updatedAt: v.number(),
+    })),
   })
     .index("by_clerk_id", ["clerkId"])
     .searchIndex("search_displayName", { searchField: "displayName" }),
+
+  // C-2: Coach chat threads. One row per conversation. The first AI
+  // onboarding chat is auto-promoted into a thread on first dashboard
+  // visit so its context isn't lost.
+  coachThreads: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    // Where this thread originated. "onboarding" = auto-promoted from
+    // the personalize chat; "coach" = started in /dashboard/coach;
+    // "imported" = reserved for future import flows.
+    source: v.union(
+      v.literal("onboarding"),
+      v.literal("coach"),
+      v.literal("imported"),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    // Number of messages in this thread (denormalized for cheap list
+    // queries — incremented in appendMessages).
+    messageCount: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_updated", ["userId", "updatedAt"]),
+
+  // C-2: Individual coach turns. Stored separately from threads so a
+  // long thread doesn't bloat the parent doc and so we can paginate.
+  coachMessages: defineTable({
+    threadId: v.id("coachThreads"),
+    userId: v.id("users"),
+    role: v.union(v.literal("user"), v.literal("assistant")),
+    content: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_thread", ["threadId"])
+    .index("by_thread_created", ["threadId", "createdAt"])
+    .index("by_user", ["userId"]),
+
+  // C-1/C-2/C-5: Append-only audit log. Captures every memory write,
+  // memory purge, thread delete, forget-me, and export so users can
+  // see exactly what was stored and when. The export bundle includes
+  // this log verbatim.
+  coachAuditLog: defineTable({
+    userId: v.id("users"),
+    action: v.union(
+      v.literal("memory_write"),
+      v.literal("memory_purge_manual"),
+      v.literal("memory_purge_ttl"),
+      v.literal("memory_settings_changed"),
+      v.literal("thread_delete"),
+      v.literal("thread_create"),
+      v.literal("forget_me"),
+      v.literal("export"),
+    ),
+    // Free-text detail for human-readable display. Kept short. Avoid
+    // PII — the action name + counts are usually enough.
+    detail: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_created", ["userId", "createdAt"]),
 
   // Challenge Instance (one per attempt)
   challenges: defineTable({
