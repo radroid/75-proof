@@ -96,11 +96,14 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
     >
       <nav
         aria-label="Primary"
-        // 5-item nav (Today/Progress/Coach/Friends/Settings) needs a bit
-        // more width on small phones than the previous 4-item layout. The
-        // ceiling caps it on tablet so it doesn't sprawl across the screen.
-        className="flex justify-around items-center mx-auto max-w-[420px]"
+        // The pill widens with item count: the 4-item guest variant
+        // caps at 360px so icons stay roomy; the 5-item authed variant
+        // (Today/Progress/Coach/Friends/Settings) gets up to 420px so
+        // labels don't crowd. Deriving from `navItems.length` keeps the
+        // two variants from drifting if either gains or loses a tab.
+        className="flex justify-around items-center mx-auto w-full"
         style={{
+          maxWidth: navItems.length >= 5 ? 420 : 360,
           height: "var(--bottom-nav-height)",
           background: "var(--nav-bg)",
           borderRadius: "var(--nav-radius)",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -152,7 +152,6 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     sessionStorage.setItem(STEP_KEY, String(stepIndex));
-    setMaxReachedIndex((prev) => Math.max(prev, stepIndex));
   }, [stepIndex]);
 
   // Redirect away if user already completed onboarding
@@ -177,59 +176,77 @@ export default function OnboardingPage() {
   // Custom path skips the template step entirely — the build-your-own
   // habits are seeded at the path picker, so there's nothing to choose.
   const skipsTemplate = state.entryPath === "custom";
+  const skipsDuration = !!selectedTemplate?.lockedDuration;
+
+  // Indices of steps that are currently skipped by the flow. Both the
+  // dot navigator and `goToIndex` consult this so a user can never land
+  // on a step the forward flow would have stepped past anyway.
+  const disabledStepIndices = useMemo(() => {
+    const set = new Set<number>();
+    ONBOARDING_STEPS.forEach((step, idx) => {
+      if (step === "template" && skipsTemplate) set.add(idx);
+      if (step === "duration" && skipsDuration) set.add(idx);
+    });
+    return set;
+  }, [skipsTemplate, skipsDuration]);
+
+  // Helper to advance state. Co-locating the `maxReachedIndex` bump with
+  // the `setStepIndex` call avoids the cascading render the
+  // react-hooks/set-state-in-effect lint rule would flag if we did it in
+  // an effect on `[stepIndex]`.
+  const setStepBoth = useCallback((newIdx: number) => {
+    setStepIndex(newIdx);
+    setMaxReachedIndex((prev) => Math.max(prev, newIdx));
+  }, []);
 
   const next = useCallback(() => {
-    setStepIndex((i) => {
-      let nextIdx = Math.min(i + 1, ONBOARDING_STEPS.length - 1);
-      if (ONBOARDING_STEPS[nextIdx] === "template" && skipsTemplate) {
-        nextIdx = Math.min(nextIdx + 1, ONBOARDING_STEPS.length - 1);
-      }
-      if (
-        ONBOARDING_STEPS[nextIdx] === "duration" &&
-        selectedTemplate?.lockedDuration
-      ) {
-        nextIdx = Math.min(nextIdx + 1, ONBOARDING_STEPS.length - 1);
-      }
-      return nextIdx;
-    });
+    let nextIdx = Math.min(stepIndex + 1, ONBOARDING_STEPS.length - 1);
+    if (ONBOARDING_STEPS[nextIdx] === "template" && skipsTemplate) {
+      nextIdx = Math.min(nextIdx + 1, ONBOARDING_STEPS.length - 1);
+    }
+    if (ONBOARDING_STEPS[nextIdx] === "duration" && skipsDuration) {
+      nextIdx = Math.min(nextIdx + 1, ONBOARDING_STEPS.length - 1);
+    }
+    setStepBoth(nextIdx);
     if (
       selectedTemplate?.lockedDuration &&
       state.daysTotal !== selectedTemplate.daysTotal
     ) {
       setState((s) => ({ ...s, daysTotal: selectedTemplate.daysTotal }));
     }
-  }, [selectedTemplate, state.daysTotal, skipsTemplate]);
+  }, [stepIndex, selectedTemplate, state.daysTotal, skipsTemplate, skipsDuration, setStepBoth]);
 
   const back = useCallback(() => {
-    setStepIndex((i) => {
-      let prevIdx = Math.max(i - 1, 0);
-      if (
-        ONBOARDING_STEPS[prevIdx] === "duration" &&
-        selectedTemplate?.lockedDuration
-      ) {
-        prevIdx = Math.max(prevIdx - 1, 0);
-      }
-      if (ONBOARDING_STEPS[prevIdx] === "template" && skipsTemplate) {
-        prevIdx = Math.max(prevIdx - 1, 0);
-      }
-      return prevIdx;
-    });
-  }, [selectedTemplate, skipsTemplate]);
+    let prevIdx = Math.max(stepIndex - 1, 0);
+    if (ONBOARDING_STEPS[prevIdx] === "duration" && skipsDuration) {
+      prevIdx = Math.max(prevIdx - 1, 0);
+    }
+    if (ONBOARDING_STEPS[prevIdx] === "template" && skipsTemplate) {
+      prevIdx = Math.max(prevIdx - 1, 0);
+    }
+    setStepBoth(prevIdx);
+  }, [stepIndex, skipsDuration, skipsTemplate, setStepBoth]);
 
-  const goToStep = useCallback((step: OnboardingStep) => {
-    const idx = ONBOARDING_STEPS.indexOf(step);
-    if (idx >= 0) setStepIndex(idx);
-  }, []);
+  const goToStep = useCallback(
+    (step: OnboardingStep) => {
+      const idx = ONBOARDING_STEPS.indexOf(step);
+      if (idx >= 0) setStepBoth(idx);
+    },
+    [setStepBoth],
+  );
 
   // Click handler for the StepIndicator dots. Only allow jumping to a
-  // step the user has already reached; forward jumps stay gated by
-  // Continue so we don't land on a screen whose required state isn't
-  // collected yet.
+  // step the user has already reached, AND that the current flow doesn't
+  // skip — otherwise a custom-path user could click the (silent) template
+  // dot or a locked-template user could click the duration dot and land
+  // on a screen the forward flow would never have shown them.
   const goToIndex = useCallback(
     (idx: number) => {
-      if (idx <= maxReachedIndex) setStepIndex(idx);
+      if (idx > maxReachedIndex) return;
+      if (disabledStepIndices.has(idx)) return;
+      setStepIndex(idx);
     },
-    [maxReachedIndex],
+    [maxReachedIndex, disabledStepIndices],
   );
 
   const handleComplete = useCallback(async () => {
@@ -373,6 +390,7 @@ export default function OnboardingPage() {
         steps={ONBOARDING_STEPS}
         currentIndex={stepIndex}
         maxReachedIndex={maxReachedIndex}
+        disabledIndices={disabledStepIndices}
         onStepClick={goToIndex}
       />
 

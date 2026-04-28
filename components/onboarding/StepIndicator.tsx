@@ -12,6 +12,13 @@ interface StepIndicatorProps {
    * on a screen whose required input hasn't been collected yet.
    */
   maxReachedIndex?: number;
+  /**
+   * Indices the current flow skips (e.g. `template` on the custom path,
+   * `duration` when the chosen template has a locked duration). Their
+   * dots render dimmed and inert so the navigator never advertises a
+   * shortcut the forward flow wouldn't take.
+   */
+  disabledIndices?: ReadonlySet<number>;
   onStepClick?: (index: number) => void;
 }
 
@@ -30,6 +37,7 @@ export function StepIndicator({
   steps,
   currentIndex,
   maxReachedIndex,
+  disabledIndices,
   onStepClick,
 }: StepIndicatorProps) {
   const ceiling = maxReachedIndex ?? currentIndex;
@@ -47,7 +55,9 @@ export function StepIndicator({
         {steps.map((step, i) => {
           const isCurrent = i === currentIndex;
           const isVisited = i < currentIndex;
-          const isReachable = onStepClick != null && i <= ceiling;
+          const isDisabled = disabledIndices?.has(i) ?? false;
+          const isReachable =
+            onStepClick != null && i <= ceiling && !isDisabled;
           const dot = (
             <span
               aria-hidden="true"
@@ -55,9 +65,11 @@ export function StepIndicator({
                 "block h-2 rounded-full transition-all duration-300 motion-reduce:transition-none",
                 isCurrent
                   ? "w-8 bg-primary"
-                  : isVisited
-                    ? "w-2 bg-primary/60"
-                    : "w-2 bg-muted",
+                  : isDisabled
+                    ? "w-2 bg-muted/50"
+                    : isVisited
+                      ? "w-2 bg-primary/60"
+                      : "w-2 bg-muted",
               )}
             />
           );

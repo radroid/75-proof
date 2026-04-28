@@ -25,13 +25,19 @@ interface DynamicDailyChecklistProps {
 }
 
 // Single source of truth for habit categories. Order is the array order;
-// adding or moving a category only requires editing this list.
+// adding or moving a category only requires editing this list. Keep in
+// sync with the routine-template category union in `convex/schema.ts`
+// (discipline / wellness / fitness / mind / custom) and the popular
+// catalog's habit categories (skill-building / productivity /
+// personal-development).
 const CATEGORY_META = [
   { key: "fitness", label: "fitness", icon: <Dumbbell className="h-4 w-4" /> },
   { key: "nutrition", label: "nutrition", icon: <Apple className="h-4 w-4" /> },
   { key: "mind", label: "mind", icon: <Brain className="h-4 w-4" /> },
+  { key: "wellness", label: "wellness", icon: <Sparkles className="h-4 w-4" /> },
   { key: "skill-building", label: "skill", icon: <Brain className="h-4 w-4" /> },
   { key: "productivity", label: "productivity", icon: <LayoutGrid className="h-4 w-4" /> },
+  { key: "discipline", label: "discipline", icon: <LayoutGrid className="h-4 w-4" /> },
   { key: "personal-development", label: "personal", icon: <Sparkles className="h-4 w-4" /> },
   { key: "other", label: "other", icon: <LayoutGrid className="h-4 w-4" /> },
 ] as const;
