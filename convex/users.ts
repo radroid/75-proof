@@ -50,6 +50,35 @@ export const createOrGetUser = mutation({
       .unique();
 
     if (existingUser) {
+      // Reconcile drift between Clerk and Convex on each sign-in. Users
+      // created before they uploaded a Clerk profile photo (or who change
+      // photo/name in Clerk afterwards) never had their Convex `avatarUrl`
+      // refreshed — the leaderboard and friend rows then fall back to the
+      // initials avatar even though Clerk has the photo.
+      const updates: Record<string, unknown> = {};
+      if (
+        identity.pictureUrl &&
+        identity.pictureUrl !== existingUser.avatarUrl
+      ) {
+        updates.avatarUrl = identity.pictureUrl;
+      }
+      // Only refresh displayName if the user hasn't customized it away from
+      // the original Clerk-derived value — we don't want to clobber a name
+      // they explicitly edited via settings. Heuristic: only patch when the
+      // stored name is empty or still matches the prior Clerk shape (name
+      // or email), and Clerk now reports a non-empty name.
+      const clerkName = identity.name ?? identity.email;
+      if (
+        clerkName &&
+        (!existingUser.displayName ||
+          existingUser.displayName === identity.email) &&
+        clerkName !== existingUser.displayName
+      ) {
+        updates.displayName = clerkName;
+      }
+      if (Object.keys(updates).length > 0) {
+        await ctx.db.patch(existingUser._id, updates);
+      }
       return existingUser._id;
     }
 

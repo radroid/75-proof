@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { StartChallengeModal } from "@/components/StartChallengeModal";
@@ -122,6 +122,11 @@ function AuthenticatedDashboard() {
   const user = useQuery(api.users.getCurrentUser);
   const createOrGetUser = useMutation(api.users.createOrGetUser);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+  // Tracks whether we've already issued the once-per-session
+  // createOrGetUser sync for drift reconciliation (Clerk avatar / name).
+  // Without this we'd refire the mutation on every render that sees a
+  // truthy user.
+  const hasSyncedRef = useRef(false);
   // Must be called unconditionally (before any early return) so the hook order
   // is stable across loading/loaded renders — otherwise React throws
   // "Rendered more hooks than during the previous render." and trips the root
@@ -132,6 +137,16 @@ function AuthenticatedDashboard() {
     if (user === null && !isCreatingUser) {
       setIsCreatingUser(true);
       createOrGetUser().finally(() => setIsCreatingUser(false));
+      return;
+    }
+    // Existing user: fire `createOrGetUser` once per session so its drift
+    // reconciliation (Clerk pictureUrl / displayName → Convex `users` row)
+    // runs. Otherwise users created before they uploaded a Clerk profile
+    // photo never refresh and the leaderboard / friend rows fall back to
+    // the initials avatar.
+    if (user && !hasSyncedRef.current) {
+      hasSyncedRef.current = true;
+      createOrGetUser();
     }
   }, [user, createOrGetUser, isCreatingUser]);
 
