@@ -25,16 +25,28 @@
 export type HapticType =
   | "selection" // subtle tick — toggles, selection changes, emoji pick
   | "impact" // single firm tap — task check, nudge button
-  | "success"; // double tap "done" feel — confetti / day complete
+  | "success" // double tap "done" feel — task / day complete
+  | "celebration"; // sustained roll — confetti / streak milestone
 
 // Android / web-standard patterns. iOS doesn't use these — it gets the
-// native UISwitch haptic via the checkbox trick and a second tap for
-// "success" to approximate the double-beat.
+// native UISwitch haptic via the checkbox trick and additional taps for
+// the multi-beat types to approximate longer feedback.
 const PATTERNS: Record<HapticType, number | number[]> = {
   selection: 8,
   impact: 12,
   success: [14, 40, 22],
+  // Smooth ~480ms roll: a single long buzz so confetti doesn't feel like
+  // a punctuated tap. iOS approximates this by firing the UISwitch tap
+  // several times in rapid succession (see fireIOSHaptic).
+  celebration: 480,
 };
+
+// iOS approximation for `celebration`: the UISwitch haptic is a fixed
+// brief tap, so to simulate a sustained roll we fire 6 taps spaced
+// ~70ms apart. The whole sequence stays inside the trusted-event window
+// of the originating user gesture.
+const IOS_CELEBRATION_TAPS = 6;
+const IOS_CELEBRATION_INTERVAL_MS = 70;
 
 const PREF_STORAGE_KEY = "75proof_haptics_enabled";
 // Separate from the on/off preference: this tracks whether we've shown the
@@ -137,6 +149,22 @@ function fireIOSHaptic(type: HapticType): void {
           }
         }
       }, 70);
+    } else if (type === "celebration") {
+      // Sustained roll for confetti: fire additional UISwitch taps in
+      // rapid succession so the user feels a continuous buzz rather
+      // than one isolated tap. The first tap already fired above, so
+      // schedule the remaining N-1.
+      for (let i = 1; i < IOS_CELEBRATION_TAPS; i++) {
+        window.setTimeout(() => {
+          if (iosSwitchEl && iosSwitchEl.isConnected) {
+            try {
+              iosSwitchEl.click();
+            } catch {
+              // ignored
+            }
+          }
+        }, i * IOS_CELEBRATION_INTERVAL_MS);
+      }
     }
   } catch {
     // ignored — silent no-op is the correct fallback for haptics.

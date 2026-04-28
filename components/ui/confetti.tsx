@@ -3,6 +3,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { haptic } from "@/lib/haptics";
 
 interface ConfettiProps {
   isActive: boolean;
@@ -89,6 +90,10 @@ export function Confetti({ isActive, duration = 3000 }: ConfettiProps) {
     if (!isActive) return;
     setActivation((n) => n + 1);
     setRunning(true);
+    // Smooth long buzz to reinforce the visual celebration. `haptic`
+    // already short-circuits on prefers-reduced-motion / disabled-in-
+    // settings, so we don't need to gate the call here.
+    haptic("celebration");
     const timer = setTimeout(() => setRunning(false), duration);
     return () => clearTimeout(timer);
   }, [isActive, duration]);
