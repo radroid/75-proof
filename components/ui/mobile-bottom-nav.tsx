@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { haptic } from "@/lib/haptics";
 
 const INDICATOR_WIDTH = 68;
 const INDICATOR_HEIGHT = 46;
@@ -224,14 +225,8 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
     const idx = tabIndexAtX(localX);
     if (idx !== dragHoverIndex) {
       setDragHoverIndex(idx);
-      // Tiny haptic when the indicator crosses into a new tab. Android only —
-      // iOS Safari ignores `navigator.vibrate` silently, which is fine.
-      if (
-        typeof navigator !== "undefined" &&
-        typeof navigator.vibrate === "function"
-      ) {
-        navigator.vibrate(8);
-      }
+      // Tiny haptic when the indicator crosses into a new tab.
+      haptic("selection");
     }
   };
 
