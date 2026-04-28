@@ -16,7 +16,6 @@ interface Props {
 export function FriendsSection({ friendProgress }: Props) {
   return (
     <section aria-labelledby="friends-heading">
-      <div className="h-px bg-border mb-8 md:mb-12" />
       <h2
         id="friends-heading"
         className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 md:mb-6"
