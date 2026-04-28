@@ -67,6 +67,7 @@ import { FriendsSection } from "@/components/progress/friends-section";
 import { ActivitySection } from "@/components/progress/activity-section";
 import { RequestsSection } from "@/components/progress/requests-section";
 import { IncomingNudges } from "@/components/friends/incoming-nudges";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFriends } from "@/hooks/use-friends";
 import {
   getTemplateBySlug,
@@ -512,6 +513,21 @@ export default function ProgressPage() {
     </>
   ) : null;
 
+  // Tab variant of the social block — used in the active-challenge return
+  // where Progress vs Friends are split into a `<Tabs>` UI. The
+  // `IncomingNudges` banner is hoisted *above* the tabs so a fresh nudge
+  // surfaces no matter which tab is selected.
+  const friendsTabSections = !isGuest ? (
+    <div className="space-y-8 md:space-y-12">
+      <FriendsSection friendProgress={friendProgress} />
+      <ActivitySection friendsFeed={friendsFeed} friends={friends} />
+      <RequestsSection
+        pendingRequests={pendingRequests}
+        sentRequests={sentRequests}
+      />
+    </div>
+  ) : null;
+
   // ── Loading / empty ────────────────────────────────────────
   // Distinguish loading (`undefined`) from "no active challenge" (`null`):
   // Convex's `useQuery` returns `undefined` while in flight, and the empty
@@ -602,10 +618,25 @@ export default function ProgressPage() {
         </p>
       </div>
 
-      {/* Incoming nudge banner moved into `socialSections` below so it
-          renders consistently across all return paths (no-challenge,
-          future-start, active). */}
+      {/* Incoming nudge banner — hoisted above the tabs so a fresh nudge
+          surfaces no matter which tab is selected. The `socialSections`
+          fallback below (alt return paths without tabs) has its own copy. */}
+      {!isGuest && <IncomingNudges />}
 
+      <Tabs
+        defaultValue="progress"
+        onValueChange={(value) => {
+          posthog.capture("progress_tab_switched", { tab: value });
+        }}
+      >
+        <TabsList className="w-full max-w-sm">
+          <TabsTrigger value="progress">Progress</TabsTrigger>
+          <TabsTrigger value="friends" disabled={isGuest}>
+            Friends
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="progress" className="mt-6 md:mt-8">
       <section
         aria-labelledby="this-week-heading"
         className="space-y-8 md:space-y-12"
@@ -1004,7 +1035,12 @@ export default function ProgressPage() {
         </div>
       </section>
 
-      {socialSections}
+        </TabsContent>
+
+        <TabsContent value="friends" className="mt-6 md:mt-8">
+          {friendsTabSections}
+        </TabsContent>
+      </Tabs>
     </PageContainer>
   );
 }
