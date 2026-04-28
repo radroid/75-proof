@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { ChatBubble } from "@/components/ui/chat-bubble";
 import { cn } from "@/lib/utils";
 
 export type CoachCategory =
@@ -359,28 +360,22 @@ export function CoachClient() {
 
 function ChatTurnView({ turn }: { turn: ChatTurn }) {
   return (
-    <div className="space-y-3">
-      <div className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wider text-muted-foreground">You</span>
-        <p className="whitespace-pre-wrap text-sm">{turn.user}</p>
-      </div>
+    <div className="space-y-2">
+      <ChatBubble role="user" content={turn.user} />
 
       {turn.pending && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground pl-1">
           <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
           Searching the catalog and thinking…
         </div>
       )}
 
       {turn.error && (
-        <p className="text-sm text-destructive">Error: {turn.error}</p>
+        <p className="text-sm text-destructive pl-1">Error: {turn.error}</p>
       )}
 
       {turn.assistant && (
-        <div className="flex flex-col gap-1">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">Coach</span>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">{turn.assistant}</p>
-        </div>
+        <ChatBubble role="assistant" content={turn.assistant} />
       )}
 
       {/* Only render retrieved routines once the turn has settled

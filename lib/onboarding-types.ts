@@ -15,6 +15,16 @@ export interface OnboardingHabit {
 
 export type SetupTier = "original" | "added";
 
+/**
+ * How the user chose to start their routine. Drives which sub-flow renders
+ * at the `template` step:
+ *   - "custom"  → skip template selection, use the build-your-own seeds
+ *   - "ai"      → personalize chat takes the whole step
+ *   - "popular" → categorized + searchable browse over the curated catalog
+ *   - null      → user hasn't chosen yet (first render of the path step)
+ */
+export type EntryPath = "custom" | "ai" | "popular" | null;
+
 export interface OnboardingState {
   ageRange: string | null;
   healthConditions: string[];
@@ -34,6 +44,7 @@ export interface OnboardingState {
    * the template's `strictMode` on submit and persisted for back-compat.
    */
   templateSlug: string;
+  entryPath: EntryPath;
 }
 
 export const DURATION_PRESETS = [30, 60, 75, 90] as const;
@@ -63,9 +74,11 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   visibility: "friends",
   daysTotal: 75,
   templateSlug: DEFAULT_TEMPLATE_SLUG,
+  entryPath: null,
 };
 
 export const ONBOARDING_STEPS = [
+  "path",
   "welcome",
   "goals",
   "theme",
