@@ -102,6 +102,9 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
   const tabRefs = React.useRef<Array<HTMLElement | null>>([]);
   const [indicatorX, setIndicatorX] = React.useState(0);
   const [indicatorReady, setIndicatorReady] = React.useState(false);
+  // Tracked in state (not read from the ref during render) so the clamp in
+  // `effectiveIndicatorX` recomputes when the viewport resizes.
+  const [navWidth, setNavWidth] = React.useState(0);
 
   // Drag-to-scrub state. `dragX` is the pointer's x within the nav (or
   // null when not dragging); `dragHoverIndex` is the tab the indicator is
@@ -133,6 +136,7 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
     }
     const navRect = navEl.getBoundingClientRect();
     const tabRect = tabEl.getBoundingClientRect();
+    setNavWidth(navRect.width);
     setIndicatorX(
       tabRect.left - navRect.left + tabRect.width / 2 - INDICATOR_WIDTH / 2,
     );
@@ -272,12 +276,10 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
   // measured position of the active tab.
   const effectiveIndicatorX = React.useMemo(() => {
     if (dragX === null) return indicatorX;
-    const navEl = navRef.current;
-    const navWidth = navEl?.getBoundingClientRect().width ?? 0;
     const min = 0;
     const max = Math.max(0, navWidth - INDICATOR_WIDTH);
     return Math.min(max, Math.max(min, dragX - INDICATOR_WIDTH / 2));
-  }, [dragX, indicatorX]);
+  }, [dragX, indicatorX, navWidth]);
 
   const isDragging = dragX !== null;
 
@@ -357,12 +359,13 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
           }
         />
         {navItems.map(({ href, icon: Icon, label, action }, idx) => {
-          // Preview the destination while the user is mid-drag — both the
-          // current route's tab and the hovered tab read as "active" to
-          // soften the handoff.
+          // The actual route — used for `aria-current` so AT only ever reports
+          // one tab as current, regardless of drag state.
+          const isCurrentRoute = idx === activeIndex;
+          // Visual state. Mirrors `isCurrentRoute` plus the drag-hover preview
+          // so both tabs read as "active" while the indicator is mid-scrub.
           const isActive =
-            idx === activeIndex ||
-            (isDragging && idx === dragHoverIndex);
+            isCurrentRoute || (isDragging && idx === dragHoverIndex);
 
           const inner = (
             <motion.div
@@ -431,7 +434,7 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
               ref={setTabRef as React.Ref<HTMLAnchorElement>}
               href={href}
               aria-label={label}
-              aria-current={isActive ? "page" : undefined}
+              aria-current={isCurrentRoute ? "page" : undefined}
               className={commonClass}
               onClick={(e) => {
                 // Drag already routed (or chose to no-op) — swallow the
