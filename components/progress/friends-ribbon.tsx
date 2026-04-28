@@ -149,7 +149,10 @@ export function FriendsRibbon({ onImpression }: Props) {
 
       {hasCheers && (
         <Link
-          href="/dashboard/friends"
+          // The Activity section now lives further down on this same page,
+          // so the ribbon scrolls there rather than navigating to the
+          // (redirected) `/dashboard/friends` route.
+          href="#activity-section"
           className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
         >
           <Sparkles className="h-3.5 w-3.5" />

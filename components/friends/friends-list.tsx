@@ -1,93 +1,34 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FriendProgressCard } from "./friend-progress-card";
 import { WeeklyLeaderboard } from "./weekly-leaderboard";
 import { TodayPulse } from "./today-pulse";
-import { UserPlus, Check, Clock, Users } from "lucide-react";
-import { toast } from "sonner";
-import posthog from "posthog-js";
+import { FriendSearch } from "./friend-search";
+import { Users } from "lucide-react";
 
-interface FriendsListProps {
-  friendProgress: Array<{
-    user: { _id: Id<"users">; displayName: string; avatarUrl?: string };
-    challenge: { currentDay: number | null; startDate: string };
-    todayComplete: boolean | null;
-    coStreak?: number;
-    habits?: Array<{
-      _id: string;
-      name: string;
-      icon?: string;
-      category?: string;
-      isHard: boolean;
-      completedToday: boolean | null;
-    }> | null;
-  }> | undefined;
+// Single source of truth — derived from the Convex query so backend
+// shape changes propagate through to consumers at compile time.
+export type FriendProgressList =
+  FunctionReturnType<typeof api.feed.getFriendProgress>;
+
+export interface FriendsListProps {
+  friendProgress: FriendProgressList | undefined;
+  /**
+   * When true, the inline search input at the top is omitted — used on the
+   * new Progress page where a more prominent "Add a friend" block lives in
+   * the Requests section instead. Defaults to `false` so existing call
+   * sites keep their search affordance.
+   */
+  hideSearch?: boolean;
 }
 
-export function FriendsList({ friendProgress }: FriendsListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedTerm, setDebouncedTerm] = useState("");
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedTerm(searchTerm), 300);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const searchResults = useQuery(
-    api.friends.searchUsers,
-    debouncedTerm.length >= 2 ? { searchTerm: debouncedTerm } : "skip"
-  );
-
-  const targetIds = useMemo(
-    () => searchResults?.map((u) => u._id) ?? [],
-    [searchResults]
-  );
-
-  const relationshipStatuses = useQuery(
-    api.friends.getRelationshipStatuses,
-    targetIds.length > 0 ? { targetUserIds: targetIds } : "skip"
-  );
-
+export function FriendsList({ friendProgress, hideSearch = false }: FriendsListProps) {
   return (
     <div className="space-y-6">
-      {/* Search */}
-      <Input
-        type="search"
-        placeholder="Search for friends by name..."
-        aria-label="Search for friends"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="h-11 md:h-9"
-      />
-
-      {/* Search results */}
-      {searchResults && searchResults.length > 0 && debouncedTerm.length >= 2 && (
-        <Card>
-          <CardContent className="p-0 divide-y divide-border">
-            {searchResults.map((user) => (
-              <SearchResultRow
-                key={user._id}
-                user={user}
-                status={relationshipStatuses?.[user._id] ?? "none"}
-              />
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {searchResults && searchResults.length === 0 && debouncedTerm.length >= 2 && (
-        <p className="text-sm text-muted-foreground text-center py-4">
-          No users found matching &ldquo;{debouncedTerm}&rdquo;
-        </p>
-      )}
+      {!hideSearch && <FriendSearch variant="compact" />}
 
       {/* Today's pulse + weekly leaderboard (hidden when no friends) */}
       <TodayPulse />
@@ -98,7 +39,18 @@ export function FriendsList({ friendProgress }: FriendsListProps) {
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
           Friends&apos; Progress
         </h3>
-        {!friendProgress || friendProgress.length === 0 ? (
+        {friendProgress === undefined ? (
+          // Loading: keep the slot's height stable so the layout doesn't
+          // jolt when the query resolves into an empty state or grid.
+          <div
+            className="grid gap-4 sm:grid-cols-2"
+            role="status"
+            aria-label="Loading friends' progress"
+          >
+            <div className="h-32 rounded-lg bg-muted/40 animate-pulse" />
+            <div className="h-32 rounded-lg bg-muted/40 animate-pulse" />
+          </div>
+        ) : friendProgress.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center py-12 px-6">
               <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
@@ -106,91 +58,24 @@ export function FriendsList({ friendProgress }: FriendsListProps) {
                 Add friends to see their progress here.
               </p>
               <p className="text-xs text-muted-foreground/70 mt-1">
-                Use the search above to find people by name.
+                {/* When `hideSearch` is true, the inline search above this
+                    block is hidden (Progress page mounts a dedicated "Add a
+                    friend" search at the bottom instead), so the "Use the
+                    search above" copy would point at nothing. */}
+                {hideSearch
+                  ? "Use the Add a friend search below to send a request."
+                  : "Use the search above to find people by name."}
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {friendProgress.map((fp) => (
-              <FriendProgressCard key={fp.user._id} friend={fp} />
-            ))}
+            {friendProgress
+              .filter((fp): fp is NonNullable<typeof fp> => fp !== null)
+              .map((fp) => (
+                <FriendProgressCard key={fp.user._id} friend={fp} />
+              ))}
           </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function SearchResultRow({
-  user,
-  status,
-}: {
-  user: { _id: Id<"users">; displayName: string; avatarUrl?: string };
-  status: "friends" | "request_sent" | "request_received" | "blocked" | "none";
-}) {
-  const sendRequest = useMutation(api.friends.sendFriendRequest);
-  const acceptRequest = useMutation(api.friends.acceptFriendRequest);
-  const pendingRequests = useQuery(api.friends.getPendingRequests);
-  const [loading, setLoading] = useState(false);
-
-  const handleSend = async () => {
-    setLoading(true);
-    try {
-      await sendRequest({ toUserId: user._id });
-      posthog.capture("friend_request_sent");
-      toast.success("Friend request sent!");
-    } catch {
-      toast.error("Could not send request");
-    }
-    setLoading(false);
-  };
-
-  const handleAccept = async () => {
-    const req = pendingRequests?.find((r) => r.user?._id === user._id);
-    if (!req) return;
-    setLoading(true);
-    try {
-      await acceptRequest({ friendshipId: req.request._id });
-      toast.success("Friend request accepted!");
-    } catch {
-      toast.error("Failed to accept request");
-    }
-    setLoading(false);
-  };
-
-  return (
-    <div className="flex items-center justify-between gap-3 p-3 min-h-[56px]">
-      <div className="flex items-center gap-3 min-w-0 flex-1">
-        <Avatar className="h-9 w-9 shrink-0">
-          <AvatarImage src={user.avatarUrl} alt={user.displayName} />
-          <AvatarFallback className="text-xs">
-            {user.displayName.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <p className="font-medium text-sm truncate">{user.displayName}</p>
-      </div>
-      <div className="shrink-0">
-        {status === "friends" && (
-          <Button variant="outline" size="sm" disabled className="min-h-[44px]">
-            <Check className="mr-1 h-3 w-3" /> Friends
-          </Button>
-        )}
-        {status === "request_sent" && (
-          <Button variant="outline" size="sm" disabled className="min-h-[44px]">
-            <Clock className="mr-1 h-3 w-3" /> Pending
-          </Button>
-        )}
-        {status === "request_received" && (
-          <Button size="sm" onClick={handleAccept} disabled={loading} className="min-h-[44px]">
-            <Check className="mr-1 h-3 w-3" /> Accept
-          </Button>
-        )}
-        {status === "blocked" && null}
-        {status === "none" && (
-          <Button size="sm" onClick={handleSend} disabled={loading} className="min-h-[44px]">
-            <UserPlus className="mr-1 h-3 w-3" /> Add
-          </Button>
         )}
       </div>
     </div>

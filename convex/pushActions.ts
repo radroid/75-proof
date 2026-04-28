@@ -185,7 +185,9 @@ export function buildNudgePayload(
   const title = `${name} nudged you 👊`;
   const body = "They're cheering you on — finish today strong.";
   const tag = `nudge-${fromUserId}`;
-  const data = { url: "/dashboard/friends", kind: "nudge", fromUserId };
+  // Friends merge Phase 3: nudges deep-link into Progress now. Old pushes
+  // pointing at `/dashboard/friends` still work via the redirect file.
+  const data = { url: "/dashboard/progress", kind: "nudge", fromUserId };
 
   if (platform === "ios") {
     return { title, body, icon: "/icon-192.png", tag, data };

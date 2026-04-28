@@ -263,7 +263,7 @@ What's NOT here:
 - ❌ No leaderboard.
 - ❌ No friend rank.
 - ❌ No "X did better than you."
-- ❌ No nudge UI on the personal dashboard (lives on Friends).
+- ✅ Nudge UI **is** allowed on Progress (revised in Phase 3 — see §4). The 20-hour rate limit on `convex/nudges.ts:sendNudge` and the neutral-absence rendering on `FriendProgressCard` (no "they missed today" badge, just an always-available nudge button) keep this within the kindness frame. The original "lives on Friends" exclusion was a v1 conservatism — once Friends folded into Progress, the nudge button came along.
 
 ### 3.4 Calendar / consistency section
 
@@ -306,16 +306,15 @@ Keep largely as-is. The polymorphic legacy/new-system rendering already works (`
 
 ---
 
-## 4. Friends merge — Phase 1 + Phase 2 in this PR
+## 4. Friends merge — Phases 1, 2, and 3 (now all shipped)
 
-Decision: this PR ships **both** the friends ribbon on Progress *and* the activity feed pulled into a Progress tab. Friends tab stays live as the management surface.
+- **Phase 1 (PR #21)**: friends ribbon on the Progress page (§3.3). Anonymized aggregate, featured co-streak, cheers inbox glance. Kindness only.
+- **Phase 2 (PR #21)**: Progress page gained tabs — **Stats** (default; the §3 layout) and **Activity** (the friends activity feed). The Activity tab on Progress reused the existing `ActivityFeed` component reading from `api.feed.getFriendsFeed`.
+- **Phase 3 (this PR)**: the standalone `/dashboard/friends` route is collapsed into Progress. The page becomes a single scrolling surface with four sections — **This Week** (the prior Stats content), **Friends Progress** (search + cards + nudge), **Activity** (per-friend capsule filter + see-more truncation), **Requests** (received/sent + an expanded "Add a friend" search). The Tabs wrapper is removed. `/dashboard/friends` 308-redirects to `/dashboard/progress` so push notifications and bookmarks still resolve. Bottom-nav and sidebar drop the Friends slot; the pending-friend-request badge moves to the Progress nav slot. The activity feed is now friends-only (no merge with the user's own personal feed) — own-activity surfaces in the calendar / per-habit / day-by-day blocks.
 
-- **Phase 1 (this PR)**: friends ribbon on the Progress page (§3.3). Anonymized aggregate, featured co-streak, cheers inbox glance. Kindness only.
-- **Phase 2 (this PR)**: Progress page gains tabs — **Stats** (default; the §3 layout) and **Activity** (the friends activity feed currently at `/dashboard/friends` → Activity tab). The Activity tab on Progress reuses the existing `ActivityFeed` component reading from `api.feed.getFriendsFeed`.
-- **Friends tab kept live**: it continues to host the friends list (with progress cards), requests, nudges, sharing settings — i.e., the *management* surface. Activity tab on Friends becomes a reciprocal alias for the same feed (or we remove it from Friends since it's now on Progress; pick during implementation based on which feels less duplicative).
-- **Phase 3 (future)**: collapse Friends tab into a settings-style management page reachable from Progress. Free up the bottom-nav slot. Out of scope for this PR.
+Phase 3 also lifts §3.3's nudge exclusion: nudges are now allowed on the personal dashboard, gated by the existing 20-hour `sendNudge` rate limit and the neutral-absence rendering on `FriendProgressCard` (no "they missed today" framing).
 
-This avoids the leaderboard-on-personal-page anti-pattern: rank/competitive features (if any are ever added) stay opt-in on the Friends management surface.
+This still avoids the leaderboard-on-personal-page anti-pattern: rank/competitive features stay deliberately absent. Kindness-frame surfaces (cheers, co-streaks, named-pair Friend Streak, low-stakes nudges) only.
 
 ---
 
@@ -464,7 +463,7 @@ Items deferred from this PR. Listed in rough priority order; not committed-to.
 - **Progress photo gallery** — re-introduce the photo gallery view if user demand returns. Likely as a separate `/dashboard/photos` route, not on Progress, gated by routine photo-task presence.
 - **Dedicated `getRecentReactionsForMe` Convex query** — promote the v1 client-side compose (OPEN #8) to a server query if it gets hit on every Progress page load.
 - **Dual-mode lifetime-vs-active scoping** — explicit headline-vs-history scope toggle if §10 #12 isn't addressed in v1.
-- **Phase 3 of Friends merge** — collapse the Friends bottom-nav slot into a Settings-style management surface reachable from Progress. (Continuation of §4.)
+- ~~**Phase 3 of Friends merge**~~ — **shipped in this PR.** `/dashboard/friends` now redirects to `/dashboard/progress`; the Progress page hosts Friends Progress, Activity (with per-friend capsule filter + see-more), and Requests as inline sections. Bottom-nav drops the Friends slot; pending-request badge moves to Progress.
 - **Per-stage layouts (not just per-stage copy)** — distinct Progress dashboard layouts for formation/consolidation/maintenance, driven by user stage telemetry.
 
 ---

@@ -7,7 +7,6 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   TrendingUp,
-  Users,
   Settings,
   Sparkles,
 } from "lucide-react";
@@ -31,11 +30,14 @@ export type NavItem = {
   action?: () => void;
 };
 
-function FriendsMobileIcon(props: IconProps) {
+// Progress now hosts the friends, requests, and activity surfaces (research
+// §4 Phase 3). The pending-friend-request count rides on the Progress slot
+// so users still see the signal without a dedicated nav entry.
+function ProgressMobileIcon(props: IconProps) {
   const count = useQuery(api.friends.getPendingRequestCount);
   return (
     <span className="relative inline-flex">
-      <Users {...props} />
+      <TrendingUp {...props} />
       {(count ?? 0) > 0 && (
         <span
           role="status"
@@ -49,7 +51,7 @@ function FriendsMobileIcon(props: IconProps) {
   );
 }
 
-// Authed mobile nav. Coach lives here too so the AI surface is reachable
+// Authed mobile nav. Coach lives here so the AI surface is reachable
 // without opening the desktop sidebar — it's becoming the central
 // interaction point (see BACKLOG C-3). Settings stays one tap away
 // because there's no other persistent settings affordance on mobile.
@@ -62,17 +64,12 @@ const defaultNavItems: NavItem[] = [
   {
     label: "Progress",
     href: "/dashboard/progress",
-    icon: TrendingUp,
+    icon: ProgressMobileIcon,
   },
   {
     label: "Coach",
     href: "/dashboard/coach",
     icon: Sparkles,
-  },
-  {
-    label: "Friends",
-    href: "/dashboard/friends",
-    icon: FriendsMobileIcon,
   },
   {
     label: "Settings",

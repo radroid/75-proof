@@ -21,7 +21,6 @@ import { HapticsPermissionPrompt } from "@/components/haptics-permission-prompt"
 import {
   LayoutDashboard,
   TrendingUp,
-  Users,
   Settings,
   LogIn,
   Sparkles,
@@ -39,13 +38,26 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
-function FriendsNavIcon() {
+// Progress now hosts the friends, requests, and activity surfaces (research
+// §4 Phase 3). The pending-request count rides on the Progress slot so
+// users still see "you have a pending request" before opening the page.
+function ProgressNavIcon() {
   const count = useQuery(api.friends.getPendingRequestCount);
   return (
-    <span className="relative flex-shrink-0" aria-label={count ? `Friends, ${count} pending requests` : "Friends"}>
-      <Users className="h-5 w-5" />
+    <span
+      className="relative flex-shrink-0"
+      aria-label={
+        count
+          ? `Progress, ${count} pending friend request${count === 1 ? "" : "s"}`
+          : "Progress"
+      }
+    >
+      <TrendingUp className="h-5 w-5" />
       {(count ?? 0) > 0 && (
-        <span aria-hidden="true" className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground leading-none">
+        <span
+          aria-hidden="true"
+          className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground leading-none"
+        >
           {count! > 9 ? "9+" : count}
         </span>
       )}
@@ -53,7 +65,7 @@ function FriendsNavIcon() {
   );
 }
 
-const staticNavItems = [
+const guestSidebarNavItems = [
   {
     label: "Today",
     href: "/dashboard",
@@ -75,7 +87,7 @@ const staticNavItems = [
 // than the signed-in version — no friend prefs, no device list — see
 // components/local-settings.tsx).
 const guestNavItems = [
-  ...staticNavItems,
+  ...guestSidebarNavItems,
   {
     label: "Settings",
     href: "/dashboard/settings",
@@ -291,17 +303,27 @@ export default function DashboardLayout({
     return null;
   }
 
-  // Only build the Friends nav item — and thus mount FriendsNavIcon, which
-  // eagerly subscribes to Convex — when the user is signed in. Local-mode
-  // users have no friends surface, so the query must not fire.
+  // Signed-in: Progress carries the pending-friend-request badge (research
+  // §4 Phase 3 — Progress is now the friends surface). Guests don't have
+  // friends, so they get the badgeless Progress slot and no Convex
+  // subscription fires.
   const navItems = isGuest
     ? guestNavItems
     : [
-        ...staticNavItems,
         {
-          label: "Friends",
-          href: "/dashboard/friends",
-          icon: <FriendsNavIcon />,
+          label: "Today",
+          href: "/dashboard",
+          icon: <LayoutDashboard className="h-5 w-5 flex-shrink-0" />,
+        },
+        {
+          label: "Progress",
+          href: "/dashboard/progress",
+          icon: <ProgressNavIcon />,
+        },
+        {
+          label: "Coach",
+          href: "/dashboard/coach",
+          icon: <Sparkles className="h-5 w-5 flex-shrink-0" />,
         },
       ];
 
