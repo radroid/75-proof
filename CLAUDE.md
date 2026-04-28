@@ -4,7 +4,7 @@ The role of this file is to describe common mistakes and confusion points that a
 
 # currentDate
 
-Today's date is 2026-02-26.
+Today's date is 2026-04-28.
 
 # Rules
 
