@@ -97,6 +97,11 @@ async function runWriter(
       process.env.OPENROUTER_MEMORY_MODEL ??
       process.env.OPENROUTER_CHAT_MODEL ??
       "anthropic/claude-haiku-4-5";
+    // 15s ceiling — the writer prompt is small and the chat itself
+    // already returned, so this just guards against OpenRouter
+    // stalling and keeping the Convex action open. AbortSignal.timeout
+    // is supported in V8 / modern Node and works inside Convex's
+    // runtime; fall through to the catch on timeout.
     const result = await generateText({
       model: openrouter.chat(model),
       system: WRITER_SYSTEM_PROMPT,
@@ -106,6 +111,7 @@ async function runWriter(
           content: `CONVERSATION:\n${transcript}${existingBlock}\n\nReturn ONLY the JSON array.`,
         },
       ],
+      abortSignal: AbortSignal.timeout(15_000),
     });
     const text = result.text ?? "";
     return parseFactsList(text);

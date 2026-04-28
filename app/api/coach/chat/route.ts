@@ -160,6 +160,13 @@ export async function POST(req: NextRequest) {
     category?: string;
     threadId?: string;
   };
+
+  // Convex IDs are opaque base32-ish strings. We don't need to fully
+  // round-trip via the SDK to validate — a quick character-class check
+  // catches the obvious garbage (slashes, spaces, JSON chars) before we
+  // hit the mutation. The mutation still verifies ownership.
+  const isPlausibleConvexId = (s: unknown): s is string =>
+    typeof s === "string" && s.length > 0 && s.length <= 64 && /^[A-Za-z0-9_]+$/.test(s);
   try {
     body = await req.json();
   } catch {
@@ -192,6 +199,10 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+  }
+
+  if (body.threadId !== undefined && !isPlausibleConvexId(body.threadId)) {
+    return NextResponse.json({ error: "Invalid threadId" }, { status: 400 });
   }
 
   const category =

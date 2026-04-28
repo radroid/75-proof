@@ -21,6 +21,11 @@ export const MEMORY_BYTE_CAP = 2048;
 // Cap thread message count returned to the client to keep payloads
 // bounded. UI paginates beyond this.
 const MESSAGE_PAGE_LIMIT = 200;
+// Bound how many messages a single mutation can insert. Convex
+// transactions have hard write caps; clients that exceed this almost
+// certainly have a bug, so silently truncating is friendlier than
+// throwing — they'll still see the most recent messages persist.
+const MAX_MESSAGES_PER_CALL = 100;
 
 async function requireUser(ctx: QueryCtx | MutationCtx): Promise<Doc<"users">> {
   const identity = await ctx.auth.getUserIdentity();
@@ -253,8 +258,9 @@ export const createThread = mutation({
       messageCount: 0,
     });
     if (args.initialMessages && args.initialMessages.length > 0) {
+      const slice = args.initialMessages.slice(0, MAX_MESSAGES_PER_CALL);
       let count = 0;
-      for (const m of args.initialMessages) {
+      for (const m of slice) {
         if (typeof m.content !== "string") continue;
         await ctx.db.insert("coachMessages", {
           threadId,
@@ -270,11 +276,14 @@ export const createThread = mutation({
         updatedAt: now,
       });
     }
+    // Audit detail intentionally avoids the user-supplied title — that
+    // string can carry PII (the user types it, and forgetMe preserves
+    // the audit trail). Length is enough for diagnostic purposes.
     await logAudit(
       ctx,
       user._id,
       "thread_create",
-      `source=${args.source}, title="${title}"`,
+      `source=${args.source}, titleLen=${title.length}`,
     );
     return threadId;
   },
@@ -297,8 +306,9 @@ export const appendMessages = mutation({
       throw new Error("Thread not found");
     }
     const now = Date.now();
+    const slice = args.messages.slice(0, MAX_MESSAGES_PER_CALL);
     let i = 0;
-    for (const m of args.messages) {
+    for (const m of slice) {
       await ctx.db.insert("coachMessages", {
         threadId: args.threadId,
         userId: user._id,
@@ -309,7 +319,7 @@ export const appendMessages = mutation({
       i += 1;
     }
     await ctx.db.patch(args.threadId, {
-      messageCount: thread.messageCount + args.messages.length,
+      messageCount: thread.messageCount + slice.length,
       updatedAt: now,
     });
   },
@@ -387,11 +397,13 @@ export const deleteThread = mutation({
     }
     await deleteAllMessagesForThread(ctx, args.threadId);
     await ctx.db.delete(args.threadId);
+    // Title omitted — same PII concern as thread_create. Message count
+    // is plenty for an audit reader to recognise which thread it was.
     await logAudit(
       ctx,
       user._id,
       "thread_delete",
-      `title="${thread.title}", messages=${thread.messageCount}`,
+      `messages=${thread.messageCount}`,
     );
   },
 });
@@ -458,73 +470,93 @@ export const forgetMe = mutation({
 });
 
 /**
- * Internal: TTL purge. Walks users with memory enabled and clears facts
- * older than ttlDays; deletes individual threads older than ttlDays.
- * Called by a cron in `convex/crons.ts`.
+ * Internal: TTL purge. Walks every user, clears memory facts older
+ * than ttlDays, and deletes individual threads untouched past ttlDays.
+ * Called daily by the cron in `convex/crons.ts`.
  *
- * Bounded by `batchSize` so a single invocation stays within transaction
- * limits; the cron re-runs frequently enough that any remaining work
- * gets cleaned up on subsequent passes.
+ * Uses Convex's `paginate()` API and self-schedules the continuation
+ * if there's a next page. This guarantees every user is processed each
+ * full daily run, even at scale — the previous "single .take(batchSize)"
+ * implementation starved every user past the first page.
  */
 export const purgeExpired = internalMutation({
-  args: { batchSize: v.optional(v.number()) },
-  handler: async (ctx, args) => {
-    const limit = args.batchSize ?? 50;
+  args: {
+    batchSize: v.optional(v.number()),
+    cursor: v.optional(v.union(v.string(), v.null())),
+  },
+  handler: async (ctx, args): Promise<{
+    memoryPurged: number;
+    threadsPurged: number;
+    isDone: boolean;
+  }> => {
+    const numItems = args.batchSize ?? 50;
+    const cursor = args.cursor ?? null;
     const now = Date.now();
 
-    // Memory: scan users page-by-page; cheap at small scale, fine to
-    // re-scan as the cron only fires daily.
-    const users = await ctx.db.query("users").take(limit);
-    let memoryPurged = 0;
-    for (const u of users) {
-      const m = u.coachMemory;
-      if (!m || m.ttlOptOut) continue;
-      if (m.facts.length === 0) continue;
-      const expiresAt = m.updatedAt + m.ttlDays * 24 * 60 * 60 * 1000;
-      if (now < expiresAt) continue;
-      await ctx.db.patch(u._id, {
-        coachMemory: { ...m, facts: [], updatedAt: now },
-      });
-      await ctx.db.insert("coachAuditLog", {
-        userId: u._id,
-        action: "memory_purge_ttl",
-        detail: `purged ${m.facts.length} fact(s) past ${m.ttlDays}-day TTL`,
-        createdAt: now,
-      });
-      memoryPurged += 1;
-    }
+    const page = await ctx.db.query("users").paginate({ numItems, cursor });
 
-    // Threads: any thread untouched for ttlDays gets deleted. We use
-    // each user's setting; falling back to default if unset.
+    let memoryPurged = 0;
     let threadsPurged = 0;
-    for (const u of users) {
+
+    for (const u of page.page) {
+      // Memory.
+      const m = u.coachMemory;
+      if (m && !m.ttlOptOut && m.facts.length > 0) {
+        const expiresAt = m.updatedAt + m.ttlDays * 24 * 60 * 60 * 1000;
+        if (now >= expiresAt) {
+          const purgedCount = m.facts.length;
+          await ctx.db.patch(u._id, {
+            coachMemory: { ...m, facts: [], updatedAt: now },
+          });
+          await ctx.db.insert("coachAuditLog", {
+            userId: u._id,
+            action: "memory_purge_ttl",
+            detail: `purged ${purgedCount} fact(s) past ${m.ttlDays}-day TTL`,
+            createdAt: now,
+          });
+          memoryPurged += 1;
+        }
+      }
+
+      // Threads (skipped when the user opted out of TTL).
       const ttlDays = u.coachMemory?.ttlOptOut
         ? null
         : u.coachMemory?.ttlDays ?? DEFAULT_TTL_DAYS;
-      if (ttlDays === null) continue;
-      const cutoff = now - ttlDays * 24 * 60 * 60 * 1000;
-      const expired = await ctx.db
-        .query("coachThreads")
-        .withIndex("by_user_updated", (q) =>
-          q.eq("userId", u._id).lt("updatedAt", cutoff),
-        )
-        .take(20);
-      for (const t of expired) {
-        await deleteAllMessagesForThread(ctx, t._id);
-        await ctx.db.delete(t._id);
-        threadsPurged += 1;
-      }
-      if (expired.length > 0) {
-        await ctx.db.insert("coachAuditLog", {
-          userId: u._id,
-          action: "memory_purge_ttl",
-          detail: `purged ${expired.length} expired thread(s)`,
-          createdAt: now,
-        });
+      if (ttlDays !== null) {
+        const cutoff = now - ttlDays * 24 * 60 * 60 * 1000;
+        const expired = await ctx.db
+          .query("coachThreads")
+          .withIndex("by_user_updated", (q) =>
+            q.eq("userId", u._id).lt("updatedAt", cutoff),
+          )
+          .take(20);
+        for (const t of expired) {
+          await deleteAllMessagesForThread(ctx, t._id);
+          await ctx.db.delete(t._id);
+          threadsPurged += 1;
+        }
+        if (expired.length > 0) {
+          await ctx.db.insert("coachAuditLog", {
+            userId: u._id,
+            action: "memory_purge_ttl",
+            detail: `purged ${expired.length} expired thread(s)`,
+            createdAt: now,
+          });
+        }
       }
     }
 
-    return { memoryPurged, threadsPurged };
+    if (!page.isDone) {
+      // Schedule the continuation. runAfter(0) keeps each invocation
+      // within transaction limits while still completing the full pass
+      // promptly.
+      await ctx.scheduler.runAfter(0, internal.coach.purgeExpired, {
+        batchSize: numItems,
+        cursor: page.continueCursor,
+      });
+    }
+
+    return { memoryPurged, threadsPurged, isDone: page.isDone };
   },
 });
 
@@ -542,7 +574,14 @@ export const listAuditLog = query({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
     if (!user) return [];
-    const limit = Math.min(args.limit ?? 100, 500);
+    // Defensive: clamp to a sane positive integer. Negative or
+    // non-finite values would throw inside .take(); we'd rather return
+    // a small page than 500.
+    const requested = args.limit ?? 100;
+    const limit = Math.max(
+      1,
+      Math.min(Math.floor(Number.isFinite(requested) ? requested : 100), 500),
+    );
     const rows = await ctx.db
       .query("coachAuditLog")
       .withIndex("by_user_created", (q) => q.eq("userId", user._id))
@@ -561,6 +600,15 @@ export const listAuditLog = query({
 // C-5 — Export bundle
 // ============================================================================
 
+// Hard ceilings to keep the export query inside Convex's per-query
+// read limit. They're high enough that real users won't hit them; if
+// any is reached, the response surfaces a `truncated` flag so the
+// downloaded bundle is not silently incomplete (per BACKLOG C-5
+// "completeness expectations").
+const EXPORT_MAX_THREADS = 1000;
+const EXPORT_MAX_MESSAGES_PER_THREAD = 2000;
+const EXPORT_MAX_AUDIT = 5000;
+
 /**
  * Internal: assemble the full bundle. Called by an action that records
  * the export audit entry (audit writes need a mutation context, queries
@@ -571,15 +619,20 @@ export const buildExportSnapshot = internalQuery({
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     if (!user) throw new Error("User not found");
+
+    // Threads — read up to the cap, flag truncation if hit.
     const threads = await ctx.db
       .query("coachThreads")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .take(200);
+      .take(EXPORT_MAX_THREADS);
+    const threadsTruncated = threads.length === EXPORT_MAX_THREADS;
+
     const threadsWithMessages: Array<{
       title: string;
       source: string;
       createdAt: number;
       updatedAt: number;
+      truncated: boolean;
       messages: Array<{ role: string; content: string; createdAt: number }>;
     }> = [];
     for (const t of threads) {
@@ -587,12 +640,13 @@ export const buildExportSnapshot = internalQuery({
         .query("coachMessages")
         .withIndex("by_thread_created", (q) => q.eq("threadId", t._id))
         .order("asc")
-        .take(500);
+        .take(EXPORT_MAX_MESSAGES_PER_THREAD);
       threadsWithMessages.push({
         title: t.title,
         source: t.source,
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,
+        truncated: messages.length === EXPORT_MAX_MESSAGES_PER_THREAD,
         messages: messages.map((m) => ({
           role: m.role,
           content: m.content,
@@ -600,11 +654,14 @@ export const buildExportSnapshot = internalQuery({
         })),
       });
     }
+
     const audit = await ctx.db
       .query("coachAuditLog")
       .withIndex("by_user_created", (q) => q.eq("userId", args.userId))
       .order("desc")
-      .take(500);
+      .take(EXPORT_MAX_AUDIT);
+    const auditTruncated = audit.length === EXPORT_MAX_AUDIT;
+
     return {
       memory: user.coachMemory ?? null,
       threads: threadsWithMessages,
@@ -613,6 +670,18 @@ export const buildExportSnapshot = internalQuery({
         detail: a.detail,
         createdAt: a.createdAt,
       })),
+      truncation: {
+        threads: threadsTruncated,
+        audit: auditTruncated,
+        // Per-thread truncation lives on each thread doc above; this
+        // top-level convenience flag is true iff any thread was clipped.
+        anyMessages: threadsWithMessages.some((t) => t.truncated),
+        limits: {
+          maxThreads: EXPORT_MAX_THREADS,
+          maxMessagesPerThread: EXPORT_MAX_MESSAGES_PER_THREAD,
+          maxAudit: EXPORT_MAX_AUDIT,
+        },
+      },
     };
   },
 });
@@ -652,6 +721,29 @@ export const resolveSelfUserId = query({
   },
 });
 
+type ExportSnapshot = {
+  memory: Doc<"users">["coachMemory"] | null;
+  threads: Array<{
+    title: string;
+    source: string;
+    createdAt: number;
+    updatedAt: number;
+    truncated: boolean;
+    messages: Array<{ role: string; content: string; createdAt: number }>;
+  }>;
+  audit: Array<{ action: string; detail: string; createdAt: number }>;
+  truncation: {
+    threads: boolean;
+    audit: boolean;
+    anyMessages: boolean;
+    limits: {
+      maxThreads: number;
+      maxMessagesPerThread: number;
+      maxAudit: number;
+    };
+  };
+};
+
 /**
  * Public action: build the export bundle for the calling user and log
  * the export to the audit trail. Wraps the internal query (paginated
@@ -659,19 +751,7 @@ export const resolveSelfUserId = query({
  */
 export const exportSnapshot = action({
   args: {},
-  handler: async (
-    ctx,
-  ): Promise<{
-    memory: Doc<"users">["coachMemory"] | null;
-    threads: Array<{
-      title: string;
-      source: string;
-      createdAt: number;
-      updatedAt: number;
-      messages: Array<{ role: string; content: string; createdAt: number }>;
-    }>;
-    audit: Array<{ action: string; detail: string; createdAt: number }>;
-  }> => {
+  handler: async (ctx): Promise<ExportSnapshot> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
@@ -681,17 +761,10 @@ export const exportSnapshot = action({
     );
     if (!userId) throw new Error("User not found");
 
-    const snapshot: {
-      memory: Doc<"users">["coachMemory"] | null;
-      threads: Array<{
-        title: string;
-        source: string;
-        createdAt: number;
-        updatedAt: number;
-        messages: Array<{ role: string; content: string; createdAt: number }>;
-      }>;
-      audit: Array<{ action: string; detail: string; createdAt: number }>;
-    } = await ctx.runQuery(internal.coach.buildExportSnapshot, { userId });
+    const snapshot: ExportSnapshot = await ctx.runQuery(
+      internal.coach.buildExportSnapshot,
+      { userId },
+    );
 
     const bytes = new TextEncoder().encode(JSON.stringify(snapshot)).byteLength;
     await ctx.runMutation(internal.coach.recordExport, { userId, bytes });

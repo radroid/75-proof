@@ -40,12 +40,14 @@ export async function GET() {
     memory: unknown;
     threads: unknown;
     audit: unknown;
+    truncation: unknown;
   };
   try {
     snapshot = (await convex.action(api.coach.exportSnapshot, {})) as {
       memory: unknown;
       threads: unknown;
       audit: unknown;
+      truncation: unknown;
     };
   } catch (err) {
     console.error("[coach/export] snapshot failed", err);
@@ -62,6 +64,7 @@ export async function GET() {
     memory: snapshot.memory,
     threads: snapshot.threads,
     audit: snapshot.audit,
+    truncation: snapshot.truncation,
   };
 
   const json = JSON.stringify(bundle, null, 2);
@@ -88,6 +91,10 @@ This file is your full coach context, exported on request. It contains:
 - **threads**: every coach chat you saved, with full transcripts.
 - **audit**: an append-only log of every memory write, purge, thread delete,
   and export so you can verify what was stored and when.
+- **truncation**: flags any place where the export hit a server-side cap so
+  you can tell if the bundle is complete. Re-export to pick up newer rows;
+  if you ever see flags set we recommend filing an issue so we can raise
+  the limits for your account.
 
 ## Schema
 
@@ -119,7 +126,13 @@ This file is your full coach context, exported on request. It contains:
           | "forget_me" | "export",
     detail: string,
     createdAt: epoch ms
-  }>
+  }>,
+  truncation: {
+    threads: boolean,        // true if more threads than were returned
+    audit: boolean,          // true if more audit rows than were returned
+    anyMessages: boolean,    // true if any thread.truncated is true
+    limits: { maxThreads, maxMessagesPerThread, maxAudit }
+  }
 }
 \`\`\`
 

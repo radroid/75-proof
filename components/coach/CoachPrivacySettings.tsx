@@ -131,7 +131,7 @@ export function CoachPrivacySettings() {
         </div>
         <CardDescription>
           The AI coach can remember durable facts about you across sessions.
-          Off by default — you control what's stored, when it expires, and you
+          Off by default — you control what&apos;s stored, when it expires, and you
           can wipe it any time.
         </CardDescription>
       </CardHeader>
@@ -142,7 +142,7 @@ export function CoachPrivacySettings() {
               Remember me across sessions
             </Label>
             <p className="text-xs text-muted-foreground">
-              Stores up to ~2KB of distilled facts (goals, schedule, what's worked).
+              Stores up to ~2KB of distilled facts (goals, schedule, what&apos;s worked).
               Display name, email, and other identifiers are excluded.
             </p>
           </div>
@@ -224,7 +224,7 @@ export function CoachPrivacySettings() {
                 <AlertDialogDescription>
                   Clears every stored fact and deletes every saved coach
                   conversation. The audit log of these actions stays so you
-                  can verify the wipe happened. This can't be undone.
+                  can verify the wipe happened. This can&apos;t be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

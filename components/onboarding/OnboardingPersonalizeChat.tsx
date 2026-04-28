@@ -65,14 +65,17 @@ export function OnboardingPersonalizeChat({
 
     // Auto-promote the onboarding chat into a coach thread. Skip if
     // there's no exchange yet (defensive — applying without messages
-    // would mean a stub-mode proposal).
+    // would mean a stub-mode proposal). Strip the sentinel + JSON
+    // proposal block from assistant turns so the persisted transcript
+    // matches what the user actually saw, not the raw payload.
     if (messages.length > 0) {
       void createThread({
         title: `Onboarding: ${proposal.title}`.slice(0, 80),
         source: "onboarding",
         initialMessages: messages.map((m) => ({
           role: m.role,
-          content: m.content,
+          content:
+            m.role === "assistant" ? stripSentinelBlock(m.content) : m.content,
         })),
       }).catch((err) => {
         console.error("[onboarding] thread persist failed", err);
