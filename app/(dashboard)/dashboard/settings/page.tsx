@@ -761,7 +761,9 @@ export default function SettingsPage() {
           </Card>
         </MotionItem>
         <MotionItem>
-          <CoachPrivacySettings />
+          <div id="coach-memory" className="scroll-mt-20">
+            <CoachPrivacySettings />
+          </div>
         </MotionItem>
       </Section>
 
