@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation } from "convex/react";
-import { Loader2, Send, Sparkles } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronLeft, Loader2, RotateCcw, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ChatBubble } from "@/components/ui/chat-bubble";
 import { usePersonalizeChat } from "@/lib/llm-personalize";
@@ -23,12 +23,22 @@ interface Props {
   }) => void;
 }
 
+const SUGGESTED_PROMPTS = [
+  "Desk worker, 30 min/day, hate cardio. Build me something I can do at home.",
+  "Want to lose 10 lb in 3 months. I have a gym and 1 hour each morning.",
+  "Burnt out from 75 HARD. Need a softer 60-day reset focused on sleep + mood.",
+];
+
+const STARTER_MESSAGE =
+  "Hey — I'm your routine coach. Tell me what you want to build " +
+  "and I'll draft a plan you can refine. Goals, schedule, equipment, " +
+  "what's worked or failed before — all useful.";
+
 /**
- * Minimal non-streaming chat panel. Sends each turn through the Convex
- * `personalize.chat` action and renders the conversation as plain text.
- * When the latest assistant message includes a sentinel-tagged routine
- * proposal, shows a "Use this routine" button that hands the parsed
- * habits/days back to the onboarding page.
+ * Full-screen onboarding chat. The composer is sticky to the bottom; the
+ * transcript scrolls inside the available space; the proposal card slides
+ * in above the composer when the model emits one. Three suggested
+ * prompts seed the empty state so the user has something to click.
  */
 export function OnboardingPersonalizeChat({
   selectedTemplateSlug,
@@ -38,15 +48,26 @@ export function OnboardingPersonalizeChat({
   const { messages, proposal, pending, error, send, reset } =
     usePersonalizeChat(selectedTemplateSlug);
   const [draft, setDraft] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
   // C-2: when the user accepts the AI-built routine, capture the
   // onboarding chat as a coach thread so the conversation is preserved.
   // Fire-and-forget — failure here must not block onboarding.
   const createThread = useMutation(api.coach.createThread);
 
-  const handleSend = async () => {
-    const text = draft;
+  // Auto-scroll the transcript to the latest message whenever something new
+  // arrives (user turn, assistant turn, or pending indicator). Without this
+  // the user has to scroll manually after every reply.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages.length, pending, proposal]);
+
+  const handleSend = async (text: string) => {
+    const value = text.trim();
+    if (!value || pending) return;
     setDraft("");
-    await send(text);
+    await send(value);
   };
 
   const handleApply = () => {
@@ -90,32 +111,67 @@ export function OnboardingPersonalizeChat({
     });
   };
 
-  return (
-    <Card>
-      <CardContent className="pt-4 space-y-4">
-        <div className="flex items-center justify-between gap-2">
-          <p className="font-medium text-sm flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Build a routine with AI
-          </p>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={reset}>
-              Reset
-            </Button>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              Close
-            </Button>
-          </div>
-        </div>
+  const showEmpty = messages.length === 0;
 
-        <div className="space-y-2 max-h-80 overflow-y-auto rounded-md border bg-background/40 p-3">
-          {messages.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              Tell me about your goals, schedule, and what&apos;s worked or
-              failed before. I&apos;ll either pick a template or design
-              something fresh.
-            </p>
+  return (
+    <div className="flex-1 flex flex-col min-h-0 w-full">
+      {/* Sticky chat header. Stays put as the transcript scrolls so the back
+          and reset affordances are always reachable. */}
+      <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClose}
+          className="gap-1 -ml-2 min-h-[44px]"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          Back
+        </Button>
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
+          Routine coach
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={reset}
+          disabled={messages.length === 0 && !proposal}
+          className="gap-1 -mr-2 min-h-[44px]"
+        >
+          <RotateCcw className="h-4 w-4" aria-hidden="true" />
+          Reset
+        </Button>
+      </div>
+
+      {/* Scrollable transcript. `min-h-0` is critical so the flex child can
+          actually shrink and let `overflow-y-auto` engage. */}
+      <div
+        ref={scrollRef}
+        className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4"
+      >
+        <div className="mx-auto max-w-2xl space-y-3">
+          {showEmpty && (
+            <div className="space-y-4 py-6">
+              <ChatBubble role="assistant" content={STARTER_MESSAGE} />
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground/70 px-1">
+                  Try one of these
+                </p>
+                {SUGGESTED_PROMPTS.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => void handleSend(prompt)}
+                    disabled={pending}
+                    className="w-full text-left rounded-xl border border-border px-3.5 py-2.5 text-sm transition hover:border-primary/50 hover:bg-primary/5 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
+
           {messages.map((m, i) => (
             <ChatBubble
               key={i}
@@ -123,55 +179,90 @@ export function OnboardingPersonalizeChat({
               content={stripSentinelBlock(m.content)}
             />
           ))}
+
           {pending && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
               <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
               Thinking…
             </div>
           )}
+
           {error && (
-            <p className="text-sm text-destructive">Error: {error}</p>
+            <div
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+            >
+              {error}
+            </div>
           )}
         </div>
+      </div>
 
-        {proposal && (
-          <div className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-2">
-            <p className="font-medium text-sm">{proposal.title}</p>
-            <p className="text-xs text-muted-foreground">{proposal.summary}</p>
-            <p className="text-xs text-muted-foreground/70">
-              {proposal.daysTotal} days · {proposal.difficulty} ·{" "}
-              {proposal.habits.length} habits
-              {proposal.strictMode ? " · strict" : ""}
-            </p>
-            <Button size="sm" onClick={handleApply}>
-              Use this routine
-            </Button>
-          </div>
-        )}
+      {/* Proposal card + composer pinned to the bottom. Wrapped in a single
+          container so they share the safe-area inset and the proposal slides
+          in above the composer without reflowing the whole page. */}
+      <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
+        {/* Animate the proposal card in/out so it slides up from the composer
+            instead of popping into existence. AnimatePresence lets it also
+            animate out when the user resets the chat. */}
+        <AnimatePresence initial={false}>
+          {proposal && (
+            <motion.div
+              key="proposal-card"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="mx-auto max-w-2xl px-4 sm:px-6 pt-3"
+            >
+              <div className="rounded-xl border border-primary/40 bg-primary/5 p-3 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">{proposal.title}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {proposal.summary}
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">
+                      {proposal.daysTotal} days · {proposal.difficulty} ·{" "}
+                      {proposal.habits.length} habits
+                      {proposal.strictMode ? " · strict" : ""}
+                    </p>
+                  </div>
+                  <Button size="sm" onClick={handleApply} className="shrink-0">
+                    Use this
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <form
-          className="flex items-center gap-2"
+          className="mx-auto max-w-2xl flex items-center gap-2 px-4 sm:px-6 py-3"
           onSubmit={(e) => {
             e.preventDefault();
-            void handleSend();
+            void handleSend(draft);
           }}
         >
           <Input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="e.g. desk worker, 30 min/day, hate cardio"
+            placeholder="Tell the coach what you want…"
             disabled={pending}
+            className="flex-1"
+            aria-label="Message the coach"
           />
           <Button
             type="submit"
+            size="icon"
             disabled={pending || !draft.trim()}
             aria-label="Send message"
           >
             <Send className="h-4 w-4" aria-hidden="true" />
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 

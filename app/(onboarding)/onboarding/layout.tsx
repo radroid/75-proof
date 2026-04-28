@@ -20,9 +20,11 @@ export default function OnboardingLayout({
         </Link>
       </header>
 
-      {/* Content */}
-      <main className="flex-1 flex items-start justify-center px-4 sm:px-6 pt-4 pb-[max(env(safe-area-inset-bottom),2rem)]">
-        <div className="w-full max-w-2xl">{children}</div>
+      {/* Content — width and padding are owned by each step so the AI coach
+          can go full-bleed while the standard form steps stay capped at
+          `max-w-2xl` with a comfortable inset. */}
+      <main className="flex-1 flex flex-col items-stretch min-h-0">
+        {children}
       </main>
     </div>
   );
