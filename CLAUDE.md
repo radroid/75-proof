@@ -7,13 +7,13 @@ Today's date is 2026-02-26.
 
 # Rules
 
-Package manager: pnpm
+Package manager: bun. Use `bun install` / `bun add` / `bun remove`; do not run `pnpm` or `npm install` against this repo. The lockfile is `bun.lock` — only that lockfile should be committed.
 
 ## Build verification
 Always run `npx next build` and confirm it passes **before** committing any changes. Do not commit code that fails the build.
 
 ## Dev server
-The dev server is always already running — do not start it yourself (no `npx next dev`, `pnpm dev`, etc.).
+The dev server is always already running — do not start it yourself (no `npx next dev`, `bun dev`, etc.).
 
 ## Tailwind class style
 Do not proactively rewrite Tailwind utility classes into canonical shorthand forms (for example, bracket/arbitrary values to parenthesis variants) unless the user explicitly asks for that refactor.

@@ -9,7 +9,7 @@ Thanks for helping out! A few ground rules to keep things clean.
 3. Run the build **before** pushing:
    ```bash
    npx next build
-   pnpm lint
+   bun lint
    ```
 4. Open a PR against `main`. Direct pushes are blocked.
 5. A PR requires **1 approving review** and must not break the build.
@@ -29,7 +29,7 @@ Keep the subject under ~70 chars. Explain the *why* in the body if non-obvious.
 
 ## Code conventions
 
-- **Package manager**: `pnpm` only.
+- **Package manager**: `bun` only. Commit `bun.lock`; never run `pnpm` or `npm install`.
 - **Tailwind**: don't rewrite arbitrary-value classes into canonical forms unless the change is the point of the PR.
 - **Convex**: always skim `convex/_generated/ai/guidelines.md` before editing `convex/`.
 - **Schema changes**: favor back-compat (keep legacy union literals, remap on read) over data migrations when practical.
