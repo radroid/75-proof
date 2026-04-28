@@ -29,7 +29,7 @@ Keep the subject under ~70 chars. Explain the *why* in the body if non-obvious.
 
 ## Code conventions
 
-- **Package manager**: `bun` only. Commit `bun.lock`; never run `pnpm` or `npm install`.
+- **Package manager**: use `bun` for `install` / `add` / `remove` / `run` in this repo. The lockfile migration (regenerating `bun.lock` and dropping `pnpm-lock.yaml`) is tracked in a separate PR — until that lands, follow whichever lockfile is currently committed and don't introduce a competing one.
 - **Tailwind**: don't rewrite arbitrary-value classes into canonical forms unless the change is the point of the PR.
 - **Convex**: always skim `convex/_generated/ai/guidelines.md` before editing `convex/`.
 - **Schema changes**: favor back-compat (keep legacy union literals, remap on read) over data migrations when practical.
