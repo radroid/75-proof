@@ -17,6 +17,7 @@ import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
 import { GuestSignupBanner } from "@/components/guest-signup-banner";
 import { useGuest } from "@/components/guest-provider";
 import { InstallPromptGate } from "@/components/pwa/install-prompt-gate";
+import { HapticsPermissionPrompt } from "@/components/haptics-permission-prompt";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -342,6 +343,8 @@ export default function DashboardLayout({
         {isGuest && <GuestSignupBanner />}
 
         <InstallPromptGate />
+
+        <HapticsPermissionPrompt />
       </div>
     </SidebarProvider>
   );
