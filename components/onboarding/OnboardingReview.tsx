@@ -45,6 +45,12 @@ export function OnboardingReview({
   const themeName = themeMetadata[state.theme]?.name ?? state.theme;
   const isCatalogTemplate = isKnownTemplate(state.templateSlug);
   const templateLabel = resolveTemplateLabel(state.templateSlug, isCatalogTemplate);
+  // The AI path skips goals/theme/duration/habits as standalone steps —
+  // everything funnels through the coach chat. Edit buttons on this page
+  // point back at the chat instead of dead-ending on a step the parent
+  // marked as `disabled`. Theme is hidden entirely (the user can change
+  // it later in settings) so we don't suggest a control they can't reach.
+  const isAiPath = state.entryPath === "ai";
 
   return (
     <motion.div
@@ -63,19 +69,24 @@ export function OnboardingReview({
 
       {/* Summary cards */}
       <div className="space-y-3">
-        {/* Profile */}
+        {/* Profile — AI path collects display name from the user record
+            (Clerk-populated, signed-in only), so the Edit button has
+            nowhere useful to point. Hide it for AI users. */}
         <SummaryRow
           label="Name"
           value={state.displayName}
-          onEdit={() => onGoToStep("goals")}
+          onEdit={isAiPath ? undefined : () => onGoToStep("goals")}
         />
 
-        {/* Theme */}
-        <SummaryRow
-          label="Theme"
-          value={themeName}
-          onEdit={() => onGoToStep("theme")}
-        />
+        {/* Theme — AI path doesn't expose the theme step; hide entirely so
+            we don't promise an edit affordance the flow won't honor. */}
+        {!isAiPath && (
+          <SummaryRow
+            label="Theme"
+            value={themeName}
+            onEdit={() => onGoToStep("theme")}
+          />
+        )}
 
         {/* Routine template */}
         <SummaryRow
@@ -85,7 +96,8 @@ export function OnboardingReview({
             // The custom path skips the template step entirely (the
             // build-your-own seeds are set at the path picker), so route
             // its Edit button to the habits step instead — that's where
-            // a custom user actually shapes their routine.
+            // a custom user actually shapes their routine. AI users go
+            // back to the coach to revise the proposal.
             onGoToStep(state.entryPath === "custom" ? "habits" : "template")
           }
         />
@@ -95,6 +107,12 @@ export function OnboardingReview({
           label="Challenge length"
           value={`${state.daysTotal} days · ends ${formatEndDate(state.startDate, state.daysTotal)}`}
           onEdit={() => {
+            // AI path: duration was set by the coach proposal — sending the
+            // user back to the chat lets them ask for a different length.
+            if (isAiPath) {
+              onGoToStep("template");
+              return;
+            }
             const lockedDuration =
               isCatalogTemplate &&
               getTemplateBySlug(state.templateSlug).lockedDuration;
@@ -111,7 +129,9 @@ export function OnboardingReview({
               </p>
               <button
                 type="button"
-                onClick={() => onGoToStep("habits")}
+                // AI users edit habits by talking to the coach; everyone
+                // else goes to the dedicated habits step.
+                onClick={() => onGoToStep(isAiPath ? "template" : "habits")}
                 aria-label="Edit habits"
                 className="inline-flex min-h-[44px] items-center gap-1 rounded px-2 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
@@ -231,7 +251,9 @@ function SummaryRow({
 }: {
   label: string;
   value: string;
-  onEdit: () => void;
+  /** Omit when the field has no editable surface in the current flow (e.g.
+   *  display name on the AI path is sourced from the user record). */
+  onEdit?: () => void;
 }) {
   return (
     <div className="flex items-center justify-between gap-2 py-3 px-4 rounded-lg border">
@@ -239,15 +261,17 @@ function SummaryRow({
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="text-sm font-medium truncate">{value}</p>
       </div>
-      <button
-        type="button"
-        onClick={onEdit}
-        aria-label={`Edit ${label}`}
-        className="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded px-2 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-      >
-        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-        Edit
-      </button>
+      {onEdit && (
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={`Edit ${label}`}
+          className="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded px-2 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+          Edit
+        </button>
+      )}
     </div>
   );
 }

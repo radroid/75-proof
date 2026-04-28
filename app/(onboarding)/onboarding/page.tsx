@@ -177,6 +177,12 @@ export default function OnboardingPage() {
   // habits are seeded at the path picker, so there's nothing to choose.
   const skipsTemplate = state.entryPath === "custom";
   const skipsDuration = !!selectedTemplate?.lockedDuration;
+  // AI path delegates everything except age + health acknowledgement to the
+  // coach conversation. Skip the standard goals/theme/duration/habits steps
+  // so the only stops are: path → welcome (age + T&C) → template (AI chat) →
+  // review. Keeping the steps available via dot-jump would let a user land
+  // on questions we promised the coach would handle.
+  const isAiPath = state.entryPath === "ai";
 
   // Indices of steps that are currently skipped by the flow. Both the
   // dot navigator and `goToIndex` consult this so a user can never land
@@ -186,9 +192,12 @@ export default function OnboardingPage() {
     ONBOARDING_STEPS.forEach((step, idx) => {
       if (step === "template" && skipsTemplate) set.add(idx);
       if (step === "duration" && skipsDuration) set.add(idx);
+      if (isAiPath && (step === "goals" || step === "theme" || step === "duration" || step === "habits")) {
+        set.add(idx);
+      }
     });
     return set;
-  }, [skipsTemplate, skipsDuration]);
+  }, [skipsTemplate, skipsDuration, isAiPath]);
 
   // Helper to advance state. Co-locating the `maxReachedIndex` bump with
   // the `setStepIndex` call avoids the cascading render the
@@ -201,11 +210,13 @@ export default function OnboardingPage() {
 
   const next = useCallback(() => {
     let nextIdx = Math.min(stepIndex + 1, ONBOARDING_STEPS.length - 1);
-    if (ONBOARDING_STEPS[nextIdx] === "template" && skipsTemplate) {
-      nextIdx = Math.min(nextIdx + 1, ONBOARDING_STEPS.length - 1);
-    }
-    if (ONBOARDING_STEPS[nextIdx] === "duration" && skipsDuration) {
-      nextIdx = Math.min(nextIdx + 1, ONBOARDING_STEPS.length - 1);
+    // Loop past every disabled step. The AI path skips four in a row
+    // (goals → theme → duration → habits) so a single hop isn't enough.
+    while (
+      nextIdx < ONBOARDING_STEPS.length - 1 &&
+      disabledStepIndices.has(nextIdx)
+    ) {
+      nextIdx += 1;
     }
     setStepBoth(nextIdx);
     if (
@@ -214,18 +225,15 @@ export default function OnboardingPage() {
     ) {
       setState((s) => ({ ...s, daysTotal: selectedTemplate.daysTotal }));
     }
-  }, [stepIndex, selectedTemplate, state.daysTotal, skipsTemplate, skipsDuration, setStepBoth]);
+  }, [stepIndex, selectedTemplate, state.daysTotal, disabledStepIndices, setStepBoth]);
 
   const back = useCallback(() => {
     let prevIdx = Math.max(stepIndex - 1, 0);
-    if (ONBOARDING_STEPS[prevIdx] === "duration" && skipsDuration) {
-      prevIdx = Math.max(prevIdx - 1, 0);
-    }
-    if (ONBOARDING_STEPS[prevIdx] === "template" && skipsTemplate) {
-      prevIdx = Math.max(prevIdx - 1, 0);
+    while (prevIdx > 0 && disabledStepIndices.has(prevIdx)) {
+      prevIdx -= 1;
     }
     setStepBoth(prevIdx);
-  }, [stepIndex, skipsDuration, skipsTemplate, setStepBoth]);
+  }, [stepIndex, disabledStepIndices, setStepBoth]);
 
   const goToStep = useCallback(
     (step: OnboardingStep) => {
@@ -383,9 +391,25 @@ export default function OnboardingPage() {
   }
 
   const currentStep = ONBOARDING_STEPS[stepIndex];
+  // The AI coach owns the entire viewport — no side text, no max-width
+  // clamp, no progress dots taking up the top of the chat. Everything else
+  // stays in the standard `max-w-2xl` form column.
+  const isAiChatStep = currentStep === "template" && state.entryPath === "ai";
+
+  if (isAiChatStep) {
+    // No outer padding — the chat owns the entire viewport and manages its
+    // own safe-area inset on the composer.
+    return (
+      <OnboardingAiStep
+        state={state}
+        onBack={back}
+        onApplyProposal={handleAiProposal}
+      />
+    );
+  }
 
   return (
-    <div className="space-y-8">
+    <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 pt-4 pb-[max(env(safe-area-inset-bottom),2rem)] space-y-8">
       <StepIndicator
         steps={ONBOARDING_STEPS}
         currentIndex={stepIndex}
@@ -405,13 +429,6 @@ export default function OnboardingPage() {
       )}
       {currentStep === "theme" && (
         <OnboardingTheme state={state} updateState={updateState} onNext={next} onBack={back} />
-      )}
-      {currentStep === "template" && state.entryPath === "ai" && (
-        <OnboardingAiStep
-          state={state}
-          onBack={back}
-          onApplyProposal={handleAiProposal}
-        />
       )}
       {currentStep === "template" && state.entryPath !== "ai" && (
         <OnboardingBrowsePopular
