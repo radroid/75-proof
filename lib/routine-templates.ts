@@ -71,7 +71,7 @@ const YOGA_HABITS: StandardHabit[] = [
   },
 ];
 
-export const ROUTINE_TEMPLATES: RoutineTemplate[] = [
+export const ROUTINE_TEMPLATES: ReadonlyArray<RoutineTemplate> = [
   {
     slug: "original-75-hard",
     title: "Original 75 HARD",
@@ -139,13 +139,29 @@ export const ROUTINE_TEMPLATES: RoutineTemplate[] = [
 
 export const DEFAULT_TEMPLATE_SLUG = "original-75-hard";
 
+// Defensive clone: ROUTINE_TEMPLATES is the canonical seed and callers
+// frequently reach into nested arrays (e.g. `template.habits.map(...)`).
+// Returning the shared reference would let any caller mutation leak into
+// every later request in the same process.
+function cloneTemplate(template: RoutineTemplate): RoutineTemplate {
+  return {
+    ...template,
+    source: { ...template.source },
+    recommendedGoals: [...template.recommendedGoals],
+    habits: template.habits.map((h) => ({ ...h })),
+  };
+}
+
 export function getTemplateBySlug(slug: string | null | undefined): RoutineTemplate {
   const found = slug ? ROUTINE_TEMPLATES.find((t) => t.slug === slug) : undefined;
-  if (found) return found;
-  const defaultTemplate = ROUTINE_TEMPLATES.find(
-    (t) => t.slug === DEFAULT_TEMPLATE_SLUG,
-  );
-  return defaultTemplate ?? ROUTINE_TEMPLATES[0];
+  const target =
+    found ??
+    ROUTINE_TEMPLATES.find((t) => t.slug === DEFAULT_TEMPLATE_SLUG) ??
+    ROUTINE_TEMPLATES[0];
+  if (!target) {
+    throw new Error("ROUTINE_TEMPLATES must contain at least one template");
+  }
+  return cloneTemplate(target);
 }
 
 export function isKnownTemplate(slug: string | null | undefined): boolean {
