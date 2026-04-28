@@ -26,6 +26,8 @@ interface Particle {
   shape: (typeof shapes)[number];
   delay: number;
   rotation: number;
+  /** Frozen-at-creation duration so the same particle doesn't re-randomize on re-renders. */
+  duration: number;
 }
 
 function generateParticles(count: number): Particle[] {
@@ -36,6 +38,7 @@ function generateParticles(count: number): Particle[] {
     shape: shapes[Math.floor(Math.random() * shapes.length)],
     delay: Math.random() * 0.3,
     rotation: Math.random() * 360,
+    duration: 2.5 + Math.random() * 1.5,
   }));
 }
 
@@ -120,7 +123,7 @@ export function Confetti({ isActive, duration = 3000 }: ConfettiProps) {
               }}
               exit={{ opacity: 0 }}
               transition={{
-                duration: 2.5 + Math.random() * 1.5,
+                duration: p.duration,
                 delay: p.delay,
                 ease: [0.23, 0.03, 0.38, 1],
               }}
@@ -141,14 +144,34 @@ export function Confetti({ isActive, duration = 3000 }: ConfettiProps) {
  */
 export function useConfetti() {
   const [isActive, setIsActive] = React.useState(false);
+  // Track the pending rAF id so consecutive triggers can cancel a stale
+  // one before scheduling a new one, and so unmount cancels cleanly
+  // (otherwise an in-flight rAF can call setIsActive after the component
+  // is gone — React 18 will warn).
+  const rafIdRef = React.useRef<number | null>(null);
 
   const trigger = React.useCallback(() => {
     // Reset to false then back to true so consecutive triggers re-fire.
     setIsActive(false);
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+    }
     // requestAnimationFrame ensures the false→true transition lands on a
     // separate render cycle — without it React batches the two updates and
     // the effect inside Confetti only sees `isActive` go true once total.
-    requestAnimationFrame(() => setIsActive(true));
+    rafIdRef.current = requestAnimationFrame(() => {
+      rafIdRef.current = null;
+      setIsActive(true);
+    });
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+    };
   }, []);
 
   return { isActive, trigger };

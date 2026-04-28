@@ -8,7 +8,22 @@ import { formatDateShort, type ChallengePhase } from "@/lib/day-utils";
 interface Props {
   startDate: string;
   phase: Extract<ChallengePhase, { kind: "future" }>;
+  /**
+   * Bare routine label/title (no "your "/"the " prefix) — the component owns
+   * the surrounding "Your X starts on …" sentence. Pass `null`/`undefined`
+   * when no recognisable label is available; we render a neutral fallback.
+   */
   routineLabel?: string | null;
+}
+
+/** Strip a leading case-insensitive `your `/`the ` from a callsite that passed
+ *  a possessive label, so we don't render "Your your routine". */
+function bareLabel(label: string | null | undefined): string | null {
+  if (!label) return null;
+  const trimmed = label.trim();
+  if (!trimmed) return null;
+  const stripped = trimmed.replace(/^(your|the)\s+/i, "").trim();
+  return stripped.length > 0 ? stripped : null;
 }
 
 /**
@@ -19,6 +34,7 @@ interface Props {
  * ("Starts in 5 days" → "Starts day after tomorrow" → "Starts tomorrow").
  */
 export function ChallengeUpcoming({ startDate, phase, routineLabel }: Props) {
+  const bare = bareLabel(routineLabel);
   return (
     <PageContainer>
       <motion.div
@@ -39,10 +55,9 @@ export function ChallengeUpcoming({ startDate, phase, routineLabel }: Props) {
           {phase.label}
         </h1>
         <p className="mt-4 text-base text-muted-foreground">
-          {routineLabel ? (
+          {bare ? (
             <>
-              Your <span className="text-foreground">{routineLabel}</span>{" "}
-              starts on{" "}
+              Your <span className="text-foreground">{bare}</span> starts on{" "}
             </>
           ) : (
             <>Your challenge starts on </>

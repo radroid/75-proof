@@ -31,6 +31,13 @@ export interface IdentityCardInput {
 interface Template {
   /** Higher = more specific; ties broken by day fit. */
   weight: number;
+  /**
+   * Optional category gate. When omitted the template is eligible for every
+   * category; when set, the template only matches challenges whose social
+   * category is in this list. Lets us bias copy toward the right vocabulary
+   * (e.g. "rep" / "set" reads weird for a productivity routine).
+   */
+  categories?: SocialCategory[];
   match: (input: IdentityCardInput) => boolean;
   render: (input: IdentityCardInput) => string;
 }
@@ -99,6 +106,16 @@ const TEMPLATES: Template[] = [
     render: ({ topHabit }) =>
       `${topHabit!.name} is starting to look like who you are.`,
   },
+  // Fitness-flavored variant: only fires for fitness routines so the
+  // body-vocabulary doesn't crash a productivity user's identity card.
+  {
+    weight: 2,
+    categories: ["fitness"],
+    match: ({ currentDay, topHabit }) =>
+      currentDay >= 14 && currentDay <= 30 && !!topHabit && topHabit.streak >= 5,
+    render: ({ topHabit }) =>
+      `Your body is starting to expect ${topHabit!.name}. ${days(topHabit!.streak)} straight.`,
+  },
 
   // ── Fixed-length, all stages ─────────────────────────────────
   {
@@ -149,19 +166,16 @@ function hash(s: string): number {
  * if no template matches the user's current state.
  */
 export function pickIdentityTemplate(input: IdentityCardInput): string {
-  const eligible = TEMPLATES.filter((t) => t.match(input));
+  const eligible = TEMPLATES.filter(
+    (t) =>
+      (!t.categories || t.categories.includes(input.category)) && t.match(input),
+  );
   if (eligible.length === 0) {
-    // Fall back to a generic phrasing when the routine label is missing or
-    // already starts with "your" / "the" — `your your routine` reads weird,
-    // and the Progress page passes "your routine" as its own fallback when
-    // the slug is unknown.
-    const label = (input.routineLabel ?? "").trim();
-    const lower = label.toLowerCase();
-    const tail = !label
-      ? "your routine"
-      : /^(your|the)\s/.test(lower)
-        ? label
-        : label;
+    // Fall back to a generic phrasing. Use the routine label as-is when
+    // present (the `bareLabel` callsite — Progress page — already strips a
+    // leading "your "/"the ", so we won't render "your your routine"); if
+    // no label survived, fall back to the literal "your routine".
+    const tail = (input.routineLabel ?? "").trim() || "your routine";
     return `Day ${input.currentDay} of ${tail}.`;
   }
 

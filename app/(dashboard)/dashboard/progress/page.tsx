@@ -407,27 +407,51 @@ export default function ProgressPage() {
   // for the "X of N" display so it reflects the user's full routine, not
   // just the gating subset.
   const todayStats = useMemo(() => {
-    if (!activeHabitDefs || !activeHabitEntries || currentDay < 1) {
-      return { done: 0, total: 0 };
-    }
-    const todayEntries = activeHabitEntries.filter(
-      (e) => e.dayNumber === currentDay,
-    );
-    const entriesByHabit = new Map(
-      todayEntries.map((e) => [e.habitDefinitionId, e]),
-    );
-    const active = activeHabitDefs.filter((h) => h.isActive);
-    let done = 0;
-    for (const h of active) {
-      const e = entriesByHabit.get(h._id);
-      if (h.blockType === "counter") {
-        if (e?.completed || (e?.value ?? 0) >= (h.target ?? Infinity)) done += 1;
-      } else if (e?.completed) {
-        done += 1;
+    if (currentDay < 1) return { done: 0, total: 0 };
+    // New-system path: per-habit entries.
+    if (activeHabitDefs && activeHabitEntries && activeHabitDefs.length > 0) {
+      const todayEntries = activeHabitEntries.filter(
+        (e) => e.dayNumber === currentDay,
+      );
+      const entriesByHabit = new Map(
+        todayEntries.map((e) => [e.habitDefinitionId, e]),
+      );
+      const active = activeHabitDefs.filter((h) => h.isActive);
+      let done = 0;
+      for (const h of active) {
+        const e = entriesByHabit.get(h._id);
+        if (h.blockType === "counter") {
+          if (e?.completed || (e?.value ?? 0) >= (h.target ?? Infinity)) done += 1;
+        } else if (e?.completed) {
+          done += 1;
+        }
       }
+      return { done, total: active.length };
     }
-    return { done, total: active.length };
-  }, [activeHabitDefs, activeHabitEntries, currentDay]);
+    // Legacy 75-Hard path: derive done/total from the `dailyLogs` row for
+    // the current day. The seven canonical hard requirements plus an
+    // optional progress photo (Counted in `total` only when the user has
+    // actually uploaded one — older 75 HARD instructions were ambiguous on
+    // whether the photo gates completion). This keeps the snapshot honest
+    // for the cohort still on the legacy schema.
+    const todayLog = (logs ?? []).find((l) => l.dayNumber === currentDay) as
+      | LegacyDayLog
+      | undefined;
+    if (!todayLog) return { done: 0, total: 7 };
+    const reqs: boolean[] = [
+      !!todayLog.workout1 && todayLog.workout1.durationMinutes >= 45,
+      !!todayLog.workout2 && todayLog.workout2.durationMinutes >= 45,
+      !!todayLog.outdoorWorkoutCompleted,
+      todayLog.waterIntakeOz >= 128,
+      todayLog.readingMinutes >= 20,
+      !!todayLog.dietFollowed,
+      !!todayLog.noAlcohol,
+    ];
+    return {
+      done: reqs.filter(Boolean).length,
+      total: reqs.length,
+    };
+  }, [activeHabitDefs, activeHabitEntries, currentDay, logs]);
 
   const routineLabel = useMemo(() => {
     const slug = challenge?.templateSlug;
