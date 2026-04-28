@@ -69,6 +69,39 @@ export function effectiveDaysTotal(challenge: {
   return challenge.daysTotal ?? 75;
 }
 
+/**
+ * Phase of a challenge relative to "today." `currentDay` is the canonical
+ * 1-based day counter once active. Future-start challenges (user set a start
+ * date later than today) collapse onto the `future` branch with a friendly
+ * `label` — UI should never render "Day 0" or "Day -3" anywhere; pre-start
+ * users see the countdown instead.
+ */
+export type ChallengePhase =
+  | { kind: "future"; daysUntilStart: number; label: string }
+  | { kind: "active"; currentDay: number };
+
+/**
+ * Resolve a challenge to its phase given today's date. Same calendar math as
+ * `computeDayNumber` (so the active path stays in lockstep with day-keyed
+ * Convex queries) — this just adds the pre-start branch.
+ */
+export function describeChallengePhase(
+  startDate: string,
+  todayDate: string,
+): ChallengePhase {
+  const dayNum = computeDayNumber(startDate, todayDate);
+  if (dayNum >= 1) return { kind: "active", currentDay: dayNum };
+  // dayNum = 0  → starts tomorrow
+  // dayNum = -1 → day after tomorrow
+  // dayNum = -n → starts in (n + 1) days
+  const daysUntilStart = 1 - dayNum;
+  let label: string;
+  if (daysUntilStart === 1) label = "Starts tomorrow";
+  else if (daysUntilStart === 2) label = "Starts day after tomorrow";
+  else label = `Starts in ${daysUntilStart} days`;
+  return { kind: "future", daysUntilStart, label };
+}
+
 /** Format the end date for a challenge as a long-form string (e.g. "Apr 15, 2026"). */
 export function formatEndDate(startDate: string, daysTotal: number): string {
   const endIso = getDateForDay(startDate, daysTotal);

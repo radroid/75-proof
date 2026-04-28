@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalQuery } from "./_generated/server";
 import { Doc } from "./_generated/dataModel";
+import { normalizeIdentityStatement } from "./lib/identityStatement";
 
 export const getCurrentUser = query({
   args: {},
@@ -138,16 +139,9 @@ export const setIdentityStatement = mutation({
       .unique();
     if (!user) throw new Error("User not found");
 
-    // Truncate (don't throw) — clients can send arbitrary input from the
-    // settings UI; throwing on a UTF-8-bloated 140-char paste would surprise
-    // the user and the cap is a presentation choice, not a correctness one.
-    const trimmed =
-      typeof args.statement === "string" ? args.statement.trim() : "";
-    const capped = trimmed.slice(0, 140);
-    const cleared = args.statement === null || capped.length === 0;
-
+    const normalized = normalizeIdentityStatement(args.statement);
     await ctx.db.patch(user._id, {
-      identityStatement: cleared ? undefined : capped,
+      identityStatement: normalized.cleared ? undefined : normalized.value,
     });
   },
 });

@@ -151,7 +151,18 @@ function hash(s: string): number {
 export function pickIdentityTemplate(input: IdentityCardInput): string {
   const eligible = TEMPLATES.filter((t) => t.match(input));
   if (eligible.length === 0) {
-    return `Day ${input.currentDay} of your ${input.routineLabel}.`;
+    // Fall back to a generic phrasing when the routine label is missing or
+    // already starts with "your" / "the" — `your your routine` reads weird,
+    // and the Progress page passes "your routine" as its own fallback when
+    // the slug is unknown.
+    const label = (input.routineLabel ?? "").trim();
+    const lower = label.toLowerCase();
+    const tail = !label
+      ? "your routine"
+      : /^(your|the)\s/.test(lower)
+        ? label
+        : label;
+    return `Day ${input.currentDay} of ${tail}.`;
   }
 
   // Weighted pick. Use a per-week salt so the line stays stable for 7 days

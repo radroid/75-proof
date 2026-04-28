@@ -366,7 +366,7 @@ Implementation notes:
 - Failsafe: if no template matches the user's state, fall back to a generic "Day {currentDay} of your {routineLabel}" line. Never blank.
 - Consolidation (30–90) and maintenance (90+) template libraries → [backlog](#11-backlog-post-v1).
 - Coach-memory-driven personalization → [backlog](#11-backlog-post-v1).
-- User-authored identity statement ("you're becoming a runner" set during onboarding) → [backlog](#11-backlog-post-v1).
+- User-authored identity statement ("you're becoming a runner" set during onboarding) → **shipped in PR #21**: onboarding now has an `OnboardingIdentity` step, persists to `users.identityStatement`, and `IdentityCard` prefers it over the generated formation-stage copy.
 
 ---
 
@@ -460,7 +460,7 @@ Items deferred from this PR. Listed in rough priority order; not committed-to.
 - **Consolidation-stage template library** (days 30–90) — adds per-category identity-card copy. (Resolves OPEN #5 stage-2.)
 - **Maintenance-stage template library** (day 90+) — variance / recovery / "you're a {x} now" copy. (Resolves OPEN #5 stage-3.)
 - **Coach-memory-driven personalization on the identity card** — pull from `users.coachMemory.facts` when `enabled === true` to make the card hyper-personal ("you said morning workouts work for you — and you've completed mornings 5/7 days this week"). Feature-flag, gate on opt-in. (Resolves OPEN #13.)
-- **User-authored identity statement** — let user write or pick their own ("I'm becoming a runner") during onboarding; prefer over generated copy when present. Coach onboarding could harvest it.
+- ~~**User-authored identity statement**~~ — **shipped in PR #21** alongside PD-1. Onboarding has an `OnboardingIdentity` step (with category-derived suggestions), persisted to `users.identityStatement`; `IdentityCard` prefers user copy over the generated formation-stage template. Coach-side harvest from H-3 conversations is a future enhancement.
 - **Per-user / per-routine social-intensity override** — schema field on `users.preferences` or `challenges` to override the inferred quiet/accountable/competitive default. (Resolves OPEN #9 stage-2.)
 - **Split `showCompletionStatus` → `showWins` + `showMisses`** — make the asymmetric default explicit in the schema (defaults: wins on, misses off). Migration of existing rows required. (Refinement of §2.7.)
 - **Progress photo gallery** — re-introduce the photo gallery view if user demand returns. Likely as a separate `/dashboard/photos` route, not on Progress, gated by routine photo-task presence.

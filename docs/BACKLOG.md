@@ -64,13 +64,13 @@
 | F-7 | ~~Auto-reset on missed hard task after 2-day grace window~~ | | done | Auto-reset implemented — if hard-rule tasks are incomplete after 2-day grace window, challenge resets to Day 1. Completed 2026-02-12. |
 | F-8 | ~~Track number of challenge restarts~~ | | done | `lifetimeRestartCount` on users table, incremented in `failChallengeInternal`. Shown as "Attempt #N" on Progress page and in ChallengeFailedDialog. Completed 2026-02-12. |
 | F-9 | ~~Track longest streak (all-time personal best)~~ | | done | `longestStreak` on users table, updated on failure and completion paths. Shown as "Best Streak" on Progress page. `getLifetimeStats` query computes currentStreak on-read. Completed 2026-02-12. |
-| F-10 | Progress page — show restart history with intuitive UI | P2 | todo | The progress map/timeline should visually show where restarts happened (e.g. a break/crack in the timeline, a "restarted" marker). Show total restart count prominently. Could use a "journey so far" visualization that includes failed attempts as part of the story, not as shame. **Roll into PD-1** — restart-aware timeline is part of the redesigned day-by-day history section (§3.7 of the research doc). |
+| F-10 | ~~Progress page — show restart history with intuitive UI~~ | | done | Folded into PD-1 (PR #21). The Day-by-Day History block now has a per-challenge selector that lists every active/completed/failed challenge with status badges + start dates, and the "Attempt #N" tile surfaces the lifetime restart count prominently. A dedicated "break in timeline" visualization across attempts (the original F-10 stretch goal) can be revisited later as a follow-up if user research shows demand. |
 
 ---
 
 ## Progress Dashboard Redesign
 
-> Scope locked in `docs/PROGRESS_DASHBOARD_RESEARCH.md` (commit `9d768fa`). PD-1 is the in-flight v1 ship; PD-2 onward are deferred to v2 per the §11 decisions.
+> Scope locked in `docs/PROGRESS_DASHBOARD_RESEARCH.md` (commit `9d768fa`). PD-1 + PD-8 shipped in PR #21; PD-2 onward are deferred to v2 per the §11 decisions.
 
 | # | Item | Priority | Status | Notes |
 |---|------|----------|--------|-------|
@@ -321,6 +321,7 @@ A Remotion-powered animated walkthrough that plays after a new user completes on
 | ~~C-5~~ | Downloadable coach context (`/api/coach/export`, JSON bundle + audit log) | 2026-04 (PR #20) |
 | ~~PD-1~~ | Progress dashboard redesign + Friends Phase 1/2 merge | 2026-04 (PR #21) |
 | ~~PD-8~~ | User-authored identity statement (onboarding step + identity card) | 2026-04 (PR #21) |
+| ~~F-10~~ | Progress page restart history (folded into PD-1 selector + Attempt #) | 2026-04 (PR #21) |
 
 ---
 

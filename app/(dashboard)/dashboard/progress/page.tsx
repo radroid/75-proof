@@ -33,7 +33,14 @@ import {
 import { cn } from "@/lib/utils";
 import { Id } from "@/convex/_generated/dataModel";
 import { useGuest } from "@/components/guest-provider";
-import { effectiveDaysTotal, formatEndDate } from "@/lib/day-utils";
+import {
+  effectiveDaysTotal,
+  formatEndDate,
+  describeChallengePhase,
+  getTodayInTimezone,
+  getUserTimezone,
+} from "@/lib/day-utils";
+import { ChallengeUpcoming } from "@/components/challenge-upcoming";
 import {
   useLocalActiveChallenge,
   useLocalUserChallenges,
@@ -501,7 +508,15 @@ export default function ProgressPage() {
   }, [friendsFeed, personalFeedRaw, userView]);
 
   // ── Loading / empty ────────────────────────────────────────
-  if (!isGuest && user === undefined) {
+  // Distinguish loading (`undefined`) from "no active challenge" (`null`):
+  // Convex's `useQuery` returns `undefined` while in flight, and the empty
+  // state firing during slow loads makes the page flash through "Start a
+  // challenge" before the data lands.
+  const isUserLoading = !isGuest && user === undefined;
+  const isChallengeLoading = !isGuest && convexUser?.currentChallengeId
+    ? convexChallenge === undefined
+    : false;
+  if (isUserLoading || isChallengeLoading) {
     return (
       <div className="max-w-4xl space-y-6">
         <div>
@@ -533,11 +548,28 @@ export default function ProgressPage() {
     );
   }
 
-  // Day-0 short-circuit (research §7): no streaks, no rolling rate, just
-  // identity card + Today snapshot pointing back at the dashboard.
-  const isDayZero = currentDay < 1;
+  // Future-start: render the upcoming-challenge placeholder rather than
+  // stat sections that would all be empty pre-Day-1.
+  const todayStr = getTodayInTimezone(getUserTimezone());
+  const phase = describeChallengePhase(challenge.startDate, todayStr);
+  if (phase.kind === "future") {
+    return (
+      <ChallengeUpcoming
+        startDate={challenge.startDate}
+        phase={phase}
+        routineLabel={routineLabel}
+      />
+    );
+  }
+
+  // The future-start branch above catches every `currentDay < 1` case, so
+  // by here `currentDay >= 1` and the stat sections always have something
+  // to render. Habit-tracker bounded fallback uses a 30-cell minimum so
+  // the grid isn't mostly empty for users with <23 days of history
+  // (research §3.4 — "fall back to a bounded grid sized to the user's
+  // history").
   const calendarLength = isActiveHabitTracker
-    ? Math.max(currentDay + 7, 14)
+    ? Math.max(currentDay + 7, 30)
     : (activeDaysTotal ?? 75);
   const useHeatmap = isActiveHabitTracker && currentDay >= HEATMAP_MIN_DAYS;
 
@@ -573,7 +605,7 @@ export default function ProgressPage() {
             userStatement={userView?.identityStatement ?? null}
             rolling7CompleteDays={rolling7.completedDays}
             templateInput={{
-              currentDay: Math.max(1, currentDay),
+              currentDay,
               daysTotal: activeDaysTotal,
               routineLabel,
               category: socialCategory,
@@ -583,17 +615,15 @@ export default function ProgressPage() {
           />
 
           {/* Today snapshot — read-only with Log → */}
-          {!isDayZero && (
-            <TodaySnapshot
-              habitsCompleted={todayStats.done}
-              habitsTotal={todayStats.total}
-              isDayComplete={!!activeCompletionMap[currentDay]}
-              onLogTap={handleLogTap}
-            />
-          )}
+          <TodaySnapshot
+            habitsCompleted={todayStats.done}
+            habitsTotal={todayStats.total}
+            isDayComplete={!!activeCompletionMap[currentDay]}
+            onLogTap={handleLogTap}
+          />
 
           {/* Headline metrics — 30-day rate + streak chip */}
-          {!isDayZero && (
+          {(
             <HeadlineMetrics
               rate={rolling30.rate}
               consideredDays={rolling30.consideredDays}
@@ -608,33 +638,31 @@ export default function ProgressPage() {
           {!isGuest && <FriendsRibbon onImpression={handleRibbonImpression} />}
 
           {/* Calendar / consistency */}
-          {!isDayZero && (
-            <div>
-              <div className="h-px bg-border mb-8 md:mb-12" />
-              <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 md:mb-6">
-                {useHeatmap
-                  ? "Consistency"
-                  : isActiveHabitTracker
-                    ? "Habit Tracker"
-                    : `${activeDaysTotal}-Day Calendar`}
-              </p>
-              {useHeatmap ? (
-                <HabitHeatmap
-                  completionMap={activeCompletionMap}
-                  currentDay={currentDay}
-                />
-              ) : (
-                <CalendarGrid
-                  totalDays={calendarLength}
-                  currentDay={currentDay}
-                  completionMap={activeCompletionMap}
-                />
-              )}
-            </div>
-          )}
+          <div>
+            <div className="h-px bg-border mb-8 md:mb-12" />
+            <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 md:mb-6">
+              {useHeatmap
+                ? "Consistency"
+                : isActiveHabitTracker
+                  ? "Habit Tracker"
+                  : `${activeDaysTotal}-Day Calendar`}
+            </p>
+            {useHeatmap ? (
+              <HabitHeatmap
+                completionMap={activeCompletionMap}
+                currentDay={currentDay}
+              />
+            ) : (
+              <CalendarGrid
+                totalDays={calendarLength}
+                currentDay={currentDay}
+                completionMap={activeCompletionMap}
+              />
+            )}
+          </div>
 
           {/* Per-habit list — replaces legacy Workouts/Water/Reading tiles */}
-          {!isDayZero && habitStats.length > 0 && (
+          {habitStats.length > 0 && (
             <div>
               <div className="h-px bg-border mb-8 md:mb-12" />
               <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 md:mb-6">

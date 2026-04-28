@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { normalizeIdentityStatement } from "./lib/identityStatement";
 
 const habitValidator = v.object({
   name: v.string(),
@@ -90,17 +91,14 @@ export const completeOnboarding = mutation({
     }
 
     // Update user profile + onboarding data
-    const trimmedIdentity =
-      typeof args.identityStatement === "string"
-        ? args.identityStatement.trim().slice(0, 140)
-        : "";
+    const normalizedIdentity = normalizeIdentityStatement(args.identityStatement);
     await ctx.db.patch(user._id, {
       displayName: args.displayName,
       currentChallengeId: challengeId,
       onboardingComplete: true,
-      ...(trimmedIdentity.length > 0
-        ? { identityStatement: trimmedIdentity }
-        : {}),
+      ...(normalizedIdentity.cleared
+        ? {}
+        : { identityStatement: normalizedIdentity.value }),
       onboarding: {
         completedAt: new Date().toISOString(),
         ageRange: args.ageRange,

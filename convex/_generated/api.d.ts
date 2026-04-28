@@ -21,6 +21,7 @@ import type * as leaderboard from "../leaderboard.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_dayCalculation from "../lib/dayCalculation.js";
 import type * as lib_habitCategories from "../lib/habitCategories.js";
+import type * as lib_identityStatement from "../lib/identityStatement.js";
 import type * as lib_llmPrompts from "../lib/llmPrompts.js";
 import type * as lib_popularRoutinesSeed from "../lib/popularRoutinesSeed.js";
 import type * as lib_routineTemplatesSeed from "../lib/routineTemplatesSeed.js";
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   "lib/auth": typeof lib_auth;
   "lib/dayCalculation": typeof lib_dayCalculation;
   "lib/habitCategories": typeof lib_habitCategories;
+  "lib/identityStatement": typeof lib_identityStatement;
   "lib/llmPrompts": typeof lib_llmPrompts;
   "lib/popularRoutinesSeed": typeof lib_popularRoutinesSeed;
   "lib/routineTemplatesSeed": typeof lib_routineTemplatesSeed;
