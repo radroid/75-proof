@@ -415,8 +415,8 @@
    plus the device safe-area inset.
    ========================================== */
 :root {
-  --bottom-nav-height: 56px;
-  --bottom-nav-offset: 2rem;
+  --bottom-nav-height: 66px;
+  --bottom-nav-offset: 1.25rem;
   --bottom-nav-gap: calc(var(--bottom-nav-height) + var(--bottom-nav-offset) + env(safe-area-inset-bottom, 0px));
 }
 
