@@ -37,11 +37,24 @@ const PATTERNS: Record<HapticType, number | number[]> = {
 };
 
 const PREF_STORAGE_KEY = "75proof_haptics_enabled";
+// Separate from the on/off preference: this tracks whether we've shown the
+// one-time iOS prompt yet, so users who explicitly toggle off in Settings
+// don't get re-prompted, and users who've been asked don't get nagged.
+const PROMPT_STORAGE_KEY = "75proof_haptics_prompt_shown";
 
 let vibrateSupportCache: boolean | null = null;
 let iosCache: boolean | null = null;
 let enabledCache: boolean | null = null;
 let iosSwitchEl: HTMLInputElement | null = null;
+
+/**
+ * Public iOS detector. Mirrors the existing private `isIOS()` so callers
+ * outside this module (the permission prompt component) don't need to
+ * duplicate the iPadOS-as-Macintosh tiebreaker.
+ */
+export function isIOSDevice(): boolean {
+  return isIOS();
+}
 
 function isIOS(): boolean {
   if (iosCache !== null) return iosCache;
@@ -155,6 +168,30 @@ export function setHapticsEnabled(enabled: boolean): void {
   } catch {
     // Storage quota / Safari private mode — we already updated the cache,
     // so the preference still applies for this session.
+  }
+}
+
+/**
+ * Has the user already seen the iOS one-time haptics prompt? Used by the
+ * prompt gate so we don't show it twice on the same device.
+ */
+export function hasBeenPromptedForHaptics(): boolean {
+  if (typeof window === "undefined") return true; // SSR: don't show
+  try {
+    return window.localStorage.getItem(PROMPT_STORAGE_KEY) === "true";
+  } catch {
+    // Storage blocked — treat as already-prompted so we don't keep nagging
+    // a user whose decision we can't persist anyway.
+    return true;
+  }
+}
+
+export function markHapticsPrompted(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PROMPT_STORAGE_KEY, "true");
+  } catch {
+    // ignored — see read path
   }
 }
 
