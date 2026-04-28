@@ -50,15 +50,15 @@ export function CoachEmptyState({
   composer?: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-6 px-4 py-8 text-center">
+    <div className="mx-auto flex w-full max-w-2xl flex-col items-stretch gap-6 px-4 py-8">
       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary">
         <Sparkles className="h-6 w-6" />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2 text-left">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Hi, I&apos;m your coach.
         </h1>
-        <p className="mx-auto max-w-md text-sm text-muted-foreground">
+        <p className="max-w-md text-sm text-muted-foreground">
           I help you reach your goals — pick a routine from the catalog, stack
           habits, or customize one to your life. Ask me anything.
         </p>
