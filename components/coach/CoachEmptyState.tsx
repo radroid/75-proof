@@ -43,9 +43,11 @@ const SUGGESTIONS: Suggestion[] = [
 export function CoachEmptyState({
   onPick,
   disabled,
+  composer,
 }: {
   onPick: (prompt: string) => void;
   disabled?: boolean;
+  composer?: React.ReactNode;
 }) {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-6 px-4 py-8 text-center">
@@ -61,6 +63,8 @@ export function CoachEmptyState({
           habits, or customize one to your life. Ask me anything.
         </p>
       </div>
+
+      {composer && <div className="w-full">{composer}</div>}
 
       <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
         {SUGGESTIONS.map((s) => (

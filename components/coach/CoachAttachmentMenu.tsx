@@ -99,9 +99,12 @@ export function CoachAttachmentMenu({
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors",
-          "hover:bg-accent hover:text-foreground disabled:opacity-50",
-          open && "border-primary text-primary",
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors",
+          "hover:bg-muted hover:text-foreground disabled:opacity-50",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          open
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-border bg-background text-foreground",
         )}
       >
         <Plus className="h-4 w-4" />

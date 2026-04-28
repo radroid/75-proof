@@ -7,9 +7,8 @@ import {
   useRef,
   useState,
 } from "react";
-import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
-import { History, Loader2, Plus, Settings, Sparkles } from "lucide-react";
+import { History, Loader2 } from "lucide-react";
 import { ChatBubble } from "@/components/ui/chat-bubble";
 import { cn } from "@/lib/utils";
 import { api } from "@/convex/_generated/api";
@@ -248,6 +247,19 @@ export function CoachClient() {
     [attachment, isEmpty],
   );
 
+  const composerNode = (
+    <CoachComposer
+      value={draft}
+      onChange={setDraft}
+      onSubmit={handleSubmit}
+      pending={pending}
+      attachment={attachment}
+      onAttach={setAttachment}
+      onClearAttachment={() => setAttachment(null)}
+      placeholder={placeholder}
+    />
+  );
+
   return (
     <div
       className={cn(
@@ -256,25 +268,45 @@ export function CoachClient() {
         // in `p-4 pb-[calc(var(--bottom-nav-gap)+1rem)] md:p-8 md:pb-8`,
         // so we negate that here.
         "-m-4 md:-m-8",
-        "flex h-[calc(100dvh-env(safe-area-inset-top))] flex-col",
+        // Height matches the parent's available content area so <main>
+        // doesn't get its own scrollbar on top of the transcript's.
+        // Mobile: subtract bottom-nav-gap (the parent's pb consumes only
+        // 1rem of the negative margin, leaving the gap as overflow).
+        // Desktop: -m-8 fully consumes p-8 padding, so no extra subtract.
+        "flex flex-col overflow-hidden",
+        "h-[calc(100dvh-env(safe-area-inset-top)-var(--bottom-nav-gap))]",
+        "md:h-[calc(100dvh-env(safe-area-inset-top))]",
       )}
     >
-      <CoachHeader
-        hasMessages={!isEmpty}
-        onOpenRecents={() => setRecentsOpen(true)}
-        onNewChat={handleNewChat}
-      />
+      <button
+        type="button"
+        onClick={() => setRecentsOpen(true)}
+        aria-label="Recent chats"
+        className={cn(
+          "fixed right-3 z-30 flex h-9 w-9 items-center justify-center rounded-full",
+          "border border-border bg-background/80 text-muted-foreground shadow-sm backdrop-blur",
+          "supports-[backdrop-filter]:bg-background/60 hover:bg-accent hover:text-foreground",
+        )}
+        style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+      >
+        <History className="h-4 w-4" />
+      </button>
 
       <div
         ref={transcriptRef}
         className={cn(
-          "flex-1 overflow-y-auto px-3 pt-2",
-          // Bottom padding clears: composer height + bottom nav gap.
-          "pb-[calc(var(--bottom-nav-gap)+5.5rem)] md:pb-32",
+          "flex-1 overflow-y-auto px-3",
+          isEmpty
+            ? "pt-[calc(env(safe-area-inset-top,0px)+3.5rem)]"
+            : "pt-[calc(env(safe-area-inset-top,0px)+3.5rem)] pb-[calc(var(--bottom-nav-gap)+6.25rem)] md:pb-32",
         )}
       >
         {isEmpty ? (
-          <CoachEmptyState onPick={handleSuggestion} disabled={pending} />
+          <CoachEmptyState
+            onPick={handleSuggestion}
+            disabled={pending}
+            composer={composerNode}
+          />
         ) : (
           <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 py-3">
             {turns.map((t) => (
@@ -284,27 +316,21 @@ export function CoachClient() {
         )}
       </div>
 
-      <div
-        className={cn(
-          "pointer-events-none fixed inset-x-0 z-30",
-          // Sit just above the floating mobile nav. On desktop there's
-          // no floating nav (md:hidden) so we drop the offset to a small
-          // gap from the bottom of the viewport.
-          "bottom-[var(--bottom-nav-gap)] md:bottom-4",
-        )}
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-      >
-        <CoachComposer
-          value={draft}
-          onChange={setDraft}
-          onSubmit={handleSubmit}
-          pending={pending}
-          attachment={attachment}
-          onAttach={setAttachment}
-          onClearAttachment={() => setAttachment(null)}
-          placeholder={placeholder}
-        />
-      </div>
+      {!isEmpty && (
+        <div
+          className={cn(
+            "pointer-events-none fixed inset-x-0 z-30",
+            // Sit above the floating mobile nav with a small breathing gap
+            // so the composer pill doesn't visually merge with the nav.
+            // Desktop has no floating nav (md:hidden) so we keep a constant
+            // gap from the bottom of the viewport.
+            "bottom-[calc(var(--bottom-nav-gap)+0.75rem)] md:bottom-4",
+          )}
+          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        >
+          {composerNode}
+        </div>
+      )}
 
       <CoachRecentsSheet
         open={recentsOpen}
@@ -314,65 +340,6 @@ export function CoachClient() {
         activeThreadId={threadId}
       />
     </div>
-  );
-}
-
-function CoachHeader({
-  hasMessages,
-  onOpenRecents,
-  onNewChat,
-}: {
-  hasMessages: boolean;
-  onOpenRecents: () => void;
-  onNewChat: () => void;
-}) {
-  return (
-    <header
-      className={cn(
-        "sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-border bg-background/80 px-3 py-2",
-        "backdrop-blur supports-[backdrop-filter]:bg-background/60",
-      )}
-    >
-      <div className="flex min-w-0 items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Sparkles className="h-4 w-4" />
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold leading-tight">Coach</p>
-          <p className="text-[11px] leading-tight text-muted-foreground">
-            Your routine partner
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-1">
-        {hasMessages && (
-          <button
-            type="button"
-            onClick={onNewChat}
-            aria-label="Start a new chat"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={onOpenRecents}
-          aria-label="Recent chats"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          <History className="h-4 w-4" />
-        </button>
-        <Link
-          href="/dashboard/settings#coach-memory"
-          aria-label="Coach memory settings"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          <Settings className="h-4 w-4" />
-        </Link>
-      </div>
-    </header>
   );
 }
 
