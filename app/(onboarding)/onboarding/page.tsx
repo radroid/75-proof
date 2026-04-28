@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -208,6 +208,13 @@ export default function OnboardingPage() {
     setMaxReachedIndex((prev) => Math.max(prev, newIdx));
   }, []);
 
+  // When the review screen jumps the user into an earlier step to edit a
+  // value, we stash the review index here so `back` can return them to
+  // review on a single tap. Without this, AI users editing from review
+  // would land on `welcome` (the previous step in the AI flow) instead
+  // of bouncing back to where they started the edit.
+  const returnToIndexRef = useRef<number | null>(null);
+
   const next = useCallback(() => {
     let nextIdx = Math.min(stepIndex + 1, ONBOARDING_STEPS.length - 1);
     // Loop past every disabled step. The AI path skips four in a row
@@ -218,6 +225,8 @@ export default function OnboardingPage() {
     ) {
       nextIdx += 1;
     }
+    // Forward flow invalidates any pending return-to-review intent.
+    returnToIndexRef.current = null;
     setStepBoth(nextIdx);
     if (
       selectedTemplate?.lockedDuration &&
@@ -228,6 +237,12 @@ export default function OnboardingPage() {
   }, [stepIndex, selectedTemplate, state.daysTotal, disabledStepIndices, setStepBoth]);
 
   const back = useCallback(() => {
+    const returnIdx = returnToIndexRef.current;
+    if (returnIdx !== null) {
+      returnToIndexRef.current = null;
+      setStepBoth(returnIdx);
+      return;
+    }
     let prevIdx = Math.max(stepIndex - 1, 0);
     while (prevIdx > 0 && disabledStepIndices.has(prevIdx)) {
       prevIdx -= 1;
@@ -236,9 +251,17 @@ export default function OnboardingPage() {
   }, [stepIndex, disabledStepIndices, setStepBoth]);
 
   const goToStep = useCallback(
-    (step: OnboardingStep) => {
+    (step: OnboardingStep, options?: { returnTo?: OnboardingStep }) => {
       const idx = ONBOARDING_STEPS.indexOf(step);
-      if (idx >= 0) setStepBoth(idx);
+      if (idx < 0) return;
+      const returnIdx = options?.returnTo
+        ? ONBOARDING_STEPS.indexOf(options.returnTo)
+        : -1;
+      // Stash the desired return step (or clear stale state if none was
+      // requested) so `back` can pop to it once and then resume normal
+      // single-step traversal.
+      returnToIndexRef.current = returnIdx >= 0 ? returnIdx : null;
+      setStepBoth(idx);
     },
     [setStepBoth],
   );

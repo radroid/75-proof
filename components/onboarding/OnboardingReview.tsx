@@ -26,7 +26,13 @@ interface Props {
   state: OnboardingState;
   updateState: (partial: Partial<OnboardingState>) => void;
   onBack: () => void;
-  onGoToStep: (step: OnboardingStep) => void;
+  /**
+   * Jump to a specific step. The optional `returnTo` hint asks the parent
+   * to bring the user back here on the next Back press — used by AI-path
+   * edits so the chat's Back button round-trips to review instead of
+   * stepping back through the normal flow to `welcome`.
+   */
+  onGoToStep: (step: OnboardingStep, options?: { returnTo?: OnboardingStep }) => void;
   onComplete: () => void;
   isSubmitting: boolean;
 }
@@ -92,14 +98,19 @@ export function OnboardingReview({
         <SummaryRow
           label="Routine"
           value={templateLabel}
-          onEdit={() =>
-            // The custom path skips the template step entirely (the
-            // build-your-own seeds are set at the path picker), so route
-            // its Edit button to the habits step instead — that's where
-            // a custom user actually shapes their routine. AI users go
-            // back to the coach to revise the proposal.
-            onGoToStep(state.entryPath === "custom" ? "habits" : "template")
-          }
+          onEdit={() => {
+            if (state.entryPath === "custom") {
+              // Custom path skips the template step entirely (the
+              // build-your-own seeds are set at the path picker), so
+              // route to habits — that's where a custom user actually
+              // shapes their routine.
+              onGoToStep("habits");
+              return;
+            }
+            // AI users round-trip back to review on chat Back; popular
+            // users follow the normal back-stack.
+            onGoToStep("template", isAiPath ? { returnTo: "review" } : undefined);
+          }}
         />
 
         {/* Challenge length + computed end date */}
@@ -108,9 +119,10 @@ export function OnboardingReview({
           value={`${state.daysTotal} days · ends ${formatEndDate(state.startDate, state.daysTotal)}`}
           onEdit={() => {
             // AI path: duration was set by the coach proposal — sending the
-            // user back to the chat lets them ask for a different length.
+            // user back to the chat lets them ask for a different length,
+            // and the returnTo hint snaps them back to review on Back.
             if (isAiPath) {
-              onGoToStep("template");
+              onGoToStep("template", { returnTo: "review" });
               return;
             }
             const lockedDuration =
@@ -130,8 +142,13 @@ export function OnboardingReview({
               <button
                 type="button"
                 // AI users edit habits by talking to the coach; everyone
-                // else goes to the dedicated habits step.
-                onClick={() => onGoToStep(isAiPath ? "template" : "habits")}
+                // else goes to the dedicated habits step. The returnTo
+                // hint makes the chat's Back button snap back to review.
+                onClick={() =>
+                  isAiPath
+                    ? onGoToStep("template", { returnTo: "review" })
+                    : onGoToStep("habits")
+                }
                 aria-label="Edit habits"
                 className="inline-flex min-h-[44px] items-center gap-1 rounded px-2 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Loader2, RotateCcw, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,28 +176,40 @@ export function OnboardingPersonalizeChat({
           container so they share the safe-area inset and the proposal slides
           in above the composer without reflowing the whole page. */}
       <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
-        {proposal && (
-          <div className="mx-auto max-w-2xl px-4 sm:px-6 pt-3">
-            <div className="rounded-xl border border-primary/40 bg-primary/5 p-3 space-y-2">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-medium text-sm">{proposal.title}</p>
-                  <p className="text-xs text-muted-foreground line-clamp-2">
-                    {proposal.summary}
-                  </p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
-                    {proposal.daysTotal} days · {proposal.difficulty} ·{" "}
-                    {proposal.habits.length} habits
-                    {proposal.strictMode ? " · strict" : ""}
-                  </p>
+        {/* Animate the proposal card in/out so it slides up from the composer
+            instead of popping into existence. AnimatePresence lets it also
+            animate out when the user resets the chat. */}
+        <AnimatePresence initial={false}>
+          {proposal && (
+            <motion.div
+              key="proposal-card"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="mx-auto max-w-2xl px-4 sm:px-6 pt-3"
+            >
+              <div className="rounded-xl border border-primary/40 bg-primary/5 p-3 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">{proposal.title}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {proposal.summary}
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">
+                      {proposal.daysTotal} days · {proposal.difficulty} ·{" "}
+                      {proposal.habits.length} habits
+                      {proposal.strictMode ? " · strict" : ""}
+                    </p>
+                  </div>
+                  <Button size="sm" onClick={handleApply} className="shrink-0">
+                    Use this
+                  </Button>
                 </div>
-                <Button size="sm" onClick={handleApply} className="shrink-0">
-                  Use this
-                </Button>
               </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <form
           className="mx-auto max-w-2xl flex items-center gap-2 px-4 sm:px-6 py-3"
