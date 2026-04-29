@@ -100,7 +100,6 @@ export function CoachRecentsSheet({
             width: "min(calc(100vw - 2rem), 28rem)",
             maxWidth: "min(calc(100vw - 2rem), 28rem)",
             top: "max(env(safe-area-inset-top, 0px) + 1rem, 8dvh)",
-            transform: "translateX(-50%)",
             maxHeight:
               "min(60dvh, calc(100dvh - max(env(safe-area-inset-top, 0px) + 1rem, 8dvh) - env(safe-area-inset-bottom, 0px) - 1rem))",
           }}
