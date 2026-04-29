@@ -95,9 +95,10 @@ const README_TEXT = `# 75 Proof — Coach Context Bundle
 This file is your full coach context, exported on request. It contains:
 
 - **memory**: a short bio paragraph the coach maintains about you. Capped at
-  600 characters. May be null if you never opted in. Older accounts may also
-  carry a legacy \`facts\` array — that gets folded into \`bio\` on the next
-  chat write.
+  600 characters. May be null if you never opted in. \`bio\` may also be
+  absent or empty on pre-migration accounts (the writer hasn't run yet);
+  in that case fall back to \`facts\`, which gets folded into \`bio\` on
+  the next chat write.
 - **threads**: every coach chat you saved, with full transcripts.
 - **audit**: an append-only log of every memory write, purge, thread delete,
   and export so you can verify what was stored and when.
@@ -116,7 +117,7 @@ This file is your full coach context, exported on request. It contains:
     enabled: boolean,
     ttlDays: number,
     ttlOptOut: boolean,
-    bio: string,             // active surface — short paragraph, ≤ 600 chars
+    bio?: string,            // active surface — short paragraph, ≤ 600 chars; may be absent pre-migration
     facts: string[],         // legacy bullet list (folded into bio over time)
     updatedAt: epoch ms
   } | null,
