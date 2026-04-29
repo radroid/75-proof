@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
+import { MEMORY_BIO_CHAR_CAP } from "@/convex/lib/coachConstants";
 
 const ACTION_LABELS: Record<string, string> = {
   memory_write: "Memory updated",
@@ -33,8 +34,6 @@ const ACTION_LABELS: Record<string, string> = {
   forget_me: "Forget me",
   export: "Bundle exported",
 };
-
-const BIO_CHAR_CAP = 600;
 
 function formatRelative(ts: number): string {
   const diff = Date.now() - ts;
@@ -132,7 +131,7 @@ export function CoachPrivacySettings() {
     // forgetMe) — without this, a save that started before the wipe
     // could land just after, repopulating the bio the user just cleared.
     if (busy) return;
-    const next = draft.trim().slice(0, BIO_CHAR_CAP);
+    const next = draft.trim().slice(0, MEMORY_BIO_CHAR_CAP);
     setSaving(true);
     try {
       await updateBio({ bio: next });
@@ -194,7 +193,7 @@ export function CoachPrivacySettings() {
               Remember me across sessions
             </Label>
             <p className="text-xs text-muted-foreground">
-              Stores a short paragraph about you (≤ {BIO_CHAR_CAP} characters).
+              Stores a short paragraph about you (≤ {MEMORY_BIO_CHAR_CAP} characters).
               The auto-writer skips identifiers like email, phone, and
               third-party names; anything you type yourself in the pencil
               edit is saved as-is.
@@ -261,16 +260,16 @@ export function CoachPrivacySettings() {
                     ref={textareaRef}
                     value={draft}
                     onChange={(e) =>
-                      setDraft(e.target.value.slice(0, BIO_CHAR_CAP))
+                      setDraft(e.target.value.slice(0, MEMORY_BIO_CHAR_CAP))
                     }
                     rows={5}
-                    maxLength={BIO_CHAR_CAP}
+                    maxLength={MEMORY_BIO_CHAR_CAP}
                     placeholder={`Write a short paragraph about ${firstName} — goals, schedule, what's worked, what hasn't.`}
                     disabled={saving || busy}
                   />
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      {draft.length} / {BIO_CHAR_CAP}
+                      {draft.length} / {MEMORY_BIO_CHAR_CAP}
                     </p>
                     <div className="flex items-center gap-2">
                       <Button

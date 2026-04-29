@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { MEMORY_BIO_CHAR_CAP } from "./coach";
+import { MEMORY_BIO_CHAR_CAP } from "./lib/coachConstants";
 
 const messageValidator = v.object({
   role: v.union(v.literal("user"), v.literal("assistant")),

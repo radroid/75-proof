@@ -11,14 +11,11 @@ import {
 import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { firstNameFrom } from "./lib/displayName";
+import { MEMORY_BIO_CHAR_CAP } from "./lib/coachConstants";
 
 // Default TTL in days for coach memory + threads. 90 days matches the
 // retention contract called out in BACKLOG C-1/C-2.
 export const DEFAULT_TTL_DAYS = 90;
-// Hard cap on the persisted bio paragraph. The writer prompt is told
-// to stay well under this; we re-check here so a misbehaving model
-// can't blow past the limit. ~600 chars ≈ 2-4 sentences of warm prose.
-export const MEMORY_BIO_CHAR_CAP = 600;
 // Cap thread message count returned to the client to keep payloads
 // bounded. UI paginates beyond this.
 const MESSAGE_PAGE_LIMIT = 200;
@@ -557,7 +554,7 @@ export const purgeExpired = internalMutation({
           await ctx.db.insert("coachAuditLog", {
             userId: u._id,
             action: "memory_purge_ttl",
-            detail: `purged bio past ${m.ttlDays}-day TTL`,
+            detail: `purged memory past ${m.ttlDays}-day TTL`,
             createdAt: now,
           });
           memoryPurged += 1;
