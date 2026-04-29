@@ -102,10 +102,10 @@ export function CoachRecentsSheet({
           style={{
             width: "min(calc(100vw - 2rem), 28rem)",
             maxWidth: "min(calc(100vw - 2rem), 28rem)",
-            height: "min(50dvh, 480px)",
-            maxHeight: "min(50dvh, 480px)",
+            top: "12dvh",
+            transform: "translateX(-50%)",
           }}
-          className="overflow-hidden p-0 gap-0"
+          className="overflow-hidden p-0 gap-0 max-h-[min(70dvh,560px)] top-[12dvh] translate-y-0"
         >
           <DialogHeader className="sr-only">
             <DialogTitle>Recent chats</DialogTitle>
