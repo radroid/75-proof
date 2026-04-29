@@ -33,6 +33,10 @@ type ChatTurn = {
   assistant?: string;
   pending?: boolean;
   error?: string;
+  // Animate the assistant text with a typewriter reveal. Set true for
+  // freshly-arrived replies, left undefined for turns hydrated from
+  // history so old transcripts don't re-animate on thread switch.
+  fresh?: boolean;
 };
 
 function newTurnId(): string {
@@ -71,6 +75,34 @@ export function CoachClient() {
   useEffect(() => {
     return () => {
       requestControllerRef.current?.abort();
+    };
+  }, []);
+
+  // LAYOUT COUPLING: this effect assumes the dashboard exposes a single
+  // <main> element styled with `overflow-auto scrollbar-gutter-stable` (see
+  // `app/(dashboard)/layout.tsx`). Every other route relies on that scroll
+  // container, but the coach owns its own scrolling region (the transcript)
+  // — without this override the user sees two scrollbar thumbs plus a
+  // permanent reserved gutter strip on the right. We mutate the live DOM
+  // (rather than a className toggle) because the styles need to win against
+  // the Tailwind utilities on <main>, and we restore the prior inline values
+  // on unmount so navigating away leaves the layout untouched.
+  //
+  // ⚠️ If you refactor the dashboard layout — rename <main>, drop the
+  // overflow utilities, or add a second scroll container — update or
+  // remove this effect. A silent no-op here will resurrect the duplicate
+  // scrollbars; a stale override could break scrolling on the route you're
+  // refactoring toward.
+  useEffect(() => {
+    const main = document.querySelector("main");
+    if (!main) return;
+    const prevOverflow = main.style.overflow;
+    const prevGutter = main.style.scrollbarGutter;
+    main.style.overflow = "hidden";
+    main.style.scrollbarGutter = "auto";
+    return () => {
+      main.style.overflow = prevOverflow;
+      main.style.scrollbarGutter = prevGutter;
     };
   }, []);
 
@@ -138,6 +170,11 @@ export function CoachClient() {
         attachment: sendingAttachment ?? undefined,
         pending: true,
       };
+      // Capture the id so we can patch this exact turn when the response
+      // returns. Patching by position (e.g. `prev[prev.length - 1]`) would
+      // corrupt unrelated rows if the user reset the chat or loaded a
+      // different thread while the request was in flight.
+      const turnId = newTurn.id;
       const nextTurns = [...turns, newTurn];
       setTurns(nextTurns);
       setDraft("");
@@ -184,12 +221,14 @@ export function CoachClient() {
         }
         const data = (await res.json()) as { assistantText: string };
         setTurns((prev) => {
+          const idx = prev.findIndex((t) => t.id === turnId);
+          if (idx === -1) return prev;
           const copy = [...prev];
-          const last = copy[copy.length - 1];
-          copy[copy.length - 1] = {
-            ...last,
+          copy[idx] = {
+            ...copy[idx],
             pending: false,
             assistant: data.assistantText,
+            fresh: true,
           };
           return copy;
         });
@@ -199,9 +238,10 @@ export function CoachClient() {
         }
         const message = err instanceof Error ? err.message : "Unknown error";
         setTurns((prev) => {
+          const idx = prev.findIndex((t) => t.id === turnId);
+          if (idx === -1) return prev;
           const copy = [...prev];
-          const last = copy[copy.length - 1];
-          copy[copy.length - 1] = { ...last, pending: false, error: message };
+          copy[idx] = { ...copy[idx], pending: false, error: message };
           return copy;
         });
       } finally {
@@ -320,13 +360,13 @@ export function CoachClient() {
         <div
           className={cn(
             "pointer-events-none fixed inset-x-0 z-30",
-            // Sit above the floating mobile nav with a small breathing gap
-            // so the composer pill doesn't visually merge with the nav.
-            // Desktop has no floating nav (md:hidden) so we keep a constant
-            // gap from the bottom of the viewport.
-            "bottom-[calc(var(--bottom-nav-gap)+0.75rem)] md:bottom-4",
+            // Sit just above the floating mobile nav. `--bottom-nav-gap`
+            // already includes the safe-area inset, so the only extra is a
+            // 0.25rem hairline gap that prevents the composer pill from
+            // touching the nav. Desktop has no floating nav (md:hidden), so
+            // a constant 1rem from the viewport bottom is enough.
+            "bottom-[calc(var(--bottom-nav-gap)+0.25rem)] md:bottom-4",
           )}
-          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
           {composerNode}
         </div>
@@ -344,6 +384,17 @@ export function CoachClient() {
 }
 
 function ChatTurnView({ turn }: { turn: ChatTurn }) {
+  const displayed = useTypewriter(turn.assistant, !!turn.fresh);
+  const assistantRef = useRef<HTMLDivElement | null>(null);
+
+  // Keep the bottom of the answer in view as the typewriter prints. The
+  // outer transcript only auto-scrolls when `turns` changes; without this
+  // ref the user has to chase the growing reply by hand on mobile.
+  useEffect(() => {
+    if (!turn.fresh || !turn.assistant) return;
+    assistantRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
+  }, [displayed, turn.fresh, turn.assistant]);
+
   return (
     <div className="space-y-1.5">
       {turn.attachment && (
@@ -365,10 +416,52 @@ function ChatTurnView({ turn }: { turn: ChatTurn }) {
       )}
 
       {turn.assistant && (
-        <ChatBubble role="assistant" content={turn.assistant} />
+        <div ref={assistantRef}>
+          <ChatBubble role="assistant" content={displayed} />
+        </div>
       )}
     </div>
   );
+}
+
+/**
+ * Reveal `content` character-by-character when `animate` is true; otherwise
+ * snap to the full string. Pacing is length-adaptive: chunk size scales with
+ * total length (`Math.ceil(total / 80)`, floored at 2) on a fixed 20ms tick,
+ * so every reply finishes in roughly the same wall time (~1.5s) regardless
+ * of length. A constant chars-per-tick would either make short replies snap
+ * instantly or drag long replies past usefulness — the adaptive curve
+ * keeps the reveal feeling like fast typing in both cases. Cleans up its
+ * interval on unmount and on input change so old animations don't bleed
+ * into a swapped thread.
+ */
+function useTypewriter(content: string | undefined, animate: boolean): string {
+  const [displayed, setDisplayed] = useState<string>(() =>
+    animate ? "" : content ?? "",
+  );
+
+  useEffect(() => {
+    if (!content) {
+      setDisplayed("");
+      return;
+    }
+    if (!animate) {
+      setDisplayed(content);
+      return;
+    }
+    setDisplayed("");
+    let index = 0;
+    const total = content.length;
+    const charsPerTick = Math.max(2, Math.ceil(total / 80));
+    const id = window.setInterval(() => {
+      index = Math.min(total, index + charsPerTick);
+      setDisplayed(content.slice(0, index));
+      if (index >= total) window.clearInterval(id);
+    }, 20);
+    return () => window.clearInterval(id);
+  }, [content, animate]);
+
+  return displayed;
 }
 
 function extractAttachmentTitle(content: string): string | null {
