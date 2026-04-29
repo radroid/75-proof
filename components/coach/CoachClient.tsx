@@ -78,12 +78,21 @@ export function CoachClient() {
     };
   }, []);
 
-  // The dashboard layout's <main> wraps every route in
-  // `overflow-auto scrollbar-gutter-stable` so other pages don't shift when
-  // their scrollbar appears. The coach owns its own scrolling region (the
-  // transcript), so on this route main's scrollbar is duplicate chrome —
-  // the user sees two thumbs and a permanent reserved gutter on the right.
-  // Suppress it for the lifetime of the coach page and restore on unmount.
+  // LAYOUT COUPLING: this effect assumes the dashboard exposes a single
+  // <main> element styled with `overflow-auto scrollbar-gutter-stable` (see
+  // `app/(dashboard)/layout.tsx`). Every other route relies on that scroll
+  // container, but the coach owns its own scrolling region (the transcript)
+  // — without this override the user sees two scrollbar thumbs plus a
+  // permanent reserved gutter strip on the right. We mutate the live DOM
+  // (rather than a className toggle) because the styles need to win against
+  // the Tailwind utilities on <main>, and we restore the prior inline values
+  // on unmount so navigating away leaves the layout untouched.
+  //
+  // ⚠️ If you refactor the dashboard layout — rename <main>, drop the
+  // overflow utilities, or add a second scroll container — update or
+  // remove this effect. A silent no-op here will resurrect the duplicate
+  // scrollbars; a stale override could break scrolling on the route you're
+  // refactoring toward.
   useEffect(() => {
     const main = document.querySelector("main");
     if (!main) return;
