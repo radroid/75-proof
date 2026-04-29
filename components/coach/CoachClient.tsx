@@ -33,6 +33,10 @@ type ChatTurn = {
   assistant?: string;
   pending?: boolean;
   error?: string;
+  // Animate the assistant text with a typewriter reveal. Set true for
+  // freshly-arrived replies, left undefined for turns hydrated from
+  // history so old transcripts don't re-animate on thread switch.
+  fresh?: boolean;
 };
 
 function newTurnId(): string {
@@ -190,6 +194,7 @@ export function CoachClient() {
             ...last,
             pending: false,
             assistant: data.assistantText,
+            fresh: true,
           };
           return copy;
         });
@@ -320,13 +325,13 @@ export function CoachClient() {
         <div
           className={cn(
             "pointer-events-none fixed inset-x-0 z-30",
-            // Sit above the floating mobile nav with a small breathing gap
-            // so the composer pill doesn't visually merge with the nav.
-            // Desktop has no floating nav (md:hidden) so we keep a constant
-            // gap from the bottom of the viewport.
-            "bottom-[calc(var(--bottom-nav-gap)+0.75rem)] md:bottom-4",
+            // Sit just above the floating mobile nav. `--bottom-nav-gap`
+            // already includes the safe-area inset, so the only extra is a
+            // 0.25rem hairline gap that prevents the composer pill from
+            // touching the nav. Desktop has no floating nav (md:hidden), so
+            // a constant 1rem from the viewport bottom is enough.
+            "bottom-[calc(var(--bottom-nav-gap)+0.25rem)] md:bottom-4",
           )}
-          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
           {composerNode}
         </div>
@@ -344,6 +349,17 @@ export function CoachClient() {
 }
 
 function ChatTurnView({ turn }: { turn: ChatTurn }) {
+  const displayed = useTypewriter(turn.assistant, !!turn.fresh);
+  const assistantRef = useRef<HTMLDivElement | null>(null);
+
+  // Keep the bottom of the answer in view as the typewriter prints. The
+  // outer transcript only auto-scrolls when `turns` changes; without this
+  // ref the user has to chase the growing reply by hand on mobile.
+  useEffect(() => {
+    if (!turn.fresh || !turn.assistant) return;
+    assistantRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+  }, [displayed, turn.fresh, turn.assistant]);
+
   return (
     <div className="space-y-1.5">
       {turn.attachment && (
@@ -365,10 +381,48 @@ function ChatTurnView({ turn }: { turn: ChatTurn }) {
       )}
 
       {turn.assistant && (
-        <ChatBubble role="assistant" content={turn.assistant} />
+        <div ref={assistantRef}>
+          <ChatBubble role="assistant" content={displayed} />
+        </div>
       )}
     </div>
   );
+}
+
+/**
+ * Reveal `content` character-by-character when `animate` is true; otherwise
+ * snap to the full string. The reveal is paced to ~25 chars per tick at
+ * 20ms intervals (≈800ms for a 1k-char reply), which feels like fast typing
+ * without dragging out long answers. Cleans up its interval on unmount and
+ * on input change so old animations don't bleed into a swapped thread.
+ */
+function useTypewriter(content: string | undefined, animate: boolean): string {
+  const [displayed, setDisplayed] = useState<string>(() =>
+    animate ? "" : content ?? "",
+  );
+
+  useEffect(() => {
+    if (!content) {
+      setDisplayed("");
+      return;
+    }
+    if (!animate) {
+      setDisplayed(content);
+      return;
+    }
+    setDisplayed("");
+    let index = 0;
+    const total = content.length;
+    const charsPerTick = Math.max(2, Math.ceil(total / 80));
+    const id = window.setInterval(() => {
+      index = Math.min(total, index + charsPerTick);
+      setDisplayed(content.slice(0, index));
+      if (index >= total) window.clearInterval(id);
+    }, 20);
+    return () => window.clearInterval(id);
+  }, [content, animate]);
+
+  return displayed;
 }
 
 function extractAttachmentTitle(content: string): string | null {

@@ -81,7 +81,11 @@ export function CoachComposer({
             rows={1}
             disabled={pending}
             className={cn(
-              "max-h-[200px] flex-1 resize-none bg-transparent px-1 py-2 text-sm leading-relaxed outline-none placeholder:text-muted-foreground",
+              // text-base (16px) on mobile prevents iOS Safari from
+              // auto-zooming the viewport when the textarea takes focus —
+              // sub-16px form controls trigger that zoom on iPhones.
+              // Desktop drops to text-sm to match the rest of the chat UI.
+              "max-h-[200px] flex-1 resize-none bg-transparent px-1 py-2 text-base leading-relaxed outline-none placeholder:text-muted-foreground sm:text-sm",
               "disabled:opacity-60",
             )}
           />
