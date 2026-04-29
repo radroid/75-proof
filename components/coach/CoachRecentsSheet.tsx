@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Loader2, MessageSquareText, Plus, Trash2 } from "lucide-react";
+import { Loader2, MessageSquareText, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/command";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -96,7 +97,7 @@ export function CoachRecentsSheet({
         }}
       >
         <DialogContent
-          showCloseButton
+          showCloseButton={false}
           onOpenAutoFocus={(e) => e.preventDefault()}
           style={{
             width: "min(calc(100vw - 2rem), 28rem)",
@@ -112,12 +113,24 @@ export function CoachRecentsSheet({
             </DialogDescription>
           </DialogHeader>
           <Command
-            className="h-full [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
+            className="h-full [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]]:h-14 [&_[cmdk-input-wrapper]_svg]:h-6 [&_[cmdk-input-wrapper]_svg]:w-6 [&_[cmdk-input]]:h-14 [&_[cmdk-input]]:text-base [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
           >
-            <CommandInput
-              placeholder="Search recent chats…"
-              autoFocus={false}
-            />
+            <div className="relative">
+              <CommandInput
+                placeholder="Search recent chats…"
+                autoFocus={false}
+                className="pr-12"
+              />
+              <DialogClose asChild>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </DialogClose>
+            </div>
             <CommandList className="max-h-none flex-1">
               <CommandEmpty>No conversations match.</CommandEmpty>
 
