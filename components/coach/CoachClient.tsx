@@ -78,6 +78,25 @@ export function CoachClient() {
     };
   }, []);
 
+  // The dashboard layout's <main> wraps every route in
+  // `overflow-auto scrollbar-gutter-stable` so other pages don't shift when
+  // their scrollbar appears. The coach owns its own scrolling region (the
+  // transcript), so on this route main's scrollbar is duplicate chrome —
+  // the user sees two thumbs and a permanent reserved gutter on the right.
+  // Suppress it for the lifetime of the coach page and restore on unmount.
+  useEffect(() => {
+    const main = document.querySelector("main");
+    if (!main) return;
+    const prevOverflow = main.style.overflow;
+    const prevGutter = main.style.scrollbarGutter;
+    main.style.overflow = "hidden";
+    main.style.scrollbarGutter = "auto";
+    return () => {
+      main.style.overflow = prevOverflow;
+      main.style.scrollbarGutter = prevGutter;
+    };
+  }, []);
+
   // When the user picks a thread from recents, hydrate it into local turns.
   useEffect(() => {
     if (!loadedThread || !loadingThreadId) return;
