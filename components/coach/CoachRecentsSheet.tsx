@@ -98,7 +98,7 @@ export function CoachRecentsSheet({
         <DialogContent
           showCloseButton
           onOpenAutoFocus={(e) => e.preventDefault()}
-          className="overflow-hidden p-0 gap-0 sm:max-w-lg w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] h-[85dvh] sm:h-auto sm:max-h-[min(80dvh,640px)]"
+          className="overflow-hidden p-0 gap-0 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] h-[85dvh] sm:h-auto sm:w-full sm:max-w-lg sm:max-h-[min(80dvh,640px)]"
         >
           <DialogHeader className="sr-only">
             <DialogTitle>Recent chats</DialogTitle>
