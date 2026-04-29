@@ -20,7 +20,6 @@ import {
   DialogClose,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
@@ -41,13 +40,11 @@ const SOURCE_LABEL: Record<string, string> = {
 };
 
 function formatDate(ts: number): string {
-  return new Date(ts).toLocaleDateString(undefined, {
+  const d = new Date(ts);
+  return d.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
-    year:
-      new Date(ts).getFullYear() === new Date().getFullYear()
-        ? undefined
-        : "numeric",
+    year: d.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
   });
 }
 
@@ -105,35 +102,29 @@ export function CoachRecentsSheet({
             top: "max(env(safe-area-inset-top, 0px) + 1rem, 8dvh)",
             transform: "translateX(-50%)",
             maxHeight:
-              "calc(100dvh - max(env(safe-area-inset-top, 0px) + 1rem, 8dvh) - env(safe-area-inset-bottom, 0px) - 1rem)",
+              "min(60dvh, calc(100dvh - max(env(safe-area-inset-top, 0px) + 1rem, 8dvh) - env(safe-area-inset-bottom, 0px) - 1rem))",
           }}
-          className="overflow-hidden p-0 gap-0 translate-y-0"
+          className="flex flex-col overflow-hidden p-0 gap-0 translate-y-0"
         >
-          <DialogHeader className="sr-only">
-            <DialogTitle>Recent chats</DialogTitle>
-            <DialogDescription>
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <DialogTitle className="text-base font-semibold">
+              Recent chats
+            </DialogTitle>
+            <DialogDescription className="sr-only">
               Search your past coach conversations
             </DialogDescription>
-          </DialogHeader>
-          <Command
-            className="h-full [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]]:h-14 [&_[cmdk-input-wrapper]_svg]:h-6 [&_[cmdk-input-wrapper]_svg]:w-6 [&_[cmdk-input]]:h-14 [&_[cmdk-input]]:text-base [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
-          >
-            <div className="relative w-full">
-              <CommandInput
-                placeholder="Search recent chats…"
-                autoFocus={false}
-                className="pr-14"
-              />
-              <DialogClose asChild>
-                <button
-                  type="button"
-                  aria-label="Close"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </DialogClose>
-            </div>
+            <DialogClose asChild>
+              <button
+                type="button"
+                aria-label="Close"
+                className="-mr-1 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </DialogClose>
+          </div>
+          <Command className="flex min-h-0 flex-1 flex-col [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-input]]:h-12 [&_[cmdk-input]]:text-base [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
+            <CommandInput placeholder="Search recent chats…" autoFocus={false} />
             <CommandList className="max-h-none flex-1">
               <CommandEmpty>No conversations match.</CommandEmpty>
 
