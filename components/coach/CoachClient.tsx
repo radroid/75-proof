@@ -161,6 +161,11 @@ export function CoachClient() {
         attachment: sendingAttachment ?? undefined,
         pending: true,
       };
+      // Capture the id so we can patch this exact turn when the response
+      // returns. Patching by position (e.g. `prev[prev.length - 1]`) would
+      // corrupt unrelated rows if the user reset the chat or loaded a
+      // different thread while the request was in flight.
+      const turnId = newTurn.id;
       const nextTurns = [...turns, newTurn];
       setTurns(nextTurns);
       setDraft("");
@@ -207,10 +212,11 @@ export function CoachClient() {
         }
         const data = (await res.json()) as { assistantText: string };
         setTurns((prev) => {
+          const idx = prev.findIndex((t) => t.id === turnId);
+          if (idx === -1) return prev;
           const copy = [...prev];
-          const last = copy[copy.length - 1];
-          copy[copy.length - 1] = {
-            ...last,
+          copy[idx] = {
+            ...copy[idx],
             pending: false,
             assistant: data.assistantText,
             fresh: true,
@@ -223,9 +229,10 @@ export function CoachClient() {
         }
         const message = err instanceof Error ? err.message : "Unknown error";
         setTurns((prev) => {
+          const idx = prev.findIndex((t) => t.id === turnId);
+          if (idx === -1) return prev;
           const copy = [...prev];
-          const last = copy[copy.length - 1];
-          copy[copy.length - 1] = { ...last, pending: false, error: message };
+          copy[idx] = { ...copy[idx], pending: false, error: message };
           return copy;
         });
       } finally {
@@ -410,10 +417,14 @@ function ChatTurnView({ turn }: { turn: ChatTurn }) {
 
 /**
  * Reveal `content` character-by-character when `animate` is true; otherwise
- * snap to the full string. The reveal is paced to ~25 chars per tick at
- * 20ms intervals (≈800ms for a 1k-char reply), which feels like fast typing
- * without dragging out long answers. Cleans up its interval on unmount and
- * on input change so old animations don't bleed into a swapped thread.
+ * snap to the full string. Pacing is length-adaptive: chunk size scales with
+ * total length (`Math.ceil(total / 80)`, floored at 2) on a fixed 20ms tick,
+ * so every reply finishes in roughly the same wall time (~1.5s) regardless
+ * of length. A constant chars-per-tick would either make short replies snap
+ * instantly or drag long replies past usefulness — the adaptive curve
+ * keeps the reveal feeling like fast typing in both cases. Cleans up its
+ * interval on unmount and on input change so old animations don't bleed
+ * into a swapped thread.
  */
 function useTypewriter(content: string | undefined, animate: boolean): string {
   const [displayed, setDisplayed] = useState<string>(() =>
