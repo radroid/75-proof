@@ -676,6 +676,7 @@ export default function SettingsPage() {
 
       {/* Privacy & Sharing section */}
       <Section title="Privacy & Sharing">
+        <div className="space-y-6">
         <MotionItem>
           <Card>
             <CardHeader>
@@ -765,6 +766,7 @@ export default function SettingsPage() {
             <CoachPrivacySettings />
           </div>
         </MotionItem>
+        </div>
       </Section>
 
       {/* Notifications section */}
