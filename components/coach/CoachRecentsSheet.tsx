@@ -102,6 +102,7 @@ export function CoachRecentsSheet({
           style={{
             width: "min(calc(100vw - 2rem), 28rem)",
             maxWidth: "min(calc(100vw - 2rem), 28rem)",
+            height: "min(50dvh, 480px)",
             maxHeight: "min(50dvh, 480px)",
           }}
           className="overflow-hidden p-0 gap-0"
@@ -115,17 +116,17 @@ export function CoachRecentsSheet({
           <Command
             className="h-full [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]]:h-14 [&_[cmdk-input-wrapper]_svg]:h-6 [&_[cmdk-input-wrapper]_svg]:w-6 [&_[cmdk-input]]:h-14 [&_[cmdk-input]]:text-base [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
           >
-            <div className="relative">
+            <div className="relative w-full">
               <CommandInput
                 placeholder="Search recent chats…"
                 autoFocus={false}
-                className="pr-12"
+                className="pr-14"
               />
               <DialogClose asChild>
                 <button
                   type="button"
                   aria-label="Close"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <X className="h-5 w-5" />
                 </button>
