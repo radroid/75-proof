@@ -376,7 +376,7 @@ function ChatTurnView({ turn }: { turn: ChatTurn }) {
   // ref the user has to chase the growing reply by hand on mobile.
   useEffect(() => {
     if (!turn.fresh || !turn.assistant) return;
-    assistantRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+    assistantRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
   }, [displayed, turn.fresh, turn.assistant]);
 
   return (
