@@ -99,10 +99,9 @@ export function CoachRecentsSheet({
           showCloseButton
           onOpenAutoFocus={(e) => e.preventDefault()}
           style={{
-            width: "min(calc(100vw - 1rem), 36rem)",
-            maxWidth: "min(calc(100vw - 1rem), 36rem)",
-            height: "min(90dvh, 720px)",
-            maxHeight: "min(90dvh, 720px)",
+            width: "min(calc(100vw - 2rem), 28rem)",
+            maxWidth: "min(calc(100vw - 2rem), 28rem)",
+            maxHeight: "min(50dvh, 480px)",
           }}
           className="overflow-hidden p-0 gap-0"
         >
