@@ -98,7 +98,13 @@ export function CoachRecentsSheet({
         <DialogContent
           showCloseButton
           onOpenAutoFocus={(e) => e.preventDefault()}
-          className="overflow-hidden p-0 gap-0 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] h-[85dvh] sm:h-auto sm:w-full sm:max-w-lg sm:max-h-[min(80dvh,640px)]"
+          style={{
+            width: "min(calc(100vw - 1rem), 36rem)",
+            maxWidth: "min(calc(100vw - 1rem), 36rem)",
+            height: "min(90dvh, 720px)",
+            maxHeight: "min(90dvh, 720px)",
+          }}
+          className="overflow-hidden p-0 gap-0"
         >
           <DialogHeader className="sr-only">
             <DialogTitle>Recent chats</DialogTitle>
@@ -106,7 +112,9 @@ export function CoachRecentsSheet({
               Search your past coach conversations
             </DialogDescription>
           </DialogHeader>
-          <Command className="h-full **:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
+          <Command
+            className="h-full [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
+          >
             <CommandInput
               placeholder="Search recent chats…"
               autoFocus={false}
@@ -121,6 +129,7 @@ export function CoachRecentsSheet({
                     onNewChat();
                     onClose();
                   }}
+                  className="data-[selected=true]:bg-transparent data-[selected=true]:text-foreground active:bg-accent/60"
                 >
                   <Plus className="text-foreground" />
                   <span className="font-medium">New chat</span>
@@ -136,51 +145,82 @@ export function CoachRecentsSheet({
 
               {threads && threads.length > 0 && (
                 <>
+                  {threads.some((t) => t._id === activeThreadId) && (
+                    <>
+                      <CommandSeparator />
+                      <CommandGroup heading="Current chat">
+                        {threads
+                          .filter((t) => t._id === activeThreadId)
+                          .map((t) => {
+                            const meta = `${t.messageCount} message${t.messageCount === 1 ? "" : "s"} · ${SOURCE_LABEL[t.source] ?? t.source} · ${formatDate(t.updatedAt)}`;
+                            return (
+                              <CommandItem
+                                key={t._id}
+                                value={`${t.title} ${meta}`}
+                                onSelect={() => onClose()}
+                                className="bg-primary/5 data-[selected=true]:bg-primary/5 data-[selected=true]:text-foreground"
+                              >
+                                <MessageSquareText className="text-primary" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium leading-tight">
+                                    {t.title}
+                                    <span className="ml-2 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+                                      Active
+                                    </span>
+                                  </p>
+                                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                                    {meta}
+                                  </p>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                      </CommandGroup>
+                    </>
+                  )}
+
                   <CommandSeparator />
                   <CommandGroup heading="Recent chats">
-                    {threads.map((t) => {
-                      const isActive = activeThreadId === t._id;
-                      const meta = `${t.messageCount} message${t.messageCount === 1 ? "" : "s"} · ${SOURCE_LABEL[t.source] ?? t.source} · ${formatDate(t.updatedAt)}`;
-                      return (
-                        <CommandItem
-                          key={t._id}
-                          value={`${t.title} ${meta}`}
-                          onSelect={() => {
-                            onLoadThread(t._id);
-                            onClose();
-                          }}
-                        >
-                          <MessageSquareText className="text-muted-foreground" />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium leading-tight">
-                              {t.title}
-                              {isActive && (
-                                <span className="ml-2 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
-                                  Active
-                                </span>
-                              )}
-                            </p>
-                            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                              {meta}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onMouseDown={(e) => e.stopPropagation()}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setPendingDeleteId(t._id);
+                    {threads
+                      .filter((t) => t._id !== activeThreadId)
+                      .map((t) => {
+                        const meta = `${t.messageCount} message${t.messageCount === 1 ? "" : "s"} · ${SOURCE_LABEL[t.source] ?? t.source} · ${formatDate(t.updatedAt)}`;
+                        return (
+                          <CommandItem
+                            key={t._id}
+                            value={`${t.title} ${meta}`}
+                            onSelect={() => {
+                              onLoadThread(t._id);
+                              onClose();
                             }}
-                            aria-label={`Delete ${t.title}`}
-                            className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="data-[selected=true]:bg-transparent data-[selected=true]:text-foreground active:bg-accent/60"
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </CommandItem>
-                      );
-                    })}
+                            <MessageSquareText className="text-muted-foreground" />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium leading-tight">
+                                {t.title}
+                              </p>
+                              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                                {meta}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setPendingDeleteId(t._id);
+                              }}
+                              aria-label={`Delete ${t.title}`}
+                              className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </CommandItem>
+                        );
+                      })}
                   </CommandGroup>
                 </>
               )}
