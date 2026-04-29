@@ -20,6 +20,7 @@ import type * as habitEntries from "../habitEntries.js";
 import type * as leaderboard from "../leaderboard.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_dayCalculation from "../lib/dayCalculation.js";
+import type * as lib_displayName from "../lib/displayName.js";
 import type * as lib_habitCategories from "../lib/habitCategories.js";
 import type * as lib_identityStatement from "../lib/identityStatement.js";
 import type * as lib_llmPrompts from "../lib/llmPrompts.js";
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   leaderboard: typeof leaderboard;
   "lib/auth": typeof lib_auth;
   "lib/dayCalculation": typeof lib_dayCalculation;
+  "lib/displayName": typeof lib_displayName;
   "lib/habitCategories": typeof lib_habitCategories;
   "lib/identityStatement": typeof lib_identityStatement;
   "lib/llmPrompts": typeof lib_llmPrompts;

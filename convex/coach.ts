@@ -10,6 +10,7 @@ import {
 } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
+import { firstNameFrom } from "./lib/displayName";
 
 // Default TTL in days for coach memory + threads. 90 days matches the
 // retention contract called out in BACKLOG C-1/C-2.
@@ -67,6 +68,7 @@ export const getMemory = query({
     facts: string[];
     updatedAt: number | null;
     expiresAt: number | null;
+    firstName: string;
   } | null> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return null;
@@ -75,6 +77,7 @@ export const getMemory = query({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
     if (!user) return null;
+    const firstName = firstNameFrom(user.displayName);
     const m = user.coachMemory;
     if (!m) {
       return {
@@ -84,6 +87,7 @@ export const getMemory = query({
         facts: [],
         updatedAt: null,
         expiresAt: null,
+        firstName,
       };
     }
     const expiresAt = m.ttlOptOut
@@ -96,6 +100,7 @@ export const getMemory = query({
       facts: m.facts,
       updatedAt: m.updatedAt,
       expiresAt,
+      firstName,
     };
   },
 });
@@ -142,6 +147,46 @@ export const updateMemorySettings = mutation({
       user._id,
       "memory_settings_changed",
       `enabled=${next.enabled}, ttlDays=${next.ttlDays}, ttlOptOut=${next.ttlOptOut}`,
+    );
+  },
+});
+
+/**
+ * Drop a single distilled fact by index. Powers the per-row "forget
+ * this" affordance in CoachPrivacySettings — gives users surgical
+ * control instead of forcing the nuclear "forget me" button when one
+ * bullet is wrong.
+ */
+export const removeMemoryFact = mutation({
+  args: { factIndex: v.number() },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const m = user.coachMemory;
+    if (!m || !m.enabled) {
+      throw new Error("Coach memory is not enabled");
+    }
+    if (
+      !Number.isInteger(args.factIndex) ||
+      args.factIndex < 0 ||
+      args.factIndex >= m.facts.length
+    ) {
+      throw new Error("Invalid fact index");
+    }
+    const nextFacts = m.facts.slice(0, args.factIndex).concat(
+      m.facts.slice(args.factIndex + 1),
+    );
+    await ctx.db.patch(user._id, {
+      coachMemory: {
+        ...m,
+        facts: nextFacts,
+        updatedAt: Date.now(),
+      },
+    });
+    await logAudit(
+      ctx,
+      user._id,
+      "memory_purge_manual",
+      `removed 1 fact (manual), ${nextFacts.length} remaining`,
     );
   },
 });
@@ -210,6 +255,7 @@ export const getMemoryByClerkId = internalQuery({
     userId: Id<"users">;
     enabled: boolean;
     facts: string[];
+    firstName: string;
   } | null> => {
     const user = await ctx.db
       .query("users")
@@ -220,6 +266,7 @@ export const getMemoryByClerkId = internalQuery({
       userId: user._id,
       enabled: user.coachMemory?.enabled ?? false,
       facts: user.coachMemory?.facts ?? [],
+      firstName: firstNameFrom(user.displayName),
     };
   },
 });

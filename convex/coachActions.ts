@@ -11,20 +11,27 @@ const messageValidator = v.object({
 const MAX_FACTS = 12;
 const MAX_FACT_CHARS = 200;
 
-const WRITER_SYSTEM_PROMPT = `You are a memory writer for a coach chatbot. Read the conversation between the user and the coach and produce a short, durable summary of the user as JSON.
+function buildWriterSystemPrompt(firstName: string): string {
+  return `You are a memory writer for a coach chatbot. Read the conversation between ${firstName} and the coach and produce a short, durable summary of ${firstName} as JSON.
 
 GOAL
 Capture facts that will help future coach sessions personalise advice. Bias toward stable, durable facts (goals, schedule constraints, what's worked, what hasn't, equipment they own, time budget) over transient ones (today's mood, this week's PR).
 
 REDACTION (hard rules)
-- Do NOT include the user's display name, email, phone number, address, or any free-text identifier.
+- Use the first name "${firstName}" as the third-person reference. Do NOT include any other identifier — no last name, full display name, email, phone number, address, social handle, or other free-text identifier.
 - Do NOT include third-party names (friends, employers, doctors).
 - Do NOT include health diagnoses or medications. Generic constraints are OK ("knee issue, avoid running") but not specifics ("ACL tear from 2024-01 surgery").
 
+DEDUPLICATION (hard rules)
+- Each fact must express a distinct idea. If two facts overlap or one is a more specific version of the other, keep ONLY the more specific one.
+- Do not restate the same idea in different words across multiple bullets.
+- If an existing fact has been contradicted or superseded by the new conversation, drop it or replace it — never keep both the old and new version.
+
 FORMAT
-Return ONLY a JSON array of short strings. Each string is one fact, ≤ 200 characters, in third person ("User prefers morning workouts" not "I prefer morning workouts"). Up to 12 entries. Order them most-durable first (the writer downstream truncates from the end if the blob exceeds 2KB).
+Return ONLY a JSON array of short strings. Each string is one fact, ≤ 200 characters, written in third person using the first name (e.g. "${firstName} prefers morning workouts", not "I prefer morning workouts" and not "User prefers morning workouts"). Up to 12 entries. Order them most-durable first (the writer downstream truncates from the end if the blob exceeds 2KB).
 
 If the conversation contains no durable facts worth saving, return an empty array [].`;
+}
 
 /**
  * C-1: Distill the latest exchange into durable memory facts. Called
@@ -51,7 +58,7 @@ export const distillMemoryFromChat = action({
       return { wrote: false, reason: "empty" };
     }
 
-    const facts = await runWriter(args.messages, memory.facts);
+    const facts = await runWriter(args.messages, memory.facts, memory.firstName);
     if (!facts) {
       return { wrote: false, reason: "writer_failed" };
     }
@@ -67,6 +74,7 @@ export const distillMemoryFromChat = action({
 async function runWriter(
   messages: Array<{ role: "user" | "assistant"; content: string }>,
   existingFacts: string[],
+  firstName: string,
 ): Promise<string[] | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -84,7 +92,7 @@ async function runWriter(
     .join("\n\n");
   const existingBlock =
     existingFacts.length > 0
-      ? `\n\nEXISTING FACTS (carry forward what's still true; revise or drop what's not):\n${existingFacts
+      ? `\n\nEXISTING FACTS (carry forward what's still true; revise or drop what's not — do NOT keep duplicates):\n${existingFacts
           .map((f, i) => `${i + 1}. ${f}`)
           .join("\n")}`
       : "";
@@ -104,7 +112,7 @@ async function runWriter(
     // runtime; fall through to the catch on timeout.
     const result = await generateText({
       model: openrouter.chat(model),
-      system: WRITER_SYSTEM_PROMPT,
+      system: buildWriterSystemPrompt(firstName),
       messages: [
         {
           role: "user",
@@ -147,10 +155,43 @@ function parseFactsList(text: string): string[] {
       cleaned.push(trimmed.slice(0, MAX_FACT_CHARS));
       if (cleaned.length >= MAX_FACTS) break;
     }
-    return enforceByteCap(cleaned);
+    return enforceByteCap(dedupeFacts(cleaned));
   } catch {
     return [];
   }
+}
+
+/**
+ * Drop near-duplicate facts: if one fact's normalized form is contained
+ * in another's, keep the longer (more specific) one. Preserves writer
+ * order otherwise — the writer is told to put the most-durable facts
+ * first, and we want the byte-cap truncation to honor that order.
+ */
+function dedupeFacts(facts: string[]): string[] {
+  const normalized = facts.map(normalizeForDedup);
+  const keep = new Array<boolean>(facts.length).fill(true);
+  for (let i = 0; i < facts.length; i++) {
+    if (!keep[i]) continue;
+    for (let j = 0; j < facts.length; j++) {
+      if (i === j || !keep[j]) continue;
+      const a = normalized[i];
+      const b = normalized[j];
+      if (!a || !b) continue;
+      if (a === b || a.includes(b)) {
+        // i is at least as specific as j — drop j.
+        keep[j] = false;
+      }
+    }
+  }
+  return facts.filter((_, idx) => keep[idx]);
+}
+
+function normalizeForDedup(fact: string): string {
+  return fact
+    .toLowerCase()
+    .replace(/[\p{P}\p{S}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function enforceByteCap(facts: string[]): string[] {

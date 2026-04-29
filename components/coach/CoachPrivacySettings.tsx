@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Brain, Download, History, Loader2, Trash2 } from "lucide-react";
+import { Brain, Download, History, Loader2, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -50,9 +50,29 @@ export function CoachPrivacySettings() {
   const audit = useQuery(api.coach.listAuditLog, { limit: 20 });
   const updateSettings = useMutation(api.coach.updateMemorySettings);
   const forgetMe = useMutation(api.coach.forgetMe);
+  const removeFact = useMutation(api.coach.removeMemoryFact);
 
   const [busy, setBusy] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [confirmingIndex, setConfirmingIndex] = useState<number | null>(null);
+  const [removingIndex, setRemovingIndex] = useState<number | null>(null);
+  const factsListRef = useRef<HTMLUListElement>(null);
+
+  // Dismiss the per-fact "Confirm" state when the user taps anywhere
+  // outside the active row. Required for the mobile-tap path; on
+  // desktop the hover :group already handles reveal/hide.
+  useEffect(() => {
+    if (confirmingIndex === null) return;
+    const handlePointer = (e: PointerEvent) => {
+      const list = factsListRef.current;
+      if (!list) return;
+      const target = e.target;
+      if (target instanceof Node && list.contains(target)) return;
+      setConfirmingIndex(null);
+    };
+    window.addEventListener("pointerdown", handlePointer);
+    return () => window.removeEventListener("pointerdown", handlePointer);
+  }, [confirmingIndex]);
 
   const expiresLabel = useMemo(() => {
     if (!memory?.updatedAt || memory.ttlOptOut) return null;
@@ -93,6 +113,19 @@ export function CoachPrivacySettings() {
       toast.error(err instanceof Error ? err.message : "Failed to clear");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleRemoveFact = async (index: number) => {
+    setRemovingIndex(index);
+    try {
+      await removeFact({ factIndex: index });
+      setConfirmingIndex(null);
+      toast.success("Forgot that");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove");
+    } finally {
+      setRemovingIndex(null);
     }
   };
 
@@ -179,13 +212,55 @@ export function CoachPrivacySettings() {
 
             {memory && memory.facts.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-sm font-medium">Currently remembered</p>
-                <ul className="rounded-md border bg-muted/30 p-3 space-y-1.5 text-xs">
-                  {memory.facts.map((fact, i) => (
-                    <li key={i} className="leading-snug">
-                      • {fact}
-                    </li>
-                  ))}
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-sm font-medium">
+                    What 75 Proof Coach knows about {memory.firstName}
+                  </p>
+                  {memory.updatedAt && (
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      Updated {formatRelative(memory.updatedAt)}
+                    </p>
+                  )}
+                </div>
+                <ul ref={factsListRef} className="space-y-1.5">
+                  {memory.facts.map((fact, i) => {
+                    const isConfirming = confirmingIndex === i;
+                    const isRemoving = removingIndex === i;
+                    return (
+                      <li
+                        key={i}
+                        data-confirming={isConfirming ? "true" : undefined}
+                        className="group relative flex items-start gap-2 rounded-md border bg-muted/40 px-3 py-2 text-xs leading-snug transition-colors hover:bg-muted/60 data-[confirming=true]:border-destructive/60 data-[confirming=true]:bg-destructive/10"
+                      >
+                        <span className="flex-1 pt-0.5 text-foreground">{fact}</span>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <button
+                            type="button"
+                            aria-label={isConfirming ? "Cancel" : "Forget this fact"}
+                            onClick={() =>
+                              setConfirmingIndex(isConfirming ? null : i)
+                            }
+                            disabled={isRemoving}
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/60 transition-transform duration-150 hover:text-foreground group-hover:rotate-90 group-data-[confirming=true]:rotate-90 group-data-[confirming=true]:text-destructive"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFact(i)}
+                            disabled={isRemoving}
+                            className="hidden h-6 items-center rounded-md bg-destructive px-2 text-[11px] font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-60 group-hover:inline-flex group-data-[confirming=true]:inline-flex"
+                          >
+                            {isRemoving ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              "Confirm"
+                            )}
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ) : (
