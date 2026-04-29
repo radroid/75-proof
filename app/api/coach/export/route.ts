@@ -151,8 +151,11 @@ This file is your full coach context, exported on request. It contains:
 
 Paste the \`memory.bio\` paragraph as a system message preamble into ChatGPT,
 Claude, or any other LLM to give them the same context the 75 Proof coach has.
-The threads are full chat transcripts — feed them in if you want a new model
-to pick up where the coach left off.
+For pre-migration accounts (where \`memory.bio\` is empty but \`memory.facts\`
+is populated), fold \`memory.facts\` into a paragraph yourself and use that
+instead — the coach will migrate the array into a real bio on its next chat
+write. The threads are full chat transcripts — feed them in if you want a new
+model to pick up where the coach left off.
 
 ## Privacy
 
