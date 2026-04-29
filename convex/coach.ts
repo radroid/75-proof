@@ -166,10 +166,19 @@ export const updateBio = mutation({
       throw new Error("Coach memory is not enabled");
     }
     const trimmed = args.bio.trim().slice(0, MEMORY_BIO_CHAR_CAP);
+    // Idempotency + migration: skip the patch entirely when the bio
+    // hasn't changed and there are no legacy facts left to clear.
+    // Otherwise always clear `facts` — leaving them around after a
+    // manual edit lets the writer fold them back into the bio later,
+    // which would silently undo a user's clear.
+    const existingBio = (m.bio ?? "").trim();
+    const hasLegacyFacts = m.facts.length > 0;
+    if (trimmed === existingBio && !hasLegacyFacts) return;
     await ctx.db.patch(user._id, {
       coachMemory: {
         ...m,
         bio: trimmed,
+        facts: [],
         updatedAt: Date.now(),
       },
     });

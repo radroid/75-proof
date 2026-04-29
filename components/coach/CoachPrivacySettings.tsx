@@ -128,6 +128,10 @@ export function CoachPrivacySettings() {
   };
 
   const handleSaveBio = async () => {
+    // Guard against a save racing with a global privacy action (e.g.
+    // forgetMe) — without this, a save that started before the wipe
+    // could land just after, repopulating the bio the user just cleared.
+    if (busy) return;
     const next = draft.trim().slice(0, BIO_CHAR_CAP);
     setSaving(true);
     try {
@@ -191,7 +195,9 @@ export function CoachPrivacySettings() {
             </Label>
             <p className="text-xs text-muted-foreground">
               Stores a short paragraph about you (≤ {BIO_CHAR_CAP} characters).
-              Display name, email, and other identifiers are excluded.
+              The auto-writer skips identifiers like email, phone, and
+              third-party names; anything you type yourself in the pencil
+              edit is saved as-is.
             </p>
           </div>
           <Switch
@@ -251,6 +257,7 @@ export function CoachPrivacySettings() {
               {editing ? (
                 <div className="space-y-2">
                   <Textarea
+                    aria-label={`Bio for ${firstName}`}
                     ref={textareaRef}
                     value={draft}
                     onChange={(e) =>
@@ -259,7 +266,7 @@ export function CoachPrivacySettings() {
                     rows={5}
                     maxLength={BIO_CHAR_CAP}
                     placeholder={`Write a short paragraph about ${firstName} — goals, schedule, what's worked, what hasn't.`}
-                    disabled={saving}
+                    disabled={saving || busy}
                   />
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -270,14 +277,14 @@ export function CoachPrivacySettings() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setEditing(false)}
-                        disabled={saving}
+                        disabled={saving || busy}
                       >
                         Cancel
                       </Button>
                       <Button
                         size="sm"
                         onClick={handleSaveBio}
-                        disabled={saving || !draftDirty}
+                        disabled={saving || busy || !draftDirty}
                       >
                         {saving ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
