@@ -152,13 +152,21 @@ export const updateMemorySettings = mutation({
 });
 
 /**
- * Drop a single distilled fact by index. Powers the per-row "forget
- * this" affordance in CoachPrivacySettings — gives users surgical
- * control instead of forcing the nuclear "forget me" button when one
- * bullet is wrong.
+ * Drop a single distilled fact. Powers the per-row "forget this"
+ * affordance in CoachPrivacySettings — gives users surgical control
+ * instead of forcing the nuclear "forget me" button when one bullet
+ * is wrong.
+ *
+ * Caller passes both `factIndex` (the position they saw in the UI) and
+ * `factText` (the exact string they're trying to drop). We only delete
+ * if the index still points at that exact text — otherwise the writer
+ * has rewritten the array between the user's read and click, and the
+ * intended fact is no longer at that slot. We throw a stale-index
+ * error so the UI can surface "memory changed, refresh" instead of
+ * silently deleting whatever happens to occupy index N now.
  */
 export const removeMemoryFact = mutation({
-  args: { factIndex: v.number() },
+  args: { factIndex: v.number(), factText: v.string() },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const m = user.coachMemory;
@@ -170,7 +178,10 @@ export const removeMemoryFact = mutation({
       args.factIndex < 0 ||
       args.factIndex >= m.facts.length
     ) {
-      throw new Error("Invalid fact index");
+      throw new Error("Memory changed since you opened this view — refresh and try again");
+    }
+    if (m.facts[args.factIndex] !== args.factText) {
+      throw new Error("Memory changed since you opened this view — refresh and try again");
     }
     const nextFacts = m.facts.slice(0, args.factIndex).concat(
       m.facts.slice(args.factIndex + 1),

@@ -116,10 +116,10 @@ export function CoachPrivacySettings() {
     }
   };
 
-  const handleRemoveFact = async (index: number) => {
+  const handleRemoveFact = async (index: number, factText: string) => {
     setRemovingIndex(index);
     try {
-      await removeFact({ factIndex: index });
+      await removeFact({ factIndex: index, factText });
       setConfirmingIndex(null);
       toast.success("Forgot that");
     } catch (err) {
@@ -247,7 +247,7 @@ export function CoachPrivacySettings() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleRemoveFact(i)}
+                            onClick={() => handleRemoveFact(i, fact)}
                             disabled={isRemoving}
                             className="hidden h-6 items-center rounded-md bg-destructive px-2 text-[11px] font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-60 group-hover:inline-flex group-data-[confirming=true]:inline-flex"
                           >
