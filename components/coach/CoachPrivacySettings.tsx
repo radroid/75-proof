@@ -63,16 +63,27 @@ export function CoachPrivacySettings() {
   const [saving, setSaving] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync the draft with the canonical bio when the user toggles into
-  // edit mode (or the bio refreshes underneath them while open).
+  // Seed the draft only on the transition into edit mode. We deliberately
+  // don't depend on memory?.bio — if the writer fires from another tab
+  // while the user is mid-edit, Convex would revalidate and clobber
+  // their unsaved changes. The trade-off: if the bio updates remotely
+  // during an open edit, the user sees their own draft and Save will
+  // overwrite the remote write. That's the right call for an inline edit.
+  const wasEditingRef = useRef(false);
   useEffect(() => {
-    if (editing) {
+    if (editing && !wasEditingRef.current) {
       setDraft(memory?.bio ?? "");
-      // Defer focus to the next tick so the Textarea has mounted.
-      const t = setTimeout(() => textareaRef.current?.focus(), 0);
-      return () => clearTimeout(t);
     }
+    wasEditingRef.current = editing;
   }, [editing, memory?.bio]);
+
+  // Focus the textarea on the same transition. Split out so it doesn't
+  // re-run if the dep array above flips for any other reason.
+  useEffect(() => {
+    if (!editing) return;
+    const t = setTimeout(() => textareaRef.current?.focus(), 0);
+    return () => clearTimeout(t);
+  }, [editing]);
 
   const expiresLabel = useMemo(() => {
     if (!memory?.updatedAt || memory.ttlOptOut) return null;

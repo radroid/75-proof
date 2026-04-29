@@ -204,6 +204,15 @@ export const replaceMemoryBio = internalMutation({
     }
     const trimmed = args.bio.trim().slice(0, MEMORY_BIO_CHAR_CAP);
     if (!trimmed) return;
+    // Idempotency: if the model emits a "new" bio that's actually
+    // identical to what we already have, don't churn the audit log.
+    // Defense-in-depth — the writer is supposed to send UNCHANGED in
+    // this case, but we don't want a sloppy model to spam writes.
+    // Still proceed if there are legacy facts left to clear, since
+    // that's the migration path even when the bio text matches.
+    const existingBio = user.coachMemory.bio ?? "";
+    const hasLegacyFacts = user.coachMemory.facts.length > 0;
+    if (trimmed === existingBio && !hasLegacyFacts) return;
     const next = {
       ...user.coachMemory,
       bio: trimmed,

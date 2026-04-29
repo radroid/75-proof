@@ -62,7 +62,11 @@ export async function GET() {
   }
 
   const bundle = {
-    schemaVersion: 1,
+    // v2 (2026-04): memory.bio is the canonical surface; memory.facts
+    // remains for migration. Audit action union gained
+    // memory_edit_manual. v1 consumers reading memory.facts will see
+    // the array empty for users who already migrated.
+    schemaVersion: 2,
     exportedAt: new Date().toISOString(),
     readme: README_TEXT,
     memory: snapshot.memory,
@@ -106,7 +110,7 @@ This file is your full coach context, exported on request. It contains:
 
 \`\`\`
 {
-  schemaVersion: 1,
+  schemaVersion: 2,
   exportedAt: ISO8601 timestamp,
   memory: {
     enabled: boolean,
