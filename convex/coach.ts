@@ -15,10 +15,10 @@ import { firstNameFrom } from "./lib/displayName";
 // Default TTL in days for coach memory + threads. 90 days matches the
 // retention contract called out in BACKLOG C-1/C-2.
 export const DEFAULT_TTL_DAYS = 90;
-// Hard cap on the persisted memory blob. The writer prompt is told to
-// stay well under this; we re-check here so a misbehaving model can't
-// blow past the limit. ~2KB matches the spec.
-export const MEMORY_BYTE_CAP = 2048;
+// Hard cap on the persisted bio paragraph. The writer prompt is told
+// to stay well under this; we re-check here so a misbehaving model
+// can't blow past the limit. ~600 chars ≈ 2-4 sentences of warm prose.
+export const MEMORY_BIO_CHAR_CAP = 600;
 // Cap thread message count returned to the client to keep payloads
 // bounded. UI paginates beyond this.
 const MESSAGE_PAGE_LIMIT = 200;
@@ -65,7 +65,7 @@ export const getMemory = query({
     enabled: boolean;
     ttlDays: number;
     ttlOptOut: boolean;
-    facts: string[];
+    bio: string;
     updatedAt: number | null;
     expiresAt: number | null;
     firstName: string;
@@ -84,7 +84,7 @@ export const getMemory = query({
         enabled: false,
         ttlDays: DEFAULT_TTL_DAYS,
         ttlOptOut: false,
-        facts: [],
+        bio: "",
         updatedAt: null,
         expiresAt: null,
         firstName,
@@ -97,7 +97,7 @@ export const getMemory = query({
       enabled: m.enabled,
       ttlDays: m.ttlDays,
       ttlOptOut: m.ttlOptOut,
-      facts: m.facts,
+      bio: m.bio ?? "",
       updatedAt: m.updatedAt,
       expiresAt,
       firstName,
@@ -138,6 +138,7 @@ export const updateMemorySettings = mutation({
       enabled: args.enabled ?? current.enabled,
       ttlDays: nextTtlDays,
       ttlOptOut: args.ttlOptOut ?? current.ttlOptOut,
+      bio: "bio" in current ? current.bio : undefined,
       facts: current.facts,
       updatedAt: current.updatedAt,
     };
@@ -152,66 +153,46 @@ export const updateMemorySettings = mutation({
 });
 
 /**
- * Drop a single distilled fact. Powers the per-row "forget this"
- * affordance in CoachPrivacySettings — gives users surgical control
- * instead of forcing the nuclear "forget me" button when one bullet
- * is wrong.
- *
- * Caller passes both `factIndex` (the position they saw in the UI) and
- * `factText` (the exact string they're trying to drop). We only delete
- * if the index still points at that exact text — otherwise the writer
- * has rewritten the array between the user's read and click, and the
- * intended fact is no longer at that slot. We throw a stale-index
- * error so the UI can surface "memory changed, refresh" instead of
- * silently deleting whatever happens to occupy index N now.
+ * Inline-edit hook for the bio paragraph. The user owns this surface —
+ * pencil-icon edit in CoachPrivacySettings calls in here. Empty string
+ * clears the bio (without touching the master enabled toggle).
  */
-export const removeMemoryFact = mutation({
-  args: { factIndex: v.number(), factText: v.string() },
+export const updateBio = mutation({
+  args: { bio: v.string() },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const m = user.coachMemory;
     if (!m || !m.enabled) {
       throw new Error("Coach memory is not enabled");
     }
-    if (
-      !Number.isInteger(args.factIndex) ||
-      args.factIndex < 0 ||
-      args.factIndex >= m.facts.length
-    ) {
-      throw new Error("Memory changed since you opened this view — refresh and try again");
-    }
-    if (m.facts[args.factIndex] !== args.factText) {
-      throw new Error("Memory changed since you opened this view — refresh and try again");
-    }
-    const nextFacts = m.facts.slice(0, args.factIndex).concat(
-      m.facts.slice(args.factIndex + 1),
-    );
+    const trimmed = args.bio.trim().slice(0, MEMORY_BIO_CHAR_CAP);
     await ctx.db.patch(user._id, {
       coachMemory: {
         ...m,
-        facts: nextFacts,
+        bio: trimmed,
         updatedAt: Date.now(),
       },
     });
     await logAudit(
       ctx,
       user._id,
-      "memory_purge_manual",
-      `removed 1 fact (manual), ${nextFacts.length} remaining`,
+      "memory_edit_manual",
+      trimmed.length > 0 ? `bio edited (${trimmed.length} chars)` : "bio cleared",
     );
   },
 });
 
 /**
- * Internal: replace the user's distilled memory facts. Called from the
- * writer action after the LLM returns a new snapshot. Truncates if the
- * blob exceeds MEMORY_BYTE_CAP — preference is to drop the oldest
- * facts, since the writer is told to put the most durable ones first.
+ * Internal: replace the user's bio paragraph. Called from the writer
+ * action after the LLM returns a fresh paragraph (it sends UNCHANGED
+ * when nothing durable was learned, in which case we never get here).
+ * Also clears the legacy `facts` array on first successful write so
+ * the migration path runs exactly once.
  */
-export const replaceMemoryFacts = internalMutation({
+export const replaceMemoryBio = internalMutation({
   args: {
     userId: v.id("users"),
-    facts: v.array(v.string()),
+    bio: v.string(),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
@@ -221,51 +202,38 @@ export const replaceMemoryFacts = internalMutation({
       // Don't write anything — keeps the opt-in contract.
       return;
     }
-    const trimmed = enforceByteCap(args.facts);
+    const trimmed = args.bio.trim().slice(0, MEMORY_BIO_CHAR_CAP);
+    if (!trimmed) return;
     const next = {
       ...user.coachMemory,
-      facts: trimmed,
+      bio: trimmed,
+      // Migration: once a bio lands, the legacy bullet list is stale.
+      facts: [],
       updatedAt: Date.now(),
     };
     await ctx.db.patch(args.userId, { coachMemory: next });
     await ctx.db.insert("coachAuditLog", {
       userId: args.userId,
       action: "memory_write",
-      detail: `${trimmed.length} fact${trimmed.length === 1 ? "" : "s"}, ${
-        byteLengthOf(trimmed)
-      } bytes`,
+      detail: `bio updated (${trimmed.length} chars)`,
       createdAt: Date.now(),
     });
   },
 });
 
-function byteLengthOf(facts: string[]): number {
-  let total = 0;
-  for (const f of facts) total += new TextEncoder().encode(f).byteLength;
-  return total;
-}
-
-function enforceByteCap(facts: string[]): string[] {
-  // Drop oldest until under cap. The writer is instructed to put the
-  // most durable / load-bearing facts first.
-  const out = [...facts];
-  while (out.length > 0 && byteLengthOf(out) > MEMORY_BYTE_CAP) {
-    out.pop();
-  }
-  return out;
-}
-
 /**
- * Internal: read memory facts for prompt injection. The HTTP API route
- * calls this through the action runner so the chat endpoint can stay
- * stateless.
+ * Internal: read memory for prompt injection. Returns the active bio
+ * plus any legacy facts that haven't been folded in yet (used as
+ * one-time seed context by the writer). The HTTP API route calls this
+ * through the action runner so the chat endpoint can stay stateless.
  */
 export const getMemoryByClerkId = internalQuery({
   args: { clerkId: v.string() },
   handler: async (ctx, args): Promise<{
     userId: Id<"users">;
     enabled: boolean;
-    facts: string[];
+    bio: string;
+    legacyFacts: string[];
     firstName: string;
   } | null> => {
     const user = await ctx.db
@@ -276,7 +244,8 @@ export const getMemoryByClerkId = internalQuery({
     return {
       userId: user._id,
       enabled: user.coachMemory?.enabled ?? false,
-      facts: user.coachMemory?.facts ?? [],
+      bio: user.coachMemory?.bio ?? "",
+      legacyFacts: user.coachMemory?.facts ?? [],
       firstName: firstNameFrom(user.displayName),
     };
   },
@@ -499,12 +468,13 @@ export const forgetMe = mutation({
     // can prove the purge happened); UI offers a separate purge for it.
     await logAudit(ctx, user._id, "forget_me", "purging memory and threads");
 
-    // 1. Memory blob: clear facts, leave settings (so the user's
-    // preferences for opt-in/out persist after the wipe).
+    // 1. Memory blob: clear bio + legacy facts, leave settings (so
+    // the user's preferences for opt-in/out persist after the wipe).
     if (user.coachMemory) {
       await ctx.db.patch(user._id, {
         coachMemory: {
           ...user.coachMemory,
+          bio: "",
           facts: [],
           updatedAt: Date.now(),
         },
@@ -528,7 +498,7 @@ export const forgetMe = mutation({
 });
 
 /**
- * Internal: TTL purge. Walks every user, clears memory facts older
+ * Internal: TTL purge. Walks every user, clears the memory bio older
  * than ttlDays, and deletes individual threads untouched past ttlDays.
  * Called daily by the cron in `convex/crons.ts`.
  *
@@ -559,17 +529,17 @@ export const purgeExpired = internalMutation({
     for (const u of page.page) {
       // Memory.
       const m = u.coachMemory;
-      if (m && !m.ttlOptOut && m.facts.length > 0) {
+      const hasContent = !!m && (!!m.bio || m.facts.length > 0);
+      if (m && !m.ttlOptOut && hasContent) {
         const expiresAt = m.updatedAt + m.ttlDays * 24 * 60 * 60 * 1000;
         if (now >= expiresAt) {
-          const purgedCount = m.facts.length;
           await ctx.db.patch(u._id, {
-            coachMemory: { ...m, facts: [], updatedAt: now },
+            coachMemory: { ...m, bio: "", facts: [], updatedAt: now },
           });
           await ctx.db.insert("coachAuditLog", {
             userId: u._id,
             action: "memory_purge_ttl",
-            detail: `purged ${purgedCount} fact(s) past ${m.ttlDays}-day TTL`,
+            detail: `purged bio past ${m.ttlDays}-day TTL`,
             createdAt: now,
           });
           memoryPurged += 1;

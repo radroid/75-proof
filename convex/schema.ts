@@ -49,18 +49,23 @@ export default defineSchema({
     // editable later. The Progress identity card prefers this over the
     // generated formation-stage copy when present. Capped at 140 chars.
     identityStatement: v.optional(v.string()),
-    // C-1: Persistent coach memory. Opt-in (default off). Capped at ~2KB.
-    // Facts are short, lossy, CLAUDE.md-style — durable preferences,
-    // schedule constraints, things that worked, things that didn't. The
-    // writer prompt is responsible for redacting display name, email,
-    // and other free-text identifiers before it lands here.
+    // C-1: Persistent coach memory. Opt-in (default off).
+    // The active surface is `bio` — a short, friendly third-person
+    // paragraph (≤ 600 chars) about the user, written in their first
+    // name. The writer prompt is responsible for redacting display
+    // name, email, and other free-text identifiers before it lands.
+    // `facts` is the legacy bullet-list shape kept around for graceful
+    // migration; the writer folds any remaining entries into the new
+    // bio on its next run and clears the array.
     coachMemory: v.optional(v.object({
       enabled: v.boolean(),
       // Days before TTL purge. 90 = default; ttlOptOut bypasses purge.
       ttlDays: v.number(),
       ttlOptOut: v.boolean(),
-      // Distilled facts as a flat array of short strings. Capped at
-      // ~2KB total in the writer; UI shows them as a list.
+      // Active memory surface — single paragraph, ≤ 600 chars.
+      bio: v.optional(v.string()),
+      // Legacy: distilled facts from the bullet-list memory model.
+      // Read once during migration, then cleared.
       facts: v.array(v.string()),
       // ms since epoch — used by the TTL cron and surfaced in the UI
       // as "last updated".
@@ -114,6 +119,7 @@ export default defineSchema({
     userId: v.id("users"),
     action: v.union(
       v.literal("memory_write"),
+      v.literal("memory_edit_manual"),
       v.literal("memory_purge_manual"),
       v.literal("memory_purge_ttl"),
       v.literal("memory_settings_changed"),

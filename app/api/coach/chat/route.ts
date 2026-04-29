@@ -247,18 +247,26 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // C-1: Pull persisted memory facts so the model knows the user.
-  // Guests + opted-out users get null and no facts are injected.
-  let memoryFacts: string[] = [];
+  // C-1: Pull the persisted bio so the model knows the user. Guests
+  // and opted-out users get null and no bio is injected.
+  let memoryBio = "";
+  let memoryFirstName = "";
   try {
-    const mem = await runConvex<{ enabled: boolean; facts: string[] } | null>(
+    const mem = await runConvex<{
+      enabled: boolean;
+      bio: string;
+      firstName: string;
+    } | null>(
       convexUrl,
       "query",
       "coach:getMemory",
       {},
       { timeoutMs: MEMORY_FETCH_TIMEOUT_MS, token },
     );
-    if (mem?.enabled) memoryFacts = mem.facts;
+    if (mem?.enabled) {
+      memoryBio = mem.bio ?? "";
+      memoryFirstName = mem.firstName ?? "";
+    }
   } catch (err) {
     // Non-fatal — coach still works without memory.
     console.error("[coach/chat] memory fetch failed", err);
@@ -288,7 +296,7 @@ export async function POST(req: NextRequest) {
   const model =
     process.env.OPENROUTER_CHAT_MODEL ?? "anthropic/claude-sonnet-4.5";
 
-  const system = buildSystemPrompt(retrieved, category, memoryFacts);
+  const system = buildSystemPrompt(retrieved, category, memoryBio, memoryFirstName);
 
   try {
     const result = await generateText({
@@ -404,14 +412,12 @@ function buildSystemPrompt(
     tags: string[];
   }>,
   category: string | undefined,
-  memoryFacts: string[] = [],
+  memoryBio: string = "",
+  memoryFirstName: string = "",
 ): string {
-  const memoryBlock =
-    memoryFacts.length > 0
-      ? `\n\nUSER MEMORY (durable facts persisted across sessions — use to personalise without re-asking)\n${memoryFacts
-          .map((f, i) => `${i + 1}. ${f}`)
-          .join("\n")}`
-      : "";
+  const memoryBlock = memoryBio
+    ? `\n\nABOUT ${memoryFirstName || "the user"} (durable bio persisted across sessions — use to personalise without re-asking)\n${memoryBio}`
+    : "";
 
   const catLine = category
     ? `The user is browsing the "${category}" category. Bias your suggestions toward routines in that category, but feel free to mention adjacent ones if a stack would help.`

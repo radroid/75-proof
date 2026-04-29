@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Brain, Download, History, Loader2, Trash2, X } from "lucide-react";
+import { Brain, Download, History, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,7 @@ import { api } from "@/convex/_generated/api";
 
 const ACTION_LABELS: Record<string, string> = {
   memory_write: "Memory updated",
+  memory_edit_manual: "Bio edited",
   memory_purge_manual: "Memory purged",
   memory_purge_ttl: "TTL purge",
   memory_settings_changed: "Settings changed",
@@ -31,6 +33,8 @@ const ACTION_LABELS: Record<string, string> = {
   forget_me: "Forget me",
   export: "Bundle exported",
 };
+
+const BIO_CHAR_CAP = 600;
 
 function formatRelative(ts: number): string {
   const diff = Date.now() - ts;
@@ -50,29 +54,25 @@ export function CoachPrivacySettings() {
   const audit = useQuery(api.coach.listAuditLog, { limit: 20 });
   const updateSettings = useMutation(api.coach.updateMemorySettings);
   const forgetMe = useMutation(api.coach.forgetMe);
-  const removeFact = useMutation(api.coach.removeMemoryFact);
+  const updateBio = useMutation(api.coach.updateBio);
 
   const [busy, setBusy] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [confirmingIndex, setConfirmingIndex] = useState<number | null>(null);
-  const [removingIndex, setRemovingIndex] = useState<number | null>(null);
-  const factsListRef = useRef<HTMLUListElement>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Dismiss the per-fact "Confirm" state when the user taps anywhere
-  // outside the active row. Required for the mobile-tap path; on
-  // desktop the hover :group already handles reveal/hide.
+  // Sync the draft with the canonical bio when the user toggles into
+  // edit mode (or the bio refreshes underneath them while open).
   useEffect(() => {
-    if (confirmingIndex === null) return;
-    const handlePointer = (e: PointerEvent) => {
-      const list = factsListRef.current;
-      if (!list) return;
-      const target = e.target;
-      if (target instanceof Node && list.contains(target)) return;
-      setConfirmingIndex(null);
-    };
-    window.addEventListener("pointerdown", handlePointer);
-    return () => window.removeEventListener("pointerdown", handlePointer);
-  }, [confirmingIndex]);
+    if (editing) {
+      setDraft(memory?.bio ?? "");
+      // Defer focus to the next tick so the Textarea has mounted.
+      const t = setTimeout(() => textareaRef.current?.focus(), 0);
+      return () => clearTimeout(t);
+    }
+  }, [editing, memory?.bio]);
 
   const expiresLabel = useMemo(() => {
     if (!memory?.updatedAt || memory.ttlOptOut) return null;
@@ -116,16 +116,17 @@ export function CoachPrivacySettings() {
     }
   };
 
-  const handleRemoveFact = async (index: number, factText: string) => {
-    setRemovingIndex(index);
+  const handleSaveBio = async () => {
+    const next = draft.trim().slice(0, BIO_CHAR_CAP);
+    setSaving(true);
     try {
-      await removeFact({ factIndex: index, factText });
-      setConfirmingIndex(null);
-      toast.success("Forgot that");
+      await updateBio({ bio: next });
+      toast.success(next ? "Bio updated" : "Bio cleared");
+      setEditing(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to remove");
+      toast.error(err instanceof Error ? err.message : "Failed to save bio");
     } finally {
-      setRemovingIndex(null);
+      setSaving(false);
     }
   };
 
@@ -154,6 +155,9 @@ export function CoachPrivacySettings() {
   };
 
   const enabled = memory?.enabled ?? false;
+  const firstName = memory?.firstName ?? "you";
+  const bio = memory?.bio ?? "";
+  const draftDirty = draft.trim() !== bio.trim();
 
   return (
     <Card>
@@ -163,9 +167,9 @@ export function CoachPrivacySettings() {
           <CardTitle className="text-lg">Coach memory & history</CardTitle>
         </div>
         <CardDescription>
-          The AI coach can remember durable facts about you across sessions.
-          Off by default — you control what&apos;s stored, when it expires, and you
-          can wipe it any time.
+          The AI coach can remember a short bio about you across sessions.
+          Off by default — you control what&apos;s stored, when it expires,
+          and you can wipe it any time.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -175,7 +179,7 @@ export function CoachPrivacySettings() {
               Remember me across sessions
             </Label>
             <p className="text-xs text-muted-foreground">
-              Stores up to ~2KB of distilled facts (goals, schedule, what&apos;s worked).
+              Stores a short paragraph about you (≤ {BIO_CHAR_CAP} characters).
               Display name, email, and other identifiers are excluded.
             </p>
           </div>
@@ -210,64 +214,80 @@ export function CoachPrivacySettings() {
               />
             </div>
 
-            {memory && memory.facts.length > 0 ? (
-              <div className="space-y-2">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="text-sm font-medium">
-                    What 75 Proof Coach knows about {memory.firstName}
-                  </p>
-                  {memory.updatedAt && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">About {firstName}</p>
+                <div className="flex items-center gap-3">
+                  {memory?.updatedAt && !editing ? (
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
                       Updated {formatRelative(memory.updatedAt)}
                     </p>
+                  ) : null}
+                  {!editing && (
+                    <button
+                      type="button"
+                      aria-label={bio ? "Edit bio" : "Write your bio"}
+                      onClick={() => setEditing(true)}
+                      disabled={busy}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
                   )}
                 </div>
-                <ul ref={factsListRef} className="space-y-1.5">
-                  {memory.facts.map((fact, i) => {
-                    const isConfirming = confirmingIndex === i;
-                    const isRemoving = removingIndex === i;
-                    return (
-                      <li
-                        key={i}
-                        data-confirming={isConfirming ? "true" : undefined}
-                        className="group relative flex items-start gap-2 rounded-md border bg-muted/40 px-3 py-2 text-xs leading-snug transition-colors hover:bg-muted/60 data-[confirming=true]:border-destructive/60 data-[confirming=true]:bg-destructive/10"
-                      >
-                        <span className="flex-1 pt-0.5 text-foreground">{fact}</span>
-                        <div className="flex shrink-0 items-center gap-1.5">
-                          <button
-                            type="button"
-                            aria-label={isConfirming ? "Cancel" : "Forget this fact"}
-                            onClick={() =>
-                              setConfirmingIndex(isConfirming ? null : i)
-                            }
-                            disabled={isRemoving}
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/60 transition-transform duration-150 hover:text-foreground group-hover:rotate-90 group-data-[confirming=true]:rotate-90 group-data-[confirming=true]:text-destructive"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveFact(i, fact)}
-                            disabled={isRemoving}
-                            className="hidden h-6 items-center rounded-md bg-destructive px-2 text-[11px] font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-60 group-hover:inline-flex group-data-[confirming=true]:inline-flex"
-                          >
-                            {isRemoving ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              "Confirm"
-                            )}
-                          </button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
               </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                No facts stored yet — chat with the coach to build memory.
-              </p>
-            )}
+
+              {editing ? (
+                <div className="space-y-2">
+                  <Textarea
+                    ref={textareaRef}
+                    value={draft}
+                    onChange={(e) =>
+                      setDraft(e.target.value.slice(0, BIO_CHAR_CAP))
+                    }
+                    rows={5}
+                    maxLength={BIO_CHAR_CAP}
+                    placeholder={`Write a short paragraph about ${firstName} — goals, schedule, what's worked, what hasn't.`}
+                    disabled={saving}
+                  />
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {draft.length} / {BIO_CHAR_CAP}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditing(false)}
+                        disabled={saving}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSaveBio}
+                        disabled={saving || !draftDirty}
+                      >
+                        {saving ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          "Save"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : bio ? (
+                <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm leading-relaxed text-foreground">
+                  {bio}
+                </p>
+              ) : (
+                <p className="rounded-md border border-dashed bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                  Chat with the coach to start your bio — or click the pencil
+                  to write one yourself.
+                </p>
+              )}
+            </div>
           </>
         )}
 
@@ -297,9 +317,10 @@ export function CoachPrivacySettings() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Wipe coach memory and threads?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Clears every stored fact and deletes every saved coach
-                  conversation. The audit log of these actions stays so you
-                  can verify the wipe happened. This can&apos;t be undone.
+                  Clears your bio and deletes every saved coach
+                  conversation. The audit log of these actions stays so
+                  you can verify the wipe happened. This can&apos;t be
+                  undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

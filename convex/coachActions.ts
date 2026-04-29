@@ -1,44 +1,51 @@
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { MEMORY_BYTE_CAP } from "./coach";
+import { MEMORY_BIO_CHAR_CAP } from "./coach";
 
 const messageValidator = v.object({
   role: v.union(v.literal("user"), v.literal("assistant")),
   content: v.string(),
 });
 
-const MAX_FACTS = 12;
-const MAX_FACT_CHARS = 200;
+const UNCHANGED_SENTINEL = "UNCHANGED";
 
 function buildWriterSystemPrompt(firstName: string): string {
-  return `You are a memory writer for a coach chatbot. Read the conversation between ${firstName} and the coach and produce a short, durable summary of ${firstName} as JSON.
+  return `You maintain a single short, friendly bio paragraph about ${firstName} that future coach sessions read to personalise advice.
 
-GOAL
-Capture facts that will help future coach sessions personalise advice. Bias toward stable, durable facts (goals, schedule constraints, what's worked, what hasn't, equipment they own, time budget) over transient ones (today's mood, this week's PR).
+DECIDE
+Does the conversation reveal *durable* new information about ${firstName} that the bio should reflect? Durable = goals, schedule, preferences, constraints, equipment, what's worked, what hasn't. Not durable = today's mood, this week's PR, transient feelings already implied by the existing bio.
+
+If nothing durable was learned, or everything is already captured in the existing bio, reply with the literal token ${UNCHANGED_SENTINEL} and nothing else.
+
+OTHERWISE rewrite the bio:
+- 2–4 sentences, ≤ ${MEMORY_BIO_CHAR_CAP} characters total.
+- Fun, light, warm tone — like a friend describing ${firstName} to another friend. Use the first name "${firstName}" (first name only) in third person.
+- Resolve contradictions: drop superseded facts and replace them with the new one. Never keep the old version alongside the new.
+- Normalise relative dates to absolute (e.g. "last Monday" → an explicit ISO date inferred from context).
+- Consolidate overlapping ideas into one clean phrase.
 
 REDACTION (hard rules)
-- Use the first name "${firstName}" as the third-person reference. Do NOT include any other identifier — no last name, full display name, email, phone number, address, social handle, or other free-text identifier.
-- Do NOT include third-party names (friends, employers, doctors).
-- Do NOT include health diagnoses or medications. Generic constraints are OK ("knee issue, avoid running") but not specifics ("ACL tear from 2024-01 surgery").
+- No last name, email, address, phone number, social handle, or other free-text identifier.
+- No third-party names (friends, employers, doctors).
+- No health diagnoses or medications. Generic constraints are OK ("knee issue, avoid running") but specifics are not ("ACL tear from 2024-01 surgery").
 
-DEDUPLICATION (hard rules)
-- Each fact must express a distinct idea. If two facts overlap or one is a more specific version of the other, keep ONLY the more specific one.
-- Do not restate the same idea in different words across multiple bullets.
-- If an existing fact has been contradicted or superseded by the new conversation, drop it or replace it — never keep both the old and new version.
-
-FORMAT
-Return ONLY a JSON array of short strings. Each string is one fact, ≤ 200 characters, written in third person using the first name (e.g. "${firstName} prefers morning workouts", not "I prefer morning workouts" and not "User prefers morning workouts"). Up to 12 entries. Order them most-durable first (the writer downstream truncates from the end if the blob exceeds 2KB).
-
-If the conversation contains no durable facts worth saving, return an empty array [].`;
+OUTPUT
+Plain prose only. No JSON, no quotes, no preamble, no headings. Or the single token ${UNCHANGED_SENTINEL}.`;
 }
 
 /**
- * C-1: Distill the latest exchange into durable memory facts. Called
- * from the Next.js coach chat route after a model response lands.
+ * C-1: Distill the latest exchange into a friendly bio paragraph.
+ * Called from the Next.js coach chat route after a model response
+ * lands.
  *
  * Auth-gated. Skips silently if the caller has memory disabled — the
  * opt-in default is off, so we never write without explicit consent.
+ *
+ * The writer is asked to return either an updated bio paragraph or the
+ * literal token UNCHANGED. UNCHANGED skips the mutation entirely so a
+ * conversation that revealed nothing durable produces no audit row and
+ * no write.
  */
 export const distillMemoryFromChat = action({
   args: {
@@ -58,30 +65,39 @@ export const distillMemoryFromChat = action({
       return { wrote: false, reason: "empty" };
     }
 
-    const facts = await runWriter(args.messages, memory.facts, memory.firstName);
-    if (!facts) {
+    const next = await runWriter(
+      args.messages,
+      memory.bio,
+      memory.legacyFacts,
+      memory.firstName,
+    );
+    if (next === null) {
       return { wrote: false, reason: "writer_failed" };
     }
+    if (next === "UNCHANGED") {
+      return { wrote: false, reason: "unchanged" };
+    }
 
-    await ctx.runMutation(internal.coach.replaceMemoryFacts, {
+    await ctx.runMutation(internal.coach.replaceMemoryBio, {
       userId: memory.userId,
-      facts,
+      bio: next,
     });
-    return { wrote: true, factCount: facts.length };
+    return { wrote: true, chars: next.length };
   },
 });
 
 async function runWriter(
   messages: Array<{ role: "user" | "assistant"; content: string }>,
-  existingFacts: string[],
+  existingBio: string,
+  legacyFacts: string[],
   firstName: string,
-): Promise<string[] | null> {
+): Promise<string | "UNCHANGED" | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    // Stub mode — keep existing facts. The route still gets called so
-    // the audit log behaviour is exercised in dev; but we don't
-    // hallucinate fake facts when the model isn't available.
-    return existingFacts;
+    // Stub mode — leave the bio alone. The route still calls us so the
+    // audit log behaviour is exercised in dev; we don't hallucinate a
+    // bio when the model isn't available.
+    return "UNCHANGED";
   }
 
   // Trim transcript to the last few turns — durable facts are usually
@@ -90,9 +106,16 @@ async function runWriter(
   const transcript = recent
     .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
     .join("\n\n");
-  const existingBlock =
-    existingFacts.length > 0
-      ? `\n\nEXISTING FACTS (carry forward what's still true; revise or drop what's not — do NOT keep duplicates):\n${existingFacts
+
+  const existingBlock = existingBio
+    ? `EXISTING BIO:\n"${existingBio}"`
+    : `EXISTING BIO:\n(none yet — write the first one if the conversation reveals durable info)`;
+
+  // One-time migration seed: if the user has legacy bullet-list facts
+  // but no bio yet, fold them into the first paragraph.
+  const legacyBlock =
+    !existingBio && legacyFacts.length > 0
+      ? `\n\nLEGACY FACTS (from a previous bullet-list memory model — fold the still-true ones into the new paragraph; drop anything stale):\n${legacyFacts
           .map((f, i) => `${i + 1}. ${f}`)
           .join("\n")}`
       : "";
@@ -107,101 +130,45 @@ async function runWriter(
       "anthropic/claude-haiku-4-5";
     // 15s ceiling — the writer prompt is small and the chat itself
     // already returned, so this just guards against OpenRouter
-    // stalling and keeping the Convex action open. AbortSignal.timeout
-    // is supported in V8 / modern Node and works inside Convex's
-    // runtime; fall through to the catch on timeout.
+    // stalling and keeping the Convex action open.
     const result = await generateText({
       model: openrouter.chat(model),
       system: buildWriterSystemPrompt(firstName),
       messages: [
         {
           role: "user",
-          content: `CONVERSATION:\n${transcript}${existingBlock}\n\nReturn ONLY the JSON array.`,
+          content: `${existingBlock}${legacyBlock}\n\nCONVERSATION:\n${transcript}\n\nReturn either the new bio as plain prose, or the literal token ${UNCHANGED_SENTINEL}.`,
         },
       ],
       abortSignal: AbortSignal.timeout(15_000),
     });
-    const text = result.text ?? "";
-    return parseFactsList(text);
+    return parseBioOrUnchanged(result.text ?? "");
   } catch (err) {
     console.error("[coach.distillMemoryFromChat] writer call failed", err);
     return null;
   }
 }
 
-function parseFactsList(text: string): string[] {
-  // Find a JSON array in the response. The writer is told to return
-  // only an array, but we tolerate fenced code blocks just in case.
-  let jsonText: string | null = null;
-  const fence = /```(?:json)?\s*([\s\S]*?)```/.exec(text);
-  if (fence) {
-    jsonText = fence[1];
-  } else {
-    const start = text.indexOf("[");
-    const end = text.lastIndexOf("]");
-    if (start !== -1 && end > start) {
-      jsonText = text.slice(start, end + 1);
-    }
-  }
-  if (!jsonText) return [];
-  try {
-    const parsed = JSON.parse(jsonText) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    const cleaned: string[] = [];
-    for (const item of parsed) {
-      if (typeof item !== "string") continue;
-      const trimmed = item.trim();
-      if (!trimmed) continue;
-      cleaned.push(trimmed.slice(0, MAX_FACT_CHARS));
-      if (cleaned.length >= MAX_FACTS) break;
-    }
-    return enforceByteCap(dedupeFacts(cleaned));
-  } catch {
-    return [];
-  }
+function parseBioOrUnchanged(text: string): string | "UNCHANGED" {
+  const trimmed = stripWrapping(text.trim());
+  if (!trimmed) return "UNCHANGED";
+  if (trimmed.toUpperCase() === UNCHANGED_SENTINEL) return "UNCHANGED";
+  return trimmed.slice(0, MEMORY_BIO_CHAR_CAP);
 }
 
-/**
- * Drop near-duplicate facts: if one fact's normalized form is contained
- * in another's, keep the longer (more specific) one. Preserves writer
- * order otherwise — the writer is told to put the most-durable facts
- * first, and we want the byte-cap truncation to honor that order.
- */
-function dedupeFacts(facts: string[]): string[] {
-  const normalized = facts.map(normalizeForDedup);
-  const keep = new Array<boolean>(facts.length).fill(true);
-  for (let i = 0; i < facts.length; i++) {
-    if (!keep[i]) continue;
-    for (let j = 0; j < facts.length; j++) {
-      if (i === j || !keep[j]) continue;
-      const a = normalized[i];
-      const b = normalized[j];
-      if (!a || !b) continue;
-      if (a === b || a.includes(b)) {
-        // i is at least as specific as j — drop j.
-        keep[j] = false;
-      }
-    }
-  }
-  return facts.filter((_, idx) => keep[idx]);
-}
-
-function normalizeForDedup(fact: string): string {
-  return fact
-    .toLowerCase()
-    .replace(/[\p{P}\p{S}]+/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function enforceByteCap(facts: string[]): string[] {
-  const out = [...facts];
-  const enc = new TextEncoder();
-  let bytes = 0;
-  for (const f of out) bytes += enc.encode(f).byteLength;
-  while (out.length > 0 && bytes > MEMORY_BYTE_CAP) {
-    const popped = out.pop();
-    if (popped) bytes -= enc.encode(popped).byteLength;
+function stripWrapping(text: string): string {
+  // Tolerate fenced code blocks and surrounding quotes — the prompt
+  // says no JSON / quotes / preamble, but models occasionally add
+  // them. We don't want a delightful little prose paragraph dropped
+  // because the model wrapped it in ```.
+  const fence = /^```(?:[a-zA-Z]+)?\s*([\s\S]*?)```$/.exec(text);
+  let out = fence ? fence[1].trim() : text;
+  // Strip a single matching pair of surrounding quotes.
+  if (
+    (out.startsWith('"') && out.endsWith('"')) ||
+    (out.startsWith("'") && out.endsWith("'"))
+  ) {
+    out = out.slice(1, -1).trim();
   }
   return out;
 }

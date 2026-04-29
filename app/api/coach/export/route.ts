@@ -90,8 +90,10 @@ const README_TEXT = `# 75 Proof — Coach Context Bundle
 
 This file is your full coach context, exported on request. It contains:
 
-- **memory**: durable facts the coach learned about you (CLAUDE.md-style summary).
-  Capped at ~2KB. May be null if you never opted in.
+- **memory**: a short bio paragraph the coach maintains about you. Capped at
+  600 characters. May be null if you never opted in. Older accounts may also
+  carry a legacy \`facts\` array — that gets folded into \`bio\` on the next
+  chat write.
 - **threads**: every coach chat you saved, with full transcripts.
 - **audit**: an append-only log of every memory write, purge, thread delete,
   and export so you can verify what was stored and when.
@@ -110,7 +112,8 @@ This file is your full coach context, exported on request. It contains:
     enabled: boolean,
     ttlDays: number,
     ttlOptOut: boolean,
-    facts: string[],
+    bio: string,             // active surface — short paragraph, ≤ 600 chars
+    facts: string[],         // legacy bullet list (folded into bio over time)
     updatedAt: epoch ms
   } | null,
   threads: Array<{
@@ -125,9 +128,9 @@ This file is your full coach context, exported on request. It contains:
     }>
   }>,
   audit: Array<{
-    action: "memory_write" | "memory_purge_manual" | "memory_purge_ttl"
-          | "memory_settings_changed" | "thread_delete" | "thread_create"
-          | "forget_me" | "export",
+    action: "memory_write" | "memory_edit_manual" | "memory_purge_manual"
+          | "memory_purge_ttl" | "memory_settings_changed"
+          | "thread_delete" | "thread_create" | "forget_me" | "export",
     detail: string,
     createdAt: epoch ms
   }>,
@@ -142,7 +145,7 @@ This file is your full coach context, exported on request. It contains:
 
 ## Using this elsewhere
 
-Paste the \`memory.facts\` array as a system message preamble into ChatGPT,
+Paste the \`memory.bio\` paragraph as a system message preamble into ChatGPT,
 Claude, or any other LLM to give them the same context the 75 Proof coach has.
 The threads are full chat transcripts — feed them in if you want a new model
 to pick up where the coach left off.
