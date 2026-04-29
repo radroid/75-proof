@@ -48,6 +48,14 @@ function formatDate(ts: number): string {
   });
 }
 
+function formatThreadMeta(t: {
+  messageCount: number;
+  source: string;
+  updatedAt: number;
+}): string {
+  return `${t.messageCount} message${t.messageCount === 1 ? "" : "s"} · ${SOURCE_LABEL[t.source] ?? t.source} · ${formatDate(t.updatedAt)}`;
+}
+
 export function CoachRecentsSheet({
   open,
   onClose,
@@ -157,7 +165,7 @@ export function CoachRecentsSheet({
                         {threads
                           .filter((t) => t._id === activeThreadId)
                           .map((t) => {
-                            const meta = `${t.messageCount} message${t.messageCount === 1 ? "" : "s"} · ${SOURCE_LABEL[t.source] ?? t.source} · ${formatDate(t.updatedAt)}`;
+                            const meta = formatThreadMeta(t);
                             return (
                               <CommandItem
                                 key={t._id}
@@ -185,11 +193,11 @@ export function CoachRecentsSheet({
                   )}
 
                   <CommandSeparator />
-                  <CommandGroup heading="Recent chats">
+                  <CommandGroup>
                     {threads
                       .filter((t) => t._id !== activeThreadId)
                       .map((t) => {
-                        const meta = `${t.messageCount} message${t.messageCount === 1 ? "" : "s"} · ${SOURCE_LABEL[t.source] ?? t.source} · ${formatDate(t.updatedAt)}`;
+                        const meta = formatThreadMeta(t);
                         return (
                           <CommandItem
                             key={t._id}
