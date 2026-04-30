@@ -198,7 +198,7 @@
 | SEO-7 | Meta (Facebook/Instagram) Open Graph optimization | P2 | todo | Verify OG tags render correctly in Facebook Sharing Debugger. Add `fb:app_id` if a Facebook app is created. Consider an Instagram presence linking back to the app. |
 | SEO-8 | ~~LLM & AI search optimization (LLMO)~~ | | done | Added `public/llms.txt` (plain-text site summary for LLM crawlers), 8-question FAQ accordion on landing page with native `<details>/<summary>`, and `FAQPage` JSON-LD structured data in layout.tsx `@graph`. Completed 2026-02-13. |
 | SEO-9 | Performance & Core Web Vitals | P2 | todo | Audit LCP, FID, CLS on the homepage. Optimize images (WebP/AVIF, proper sizing), defer non-critical JS, ensure fonts don't cause layout shift. Good CWV directly impacts search ranking. |
-| SEO-10 | Create `/about` page for discoverability | P2 | todo | A public, crawlable page explaining 75 Proof, the 75 HARD challenge, the team, and the open-source mission. Rich keyword content for both traditional search and LLM retrieval. |
+| SEO-10 | ~~Create `/about` page for discoverability~~ | | done | Public `/about` route with the evolution-from-75-HARD-to-habit-OS story, mission cards, a slice of the live roadmap (with link to the full BACKLOG), and an AboutPage JSON-LD node added to the global @graph. Sitemap updated. Completed 2026-04-30. |
 | SEO-11 | Social sharing preview for user milestones | P3 | todo | When users share milestones (Day 30, Day 75, etc.), generate dynamic OG images with their stats. Use Next.js `ImageResponse` (og) API or a Cloudflare Worker for on-the-fly image generation. |
 
 ---
@@ -323,6 +323,7 @@ A Remotion-powered animated walkthrough that plays after a new user completes on
 | ~~PD-1~~ | Progress dashboard redesign + Friends Phase 1/2 merge | 2026-04 (PR #21) |
 | ~~PD-8~~ | User-authored identity statement (onboarding step + identity card) | 2026-04 (PR #21) |
 | ~~F-10~~ | Progress page restart history (folded into PD-1 selector + Attempt #) | 2026-04 (PR #21) |
+| ~~SEO-10~~ | About page for discoverability (`/about` + AboutPage JSON-LD + sitemap) | 2026-04-30 |
 
 ---
 

@@ -200,6 +200,25 @@ export default function RootLayout({
                     },
                   ],
                 },
+                {
+                  "@type": "AboutPage",
+                  name: "About 75 Proof",
+                  url: "https://75.createplus.club/about",
+                  description:
+                    "75 Proof is a free, open-source, privacy-first habit tracker. It started as a 75 HARD challenge tracker and grew into a general-purpose habit and routine tool, built by Create+ Club and the contributor community.",
+                  isPartOf: {
+                    "@type": "WebSite",
+                    url: "https://75.createplus.club",
+                  },
+                  about: {
+                    "@type": "SoftwareApplication",
+                    name: "75 Proof",
+                  },
+                  publisher: {
+                    "@type": "Organization",
+                    name: "Create+ Club",
+                  },
+                },
               ],
             }),
           }}
