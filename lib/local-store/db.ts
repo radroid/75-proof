@@ -8,7 +8,7 @@
  * them via `any`/`string` so the lack of Convex branding is invisible.
  */
 
-export const LOCAL_DB_KEY = "75proof:local:v1";
+export const LOCAL_DB_KEY = "earned:local:v1";
 
 export interface LocalSharingPrefs {
   showStreak: boolean;

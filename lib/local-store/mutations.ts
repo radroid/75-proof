@@ -157,10 +157,7 @@ export function completeOnboarding(args: CompleteOnboardingArgs): string {
       userId: user._id,
       type: "challenge_started",
       challengeId,
-      message:
-        finalDaysTotal === 75
-          ? "Started the 75 HARD challenge!"
-          : `Started a ${finalDaysTotal}-day challenge!`,
+      message: `Started a ${finalDaysTotal}-day challenge!`,
       createdAt: new Date().toISOString(),
     });
   });
@@ -333,10 +330,7 @@ export function syncChallengeStatus(args: {
           type: "challenge_completed",
           challengeId: challenge._id,
           dayNumber: daysTotal,
-          message:
-            daysTotal === 75
-              ? "Completed the 75 HARD challenge!"
-              : `Completed the ${daysTotal}-day challenge!`,
+          message: `Completed the ${daysTotal}-day challenge!`,
           createdAt: new Date().toISOString(),
         });
         return;
@@ -632,9 +626,7 @@ export function resetKeepingSetup(args: {
     }
     const startMessage = old.isHabitTracker
       ? "Started a fresh habit tracker!"
-      : carriedDaysTotal === 75
-        ? "Started the 75 HARD challenge!"
-        : `Started a ${carriedDaysTotal}-day challenge!`;
+      : `Started a ${carriedDaysTotal}-day challenge!`;
     draft.activityFeed.push({
       _id: genId("feed"),
       _creationTime: Date.now(),

@@ -48,11 +48,11 @@ const PATTERNS: Record<HapticType, number | number[]> = {
 const IOS_CELEBRATION_TAPS = 6;
 const IOS_CELEBRATION_INTERVAL_MS = 70;
 
-const PREF_STORAGE_KEY = "75proof_haptics_enabled";
+const PREF_STORAGE_KEY = "earned_haptics_enabled";
 // Separate from the on/off preference: this tracks whether we've shown the
 // one-time iOS prompt yet, so users who explicitly toggle off in Settings
 // don't get re-prompted, and users who've been asked don't get nagged.
-const PROMPT_STORAGE_KEY = "75proof_haptics_prompt_shown";
+const PROMPT_STORAGE_KEY = "earned_haptics_prompt_shown";
 
 let vibrateSupportCache: boolean | null = null;
 let iosCache: boolean | null = null;

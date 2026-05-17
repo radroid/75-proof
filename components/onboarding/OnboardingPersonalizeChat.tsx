@@ -26,7 +26,7 @@ interface Props {
 const SUGGESTED_PROMPTS = [
   "Desk worker, 30 min/day, hate cardio. Build me something I can do at home.",
   "Want to lose 10 lb in 3 months. I have a gym and 1 hour each morning.",
-  "Burnt out from 75 HARD. Need a softer 60-day reset focused on sleep + mood.",
+  "Burnt out from a strict program. Need a softer 60-day reset focused on sleep + mood.",
 ];
 
 const STARTER_MESSAGE =

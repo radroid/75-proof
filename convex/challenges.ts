@@ -188,10 +188,7 @@ export const startChallenge = mutation({
       currentChallengeId: challengeId,
     });
 
-    const startMessage =
-      daysTotal === 75
-        ? "Started the 75 HARD challenge!"
-        : `Started a ${daysTotal}-day challenge!`;
+    const startMessage = `Started a ${daysTotal}-day challenge!`;
     await ctx.db.insert("activityFeed", {
       userId: args.userId,
       type: "challenge_started",
@@ -233,10 +230,7 @@ export const advanceDay = mutation({
         await ctx.db.patch(challenge.userId, { longestStreak: daysTotal });
       }
 
-      const completionMessage =
-        daysTotal === 75
-          ? "Completed the 75 HARD challenge! 🎉"
-          : `Completed the ${daysTotal}-day challenge! 🎉`;
+      const completionMessage = `Completed the ${daysTotal}-day challenge! 🎉`;
       await ctx.db.insert("activityFeed", {
         userId: challenge.userId,
         type: "challenge_completed",
@@ -254,7 +248,7 @@ export const advanceDay = mutation({
       const milestones = [7, 14, 21, 30, 45, 60];
       if (milestones.includes(newDay - 1)) {
         const milestoneSuffix =
-          daysTotal === 75 ? "of 75 HARD" : daysTotal !== null ? `of ${daysTotal}` : "";
+          daysTotal !== null ? `of ${daysTotal}` : "";
         await ctx.db.insert("activityFeed", {
           userId: challenge.userId,
           type: "milestone",
@@ -418,10 +412,7 @@ export const checkChallengeStatus = mutation({
           await ctx.db.patch(challenge.userId, { longestStreak: daysTotal });
         }
 
-        const completionMessage =
-          daysTotal === 75
-            ? "Completed the 75 HARD challenge!"
-            : `Completed the ${daysTotal}-day challenge!`;
+        const completionMessage = `Completed the ${daysTotal}-day challenge!`;
         await ctx.db.insert("activityFeed", {
           userId: challenge.userId,
           type: "challenge_completed",
@@ -862,9 +853,7 @@ export const resetKeepingSetup = mutation({
 
     const startMessage = carriedIsHabitTracker
       ? "Started a fresh habit tracker!"
-      : carriedDaysTotal === 75
-        ? "Started the 75 HARD challenge!"
-        : `Started a ${carriedDaysTotal}-day challenge!`;
+      : `Started a ${carriedDaysTotal}-day challenge!`;
     await ctx.db.insert("activityFeed", {
       userId: oldChallenge.userId,
       type: "challenge_started",

@@ -112,7 +112,7 @@ export function HapticsPermissionPrompt() {
             <DialogTitle>Enable haptics?</DialogTitle>
           </div>
           <DialogDescription className="pt-2">
-            75 Proof can buzz when you check off habits, hit streaks, and tap
+            earned can buzz when you check off habits, hit streaks, and tap
             through the app. You can change this any time in Settings.
           </DialogDescription>
         </DialogHeader>

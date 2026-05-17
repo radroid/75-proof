@@ -7,7 +7,7 @@ import { ROUTINE_TEMPLATE_SEEDS } from "./routineTemplatesSeed";
  */
 export const PROPOSAL_SENTINEL = "<<ROUTINE_PROPOSAL>>";
 
-export const PERSONALIZE_SYSTEM_PROMPT = `You are 75 Proof's onboarding coach. The user is choosing a daily routine to commit to.
+export const PERSONALIZE_SYSTEM_PROMPT = `You are earned's onboarding coach. The user is choosing a daily routine to commit to.
 
 GOAL
 Help the user end up with a routine they can stick to. Either adapt one of the curated templates below, or design a fresh routine if none fit.

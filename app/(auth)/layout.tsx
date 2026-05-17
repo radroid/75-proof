@@ -17,11 +17,11 @@ export default function AuthLayout({
     >
       <Link
         href="/"
-        aria-label="75 Proof — back to home"
+        aria-label="earned — back to home"
         className="mb-6 inline-flex min-h-[44px] items-center justify-center rounded-md px-3 py-2 text-2xl font-black text-foreground touch-manipulation transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         style={{ fontFamily: "var(--font-heading)" }}
       >
-        75 Proof
+        earned
       </Link>
 
       {children}

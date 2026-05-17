@@ -2,7 +2,7 @@
 
 // Bump this version string to force existing clients to drop old caches
 // and re-fetch the latest precache manifest on activate.
-const CACHE_NAME = "75proof-v4";
+const CACHE_NAME = "earned-v1";
 const OFFLINE_URL = "/offline";
 
 // App shell assets to pre-cache on install. Everything here must be
@@ -157,7 +157,7 @@ self.addEventListener("push", (event) => {
   const defaultBadge = "/icon-192.png";
 
   let payload = {
-    title: "75 Proof",
+    title: "earned",
     body: "You have a new reminder.",
     icon: defaultIcon,
     badge: defaultBadge,
