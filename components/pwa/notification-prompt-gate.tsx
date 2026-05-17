@@ -12,7 +12,7 @@ import { LocalNotificationPrompt } from "./local-notification-prompt";
 
 // Track dashboard visits separately from the install prompt so both prompts
 // can coexist without interfering.
-const VISITED_KEY = "75proof_notif_dashboard_visited";
+const VISITED_KEY = "earned_notif_dashboard_visited";
 
 function useHasVisitedDashboardBefore(onDashboard: boolean): boolean {
   const [visitedBefore, setVisitedBefore] = useState(false);

@@ -9,7 +9,7 @@ import { useGuest } from "@/components/guest-provider";
 import { useLocalUser } from "@/lib/local-store/hooks";
 import { InstallPrompt } from "./install-prompt";
 
-const VISITED_KEY = "75proof_dashboard_visited";
+const VISITED_KEY = "earned_dashboard_visited";
 
 // Engagement heuristic: only prompt after the user has reached the dashboard
 // at least once AND is past onboarding. First visit just records the flag so

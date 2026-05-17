@@ -81,7 +81,7 @@ export async function GET() {
     status: 200,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Content-Disposition": `attachment; filename="75proof-coach-context-${
+      "Content-Disposition": `attachment; filename="earned-coach-context-${
         new Date().toISOString().split("T")[0]
       }.json"`,
       // Don't let CDNs cache user-specific data.
@@ -90,7 +90,7 @@ export async function GET() {
   });
 }
 
-const README_TEXT = `# 75 Proof — Coach Context Bundle
+const README_TEXT = `# earned — Coach Context Bundle
 
 This file is your full coach context, exported on request. It contains:
 
@@ -151,7 +151,7 @@ This file is your full coach context, exported on request. It contains:
 ## Using this elsewhere
 
 Paste the \`memory.bio\` paragraph as a system message preamble into ChatGPT,
-Claude, or any other LLM to give them the same context the 75 Proof coach has.
+Claude, or any other LLM to give them the same context the earned coach has.
 For pre-migration accounts (where \`memory.bio\` is empty but \`memory.facts\`
 is populated), fold \`memory.facts\` into a paragraph yourself and use that
 instead — the coach will migrate the array into a real bio on its next chat
@@ -160,7 +160,7 @@ model to pick up where the coach left off.
 
 ## Privacy
 
-This file lives on your machine the moment you download it. 75 Proof keeps the
+This file lives on your machine the moment you download it. earned keeps the
 same data on its servers (subject to the TTL you've configured); use the
 "Forget me" button in settings to purge it server-side.
 `;

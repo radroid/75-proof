@@ -21,7 +21,7 @@ import { Doc, Id } from "./_generated/dataModel";
 function ensureVapidConfigured(): boolean {
   const publicKey = process.env.VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT || "mailto:admin@75proof.app";
+  const subject = process.env.VAPID_SUBJECT || "mailto:admin@earned.app";
   if (!publicKey || !privateKey) {
     // eslint-disable-next-line no-console
     console.warn(
@@ -123,7 +123,7 @@ export function buildReminderPayload(
   platform: Platform
 ): PushPayload {
   const copy = reminderCopy(slot);
-  const tag = `75proof-${slot}-${todayTagSuffix()}`;
+  const tag = `earned-${slot}-${todayTagSuffix()}`;
   const data = { url: "/dashboard", slot };
 
   if (platform === "ios") {

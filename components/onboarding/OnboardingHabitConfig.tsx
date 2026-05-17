@@ -38,9 +38,9 @@ export function OnboardingHabitConfig({
   const [newUnit, setNewUnit] = useState("");
   const [newCategory, setNewCategory] = useState("fitness");
 
-  // Strict catalog templates (75 HARD, 30-Day Yoga, etc.) lock the habit
-  // list — the habits panel renders read-only. AI-generated routines and
-  // unknown slugs default to fully customizable so users can tune them.
+  // Strict catalog templates lock the habit list — the habits panel renders
+  // read-only. AI-generated routines and unknown slugs default to fully
+  // customizable so users can tune them.
   const isStrictCatalog =
     isKnownTemplate(state.templateSlug) &&
     getTemplateBySlug(state.templateSlug).strictMode;

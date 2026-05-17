@@ -32,7 +32,7 @@ export function OnboardingWelcome({ state, updateState, onNext }: Props) {
       {/* Welcome header */}
       <div className="text-center space-y-3">
         <h1 className="text-3xl font-bold tracking-tight">
-          Welcome to 75 Proof
+          Welcome to earned
         </h1>
         <p className="text-muted-foreground text-lg max-w-md mx-auto">
           Let&apos;s set up your challenge. This takes about 2 minutes.
@@ -79,7 +79,7 @@ export function OnboardingWelcome({ state, updateState, onNext }: Props) {
               <div>
                 <h3 className="font-semibold text-sm">Health Advisory</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  75 HARD is a demanding physical and mental challenge. Please
+                  Some routines are physically and mentally demanding. Please
                   consult a healthcare professional before starting, especially
                   if you have any pre-existing conditions.
                 </p>

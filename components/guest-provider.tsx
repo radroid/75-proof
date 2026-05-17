@@ -19,7 +19,7 @@ import {
   useLocalAllEntriesForChallenge,
 } from "@/lib/local-store/hooks";
 
-const LOCAL_OPT_IN_KEY = "75proof:local:opted-in";
+const LOCAL_OPT_IN_KEY = "earned:local:opted-in";
 
 interface GuestContextValue {
   /**

@@ -209,7 +209,7 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
                 letterSpacing: "-0.02em",
               }}
             >
-              The 75 Proof Daily
+              The earned Daily
             </h1>
             <p className="mt-1 text-[10px] md:text-xs tracking-[0.28em] md:tracking-[0.35em] uppercase text-muted-foreground">
               A Record of Discipline & Transformation
@@ -332,8 +332,8 @@ export function BroadsheetDashboard({ user, challenge }: ThemedDashboardProps) {
           className="mt-6 md:mt-10 pt-4 pb-2 text-center border-t-[3px] border-foreground"
         >
           <p className="text-[9px] sm:text-[10px] tracking-[0.18em] sm:tracking-[0.3em] uppercase text-muted-foreground leading-relaxed">
-            <span className="hidden sm:inline">Published continuously since Day 1 &mdash; All rights reserved &mdash; 75 Proof Daily</span>
-            <span className="sm:hidden">Published since Day 1 &middot; 75 Proof Daily</span>
+            <span className="hidden sm:inline">Published continuously since Day 1 &mdash; All rights reserved &mdash; earned Daily</span>
+            <span className="sm:hidden">Published since Day 1 &middot; earned Daily</span>
           </p>
         </motion.footer>
       </div>

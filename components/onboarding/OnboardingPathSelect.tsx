@@ -32,7 +32,7 @@ const PATH_OPTIONS: PathOption[] = [
   {
     id: "popular",
     title: "Browse popular routines",
-    blurb: "Pick from 80+ curated programs — 75 HARD, Couch-to-5K, Atomic Habits, and more.",
+    blurb: "Pick from curated programs — strict daily challenges and lighter habit builds.",
     bestFor: "Best when you want a proven plan",
     Icon: LibraryBig,
     accent: "text-sky-600 dark:text-sky-400",

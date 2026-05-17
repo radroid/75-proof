@@ -13,7 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const SIDEBAR_STORAGE_KEY = "75hard-sidebar-open";
+const SIDEBAR_STORAGE_KEY = "earned-sidebar-open";
 const SIDEBAR_EXPANDED_WIDTH = 260;
 const SIDEBAR_COLLAPSED_WIDTH = 60;
 

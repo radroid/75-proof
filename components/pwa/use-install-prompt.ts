@@ -10,7 +10,7 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
-const DISMISS_KEY = "75proof_install_prompt_dismissed_at";
+const DISMISS_KEY = "earned_install_prompt_dismissed_at";
 const DISMISS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**

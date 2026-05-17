@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "75 Proof - Do Hard Stuff. Feel Amazing.";
+export const alt = "earned";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -19,7 +19,6 @@ export default function OgImage() {
           fontFamily: "system-ui, sans-serif",
         }}
       >
-        {/* Accent bar */}
         <div
           style={{
             position: "absolute",
@@ -31,7 +30,6 @@ export default function OgImage() {
           }}
         />
 
-        {/* Main content */}
         <div
           style={{
             display: "flex",
@@ -40,7 +38,6 @@ export default function OgImage() {
             gap: 24,
           }}
         >
-          {/* Logo / Title */}
           <div
             style={{
               fontSize: 96,
@@ -50,10 +47,9 @@ export default function OgImage() {
               lineHeight: 1,
             }}
           >
-            75 Proof
+            earned
           </div>
 
-          {/* Tagline */}
           <div
             style={{
               fontSize: 32,
@@ -62,39 +58,8 @@ export default function OgImage() {
               letterSpacing: "0.02em",
             }}
           >
-            Do Hard Stuff. Feel Amazing.
+            Show up. Every day.
           </div>
-
-          {/* Description */}
-          <div
-            style={{
-              fontSize: 22,
-              color: "#1a1a1a",
-              opacity: 0.6,
-              maxWidth: 700,
-              textAlign: "center",
-              lineHeight: 1.5,
-            }}
-          >
-            Track your 75 HARD challenge — workouts, water, reading, and
-            progress photos
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 32,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            fontSize: 18,
-            color: "#1a1a1a",
-            opacity: 0.4,
-          }}
-        >
-          75.createplus.club
         </div>
       </div>
     ),

@@ -16,7 +16,7 @@ export default function OnboardingLayout({
           <div className="h-7 w-7 bg-primary rounded-lg flex items-center justify-center">
             <Dumbbell className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="font-bold text-foreground text-base">75 Proof</span>
+          <span className="font-bold text-foreground text-base">earned</span>
         </Link>
       </header>
 

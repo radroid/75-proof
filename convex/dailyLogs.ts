@@ -218,14 +218,11 @@ export const markDayComplete = mutation({
       throw new Error("Challenge not found");
     }
 
-    // Create activity feed entry. Keep "75 HARD" only when the challenge is
-    // exactly the canonical 75-day program; otherwise describe the chosen
-    // length, or just the day number for endless habit trackers.
+    // Create activity feed entry describing the day, or just the day number
+    // for endless habit trackers.
     const message = challenge.isHabitTracker
       ? `Completed Day ${args.dayNumber}!`
-      : (challenge.daysTotal ?? 75) === 75
-        ? `Completed Day ${args.dayNumber} of 75 HARD!`
-        : `Completed Day ${args.dayNumber} of ${challenge.daysTotal}!`;
+      : `Completed Day ${args.dayNumber} of ${challenge.daysTotal ?? 75}!`;
     await ctx.db.insert("activityFeed", {
       userId: log.userId,
       type: "day_completed",

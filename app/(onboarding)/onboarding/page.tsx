@@ -37,8 +37,8 @@ import { OnboardingReview } from "@/components/onboarding/OnboardingReview";
 import { HeroSkeleton } from "@/components/ui/skeleton-enhanced";
 import posthog from "posthog-js";
 
-const STORAGE_KEY = "75hard-onboarding-state";
-const STEP_KEY = "75hard-onboarding-step";
+const STORAGE_KEY = "earned-onboarding-state";
+const STEP_KEY = "earned-onboarding-step";
 
 function loadState(): OnboardingState {
   if (typeof window === "undefined") return INITIAL_ONBOARDING_STATE;
@@ -107,7 +107,7 @@ export default function OnboardingPage() {
       : DEFAULT_TEMPLATE_SLUG;
     // When the previous run captured habits, reuse them. Otherwise derive
     // from the seeded template — falling back to INITIAL_ONBOARDING_STATE
-    // would leave a Yoga-slug user staring at 75 HARD's habit list.
+    // would leave a user staring at a different template's habit list.
     const seededHabits =
       previousState.habits.length > 0
         ? previousState.habits
@@ -167,11 +167,11 @@ export default function OnboardingPage() {
     setState((s) => ({ ...s, ...partial }));
   }, []);
 
-  // Built-in templates (75 HARD, 30-Day Yoga) hide the duration step and
+  // Built-in templates with a locked duration hide the duration step and
   // pin daysTotal to the template's value. AI-generated and unknown slugs
   // resolve to `null` here so they fall through to the user-chosen
-  // duration — `getTemplateBySlug` would silently default to 75 HARD and
-  // make a personalized 30-day plan look like a strict 75-day challenge.
+  // duration — `getTemplateBySlug` would silently default to the catalog
+  // entry and make a personalized 30-day plan look like a strict challenge.
   const selectedTemplate = isKnownTemplate(state.templateSlug)
     ? getTemplateBySlug(state.templateSlug)
     : null;
@@ -294,8 +294,8 @@ export default function OnboardingPage() {
       // Locked-duration built-in templates always use the template's value.
       // AI-generated and unknown slugs (e.g. "ai-generated:*") fall through
       // to the user-picked duration and the user-chosen setupTier so we
-      // don't silently coerce a personalized plan into the 75 HARD strict
-      // 75-day shape.
+      // don't silently coerce a personalized plan into a strict template's
+      // fixed shape.
       const knownTemplate = isKnownTemplate(state.templateSlug)
         ? getTemplateBySlug(state.templateSlug)
         : null;

@@ -1,5 +1,5 @@
 /**
- * Standard 75 HARD habit definitions.
+ * Standard daily-challenge habit definitions.
  * Used as the default set when creating a new challenge through onboarding.
  */
 

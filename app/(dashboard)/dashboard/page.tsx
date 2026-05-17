@@ -261,10 +261,10 @@ function NoActiveChallenge() {
             >
               <Rocket className="h-10 w-10 text-primary" />
             </motion.div>
-            <h2 className="text-2xl font-bold">Ready to Transform?</h2>
+            <h2 className="text-2xl font-bold">Ready to start?</h2>
             <p className="mt-3 text-muted-foreground max-w-md mx-auto">
-              Begin your 75 HARD journey today. Track your workouts, water intake,
-              reading, and build unbreakable mental toughness.
+              Pick a routine and show up for it every day. Track your habits and
+              build the streak.
             </p>
             <Button
               onClick={() => setShowModal(true)}
@@ -272,7 +272,7 @@ function NoActiveChallenge() {
               variant="outline"
               className="mt-8"
             >
-              Start 75 HARD Challenge
+              Start a challenge
             </Button>
           </CardContent>
         </Card>

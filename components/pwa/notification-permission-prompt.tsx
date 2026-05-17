@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePushSubscription } from "./use-push-subscription";
 
-const DISMISS_KEY = "75proof_notif_prompt_dismissed_at";
+const DISMISS_KEY = "earned_notif_prompt_dismissed_at";
 const DISMISS_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
 function readDismissedAt(): number | null {

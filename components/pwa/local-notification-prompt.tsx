@@ -10,7 +10,7 @@ import {
   type LocalPermissionStatus,
 } from "@/lib/local-store/notifications";
 
-const DISMISS_KEY = "75proof_local_notif_prompt_dismissed_at";
+const DISMISS_KEY = "earned_local_notif_prompt_dismissed_at";
 const DISMISS_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
 function readDismissedAt(): number | null {

@@ -70,7 +70,7 @@ export function InstallPrompt() {
               />
             </div>
             <DialogTitle>
-              {isIOS ? "Add to Home Screen" : "Install 75 Proof"}
+              {isIOS ? "Add to Home Screen" : "Install earned"}
             </DialogTitle>
           </div>
           <DialogDescription className="pt-2" asChild>
@@ -119,7 +119,7 @@ export function InstallPrompt() {
               </ol>
             ) : (
               <span>
-                Add 75 Proof to your home screen for quick access and a fullscreen experience.
+                Add earned to your home screen for quick access and a fullscreen experience.
               </span>
             )}
           </DialogDescription>
