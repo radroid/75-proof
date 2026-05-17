@@ -1,11 +1,28 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-const FONT_LINK =
-  "https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700;800;900&family=Caveat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap";
-
 const ABOUT_DESCRIPTION =
   "75 Proof is a free, open-source, privacy-first habit tracker. It started as a 75 HARD challenge tracker and grew into a general-purpose habit and routine tool, built by Create+ Club and the contributor community.";
+
+const ABOUT_PAGE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  name: "About 75 Proof",
+  url: "https://75.createplus.club/about",
+  description: ABOUT_DESCRIPTION,
+  isPartOf: {
+    "@type": "WebSite",
+    url: "https://75.createplus.club",
+  },
+  about: {
+    "@type": "SoftwareApplication",
+    name: "75 Proof",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "Create+ Club",
+  },
+} as const;
 
 export const metadata: Metadata = {
   title: "About",
@@ -84,7 +101,7 @@ const MISSION_CARDS: Array<{
   {
     color: "#FFFBF0",
     title: "Privacy first",
-    body: "No ads. No third-party trackers. We don't sell your habits or your progress photos. Your data is yours — period.",
+    body: "No ads. We minimise third-party tracking, we don't sell your habits or your progress photos, and what telemetry we do collect (PostHog) powers product decisions only. Your data is yours.",
     textColor: "#1a1a1a",
     bordered: true,
     rotate: "1deg",
@@ -106,8 +123,8 @@ const EVOLUTION_BEATS: Array<{ tag: string; title: string; body: string }> = [
   },
   {
     tag: "v2 — IT GREW UP",
-    title: "Any habit, any cadence",
-    body: "Users wanted to keep using it after Day 75 — for daily reading, weekly long runs, monthly reviews, yearly goals. So we generalised the engine. The same checklist, streaks, friends, and AI coach now back any routine you can describe.",
+    title: "Any daily habit",
+    body: "Users wanted to keep using it after Day 75. So we generalised the engine: the same checklist, streaks, friends, and AI coach now back any daily routine you can describe. Non-daily cadences (weekly, monthly, yearly) are on the roadmap.",
   },
   {
     tag: "v3 — IT'S YOURS",
@@ -177,7 +194,13 @@ export default function AboutPage() {
       className="min-h-screen overflow-x-hidden selection:bg-[#FF6154]/20"
       style={{ backgroundColor: "#FFFBF0", color: "#1a1a1a" }}
     >
-      <link rel="stylesheet" href={FONT_LINK} />
+      {/* Page-specific structured data — AboutPage schema belongs on the
+          page it describes, not in the site-wide layout @graph. The JSON
+          payload is fully static, so React's text-escaping of script
+          children is safe here. */}
+      <script type="application/ld+json">
+        {JSON.stringify(ABOUT_PAGE_JSON_LD)}
+      </script>
 
       {/* Nav */}
       <nav className="relative z-20 flex items-center justify-between px-6 md:px-10 py-6">
@@ -325,7 +348,8 @@ export default function AboutPage() {
             style={{ fontFamily: "'Crimson Pro', Georgia, serif" }}
           >
             Miss any one task and you restart at Day 1. 75 Proof enforces this
-            automatically — there&apos;s no way to skip or backfill. That&apos;s
+            automatically: you have a short two-day backfill window to clean up
+            forgotten entries, and after that the day is locked. That&apos;s
             the whole point.
           </p>
         </div>
