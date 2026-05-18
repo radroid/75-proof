@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{ width:700px; height:240px; padding:24px 28px; box-sizing:border-box; background:var(--bg); border:1px solid var(--earned-cream-dark); display:flex; gap:20px; align-items:stretch }
+  .col{ display:flex; flex-direction:column; gap:8px; flex:1 }
+  .swatch{ flex:1; border-radius:0; border:1px solid rgba(31,31,29,.15); display:flex; flex-direction:column; justify-content:flex-end; padding:10px 12px; min-height:80px }
+  .swatch .name{ font-family:var(--font-sans); font-weight:600; font-size:13px }
+  .swatch .hex{ font-family:var(--font-mono); font-size:11px; opacity:.7 }
+  .label{ font-family:var(--font-sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted); font-weight:600; margin-bottom:6px}
+</style></head>
+<body>
+<div class="card">
+  <div class="col">
+    <div class="label">Paper · cream family</div>
+    <div class="swatch" style="background:var(--earned-cream-light); color:var(--earned-ink)"><div class="name">cream-light</div><div class="hex">#F9F3E1</div></div>
+    <div class="swatch" style="background:var(--earned-cream); color:var(--earned-ink)"><div class="name">cream</div><div class="hex">#F4ECD8</div></div>
+    <div class="swatch" style="background:var(--earned-cream-dark); color:var(--earned-ink)"><div class="name">cream-dark</div><div class="hex">#E8DEC4</div></div>
+  </div>
+  <div class="col">
+    <div class="label">Ink · text family</div>
+    <div class="swatch" style="background:var(--earned-ink); color:var(--earned-cream-light)"><div class="name">ink</div><div class="hex">#1F1F1D</div></div>
+    <div class="swatch" style="background:var(--earned-ink-soft); color:var(--earned-cream-light)"><div class="name">ink-soft</div><div class="hex">#3A3A36</div></div>
+    <div class="swatch" style="background:rgba(31,31,29,.32); color:var(--earned-cream-light)"><div class="name">fg-faint</div><div class="hex">rgba 32%</div></div>
+  </div>
+</div>
+</body></html>

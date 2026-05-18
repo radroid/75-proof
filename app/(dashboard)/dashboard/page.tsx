@@ -34,6 +34,7 @@ import { ArcticDashboard } from "@/components/themes/arctic-dashboard";
 import { BroadsheetDashboard } from "@/components/themes/broadsheet-dashboard";
 import { MilitaryDashboard } from "@/components/themes/military-dashboard";
 import { ZenDashboard } from "@/components/themes/zen-dashboard";
+import { EarnedDashboard } from "@/components/themes/earned-dashboard";
 
 import type { ThemePersonality } from "@/lib/themes";
 import type { Doc } from "@/convex/_generated/dataModel";
@@ -46,6 +47,7 @@ const dashboardComponents: Record<
   broadsheet: BroadsheetDashboard,
   military: MilitaryDashboard,
   zen: ZenDashboard,
+  earned: EarnedDashboard,
 };
 
 export default function DashboardPage() {

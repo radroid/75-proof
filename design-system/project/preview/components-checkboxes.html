@@ -1,0 +1,67 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{ width:700px; height:200px; padding:28px; box-sizing:border-box; background:var(--bg); border:1px solid var(--earned-cream-dark) }
+  .label{ font-family:var(--font-sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted); font-weight:600; margin-bottom:20px }
+  .row{ display:flex; gap:36px; align-items:center }
+  .cb{ position:relative; width:36px; height:36px }
+  .cb svg{ position:absolute; inset:0; width:100%; height:100% }
+  .name{ font-family:var(--font-sans); font-size:11px; font-weight:600; text-align:center; margin-top:10px }
+  .item{ display:flex; flex-direction:column; align-items:center }
+</style></head>
+<body>
+<div class="card">
+  <div class="label">Checkboxes · hand-drawn, three states</div>
+  <div class="row">
+    <div class="item">
+      <div class="cb">
+        <svg viewBox="0 0 36 36"><path d="M4 5 C 14 3, 28 4, 33 6 C 33.5 16, 33 26, 32 32 C 22 33, 10 33, 4 31 C 3 22, 3.5 12, 4 5 Z" fill="none" stroke="#1F1F1D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="name">Empty</div>
+    </div>
+    <div class="item">
+      <div class="cb">
+        <svg viewBox="0 0 36 36">
+          <path d="M4 5 C 14 3, 28 4, 33 6 C 33.5 16, 33 26, 32 32 C 22 33, 10 33, 4 31 C 3 22, 3.5 12, 4 5 Z" fill="none" stroke="#1F1F1D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 18 C 11 22, 13 26, 16 28 C 22 22, 26 14, 32 6" fill="none" stroke="#0090D8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="name">Checked</div>
+    </div>
+    <div class="item">
+      <div class="cb" style="width:44px; height:44px; position:relative">
+        <!-- ink-stroke box -->
+        <svg viewBox="0 0 36 36" style="position:absolute; inset:4px; width:36px; height:36px">
+          <path d="M4 5 C 14 3, 28 4, 33 6 C 33.5 16, 33 26, 32 32 C 22 33, 10 33, 4 31 C 3 22, 3.5 12, 4 5 Z" fill="none" stroke="#1F1F1D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <!-- gold star sticker, oversized + tilted, sits on top -->
+        <svg viewBox="0 0 100 100" style="position:absolute; inset:0; width:44px; height:44px; transform:rotate(-8deg)">
+          <path d="M50 8 L61 38 L93 39 L67 58 L77 90 L50 72 L23 90 L33 58 L7 39 L39 38 Z" fill="#D8A830" stroke="#1F1F1D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M28 26 Q34 22 40 27" fill="none" stroke="#FFF8E1" stroke-width="3.2" stroke-linecap="round" opacity="0.95"/>
+        </svg>
+      </div>
+      <div class="name">Star earned</div>
+    </div>
+    <div class="item">
+      <div class="cb">
+        <svg viewBox="0 0 36 36">
+          <path d="M4 5 C 14 3, 28 4, 33 6 C 33.5 16, 33 26, 32 32 C 22 33, 10 33, 4 31 C 3 22, 3.5 12, 4 5 Z" fill="none" stroke="#1F1F1D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 10 L28 27 M28 10 L9 27" fill="none" stroke="#C75F4A" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="name">Missed</div>
+    </div>
+    <div class="item">
+      <div class="cb">
+        <svg viewBox="0 0 36 36">
+          <path d="M4 5 C 14 3, 28 4, 33 6 C 33.5 16, 33 26, 32 32 C 22 33, 10 33, 4 31 C 3 22, 3.5 12, 4 5 Z" fill="none" stroke="#7A8C6B" stroke-width="2" stroke-dasharray="3 3" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="18" y="24" text-anchor="middle" font-family="Caveat, cursive" font-size="22" fill="#7A8C6B">z</text>
+        </svg>
+      </div>
+      <div class="name">Rest day</div>
+    </div>
+  </div>
+</div>
+</body></html>

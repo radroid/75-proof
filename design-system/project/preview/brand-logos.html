@@ -1,0 +1,31 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{
+    width:700px; height:200px; background:var(--bg);
+    display:flex; align-items:center; gap:24px;
+    padding:24px 28px; box-sizing:border-box;
+    border:1px solid var(--earned-cream-dark);
+  }
+  .pane{display:flex; align-items:center; justify-content:center; flex:0 0 auto}
+  .pane.cream{background:var(--earned-cream); width:200px; height:152px; border:1px solid var(--earned-cream-dark)}
+  .pane.blue{background:var(--earned-sky); width:200px; height:152px}
+  .pane img{max-width:78%; max-height:78%; object-fit:contain}
+  .meta{display:flex; flex-direction:column; gap:6px}
+  .meta .label{font-family:var(--font-sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted); font-weight:600}
+  .meta .name{font-family:var(--font-hand); font-size:34px; color:var(--fg); line-height:1.05}
+  .meta .desc{font-family:var(--font-sans); font-size:13px; color:var(--fg-2); max-width:240px}
+</style></head>
+<body>
+<div class="card">
+  <div class="pane cream"><img src="../assets/logo-mark.png" alt="Earned mark"></div>
+  <div class="pane blue"><img src="../assets/logo-wordmark.png" alt="Earned wordmark"></div>
+  <div class="meta">
+    <div class="label">Logo · primary lockups</div>
+    <div class="name">Earned</div>
+    <div class="desc">Mark on cream and wordmark on sky-blue. Always preserve the gold star — never recolor it.</div>
+  </div>
+</div>
+</body></html>

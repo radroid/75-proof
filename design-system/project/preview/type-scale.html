@@ -1,0 +1,24 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{ width:700px; height:380px; padding:22px 28px; box-sizing:border-box; background:var(--bg); border:1px solid var(--earned-cream-dark); display:flex; flex-direction:column; justify-content:space-between }
+  .row{ display:flex; align-items:baseline; gap:16px; border-bottom:1px dashed rgba(31,31,29,.12); padding:6px 0 }
+  .row:last-child{ border:none }
+  .tag{ width:120px; font-family:var(--font-sans); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--fg-muted); font-weight:600 }
+  .size{ width:48px; font-family:var(--font-mono); font-size:11px; color:var(--fg-muted) }
+  .sample{ flex:1 }
+</style></head>
+<body>
+<div class="card">
+  <div class="row"><div class="tag">Display hand</div><div class="size">88px</div><div class="sample t-display-hand">12</div></div>
+  <div class="row"><div class="tag">Display</div><div class="size">54px</div><div class="sample t-display">12</div></div>
+  <div class="row"><div class="tag">H1 hand</div><div class="size">40px</div><div class="sample t-h1-hand">Today</div></div>
+  <div class="row"><div class="tag">H2 hand</div><div class="size">32px</div><div class="sample t-h2-hand">Read for 20 min</div></div>
+  <div class="row"><div class="tag">Body hand</div><div class="size">22px</div><div class="sample t-body-hand">A small note in the margin.</div></div>
+  <div class="row"><div class="tag">Body</div><div class="size">16px</div><div class="sample t-body">Showed up for 12 days in a row.</div></div>
+  <div class="row"><div class="tag">Small</div><div class="size">14px</div><div class="sample t-small">Last entry · 2h ago</div></div>
+  <div class="row"><div class="tag">Overline</div><div class="size">11px</div><div class="sample t-overline">This week</div></div>
+</div>
+</body></html>

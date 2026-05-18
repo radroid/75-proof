@@ -408,6 +408,145 @@
 }
 
 /* ==========================================
+   EARNED THEME
+   Notebook paper, hand-drawn moments, gold-star reward.
+   Tokens sourced from design-system/project/colors_and_type.css.
+   ========================================== */
+[data-theme="earned"] {
+  --radius: 0.625rem; /* paper has minimal radii; chips/cards bump to 10px */
+
+  --font-body: var(--font-poppins), 'Poppins', system-ui, -apple-system, sans-serif;
+  --font-heading: var(--font-caveat), 'Caveat', 'Patrick Hand', cursive;
+  --font-code: 'JetBrains Mono', 'Courier New', monospace;
+
+  /* Brand palette — sampled directly from the logos */
+  --earned-cream:        #F4ECD8;
+  --earned-cream-light:  #F9F3E1;
+  --earned-cream-dark:   #E8DEC4;
+  --earned-ink:          #1F1F1D;
+  --earned-ink-soft:     #3A3A36;
+  --earned-star-gold:    #D8A830;
+  --earned-star-gold-lt: #F2C94C;
+  --earned-sky:          #0090D8;
+  --earned-sky-deep:     #0B6FA3;
+  --earned-rose:         #C75F4A;
+  --earned-sage:         #7A8C6B;
+  --earned-rule-line:    rgba(78, 60, 28, 0.18);
+  --earned-margin-line:  rgba(199, 95, 74, 0.45);
+
+  /* Semantic mapping — keeps existing components rendering correctly */
+  --primary: var(--earned-sky);
+  --primary-foreground: var(--earned-cream-light);
+
+  --background: var(--earned-cream);
+  --foreground: var(--earned-ink);
+
+  --card: var(--earned-cream-light);
+  --card-foreground: var(--earned-ink);
+
+  --popover: var(--earned-cream-light);
+  --popover-foreground: var(--earned-ink);
+
+  --secondary: var(--earned-cream-light);
+  --secondary-foreground: var(--earned-ink);
+
+  --muted: var(--earned-cream-dark);
+  --muted-foreground: rgba(31, 31, 29, 0.55);
+
+  --accent: var(--earned-sky);
+  --accent-foreground: var(--earned-cream-light);
+
+  --success: var(--earned-star-gold);
+  --success-foreground: var(--earned-ink);
+  --warning: var(--earned-star-gold);
+  --warning-foreground: var(--earned-ink);
+  --destructive: var(--earned-rose);
+  --destructive-foreground: var(--earned-cream-light);
+
+  --border: rgba(31, 31, 29, 0.88);
+  --input: var(--earned-cream-light);
+  --ring: var(--earned-sky);
+
+  --chart-1: var(--earned-sky);
+  --chart-2: var(--earned-star-gold);
+  --chart-3: var(--earned-sage);
+  --chart-4: var(--earned-rose);
+  --chart-5: var(--earned-ink-soft);
+
+  --sidebar: var(--earned-cream-light);
+  --sidebar-foreground: var(--earned-ink);
+  --sidebar-primary: var(--earned-sky);
+  --sidebar-primary-foreground: var(--earned-cream-light);
+  --sidebar-accent: var(--earned-cream-dark);
+  --sidebar-accent-foreground: var(--earned-ink);
+  --sidebar-border: rgba(31, 31, 29, 0.32);
+  --sidebar-ring: var(--earned-sky);
+
+  /* Paper shadow family — warm, soft, multi-layered. Lifts a card off the page. */
+  --shadow-color: 30 40% 20%;
+  --shadow-2xs: 0 1px 0 rgba(78, 60, 28, 0.08);
+  --shadow-xs: 0 1px 0 rgba(78, 60, 28, 0.10);
+  --shadow-sm: 0 1px 0 rgba(78, 60, 28, 0.12), 0 2px 6px rgba(78, 60, 28, 0.08);
+  --shadow: 0 2px 0 rgba(78, 60, 28, 0.10), 0 6px 18px rgba(78, 60, 28, 0.10);
+  --shadow-md: 0 2px 0 rgba(78, 60, 28, 0.10), 0 6px 18px rgba(78, 60, 28, 0.10);
+  --shadow-lg: 0 4px 0 rgba(78, 60, 28, 0.10), 0 14px 40px rgba(78, 60, 28, 0.14);
+  --shadow-xl: 0 4px 0 rgba(78, 60, 28, 0.10), 0 14px 40px rgba(78, 60, 28, 0.14);
+  --shadow-2xl: 0 6px 0 rgba(78, 60, 28, 0.12), 0 22px 60px rgba(78, 60, 28, 0.18);
+  --shadow-card: 0 1px 0 rgba(78, 60, 28, 0.10);
+  --shadow-card-hover: 0 2px 0 rgba(78, 60, 28, 0.10), 0 6px 18px rgba(78, 60, 28, 0.10);
+
+  /* Ink-sticker shadow — used for chips/badges; "stuck on" feel */
+  --shadow-ink: 2px 2px 0 var(--earned-ink);
+  --shadow-ink-lg: 3px 3px 0 var(--earned-ink);
+
+  --glow-success: 0 0 0 3px rgba(216, 168, 48, 0.25);
+  --inner-glow-success: inset 0 0 20px 0 rgba(216, 168, 48, 0.06);
+
+  /* Paper motion — slight overshoot, like a page settling onto the desk */
+  --duration-fast: 140ms;
+  --duration-normal: 220ms;
+  --duration-slow: 420ms;
+
+  --gradient-primary: linear-gradient(135deg, var(--earned-sky), var(--earned-sky-deep));
+  --gradient-accent: linear-gradient(135deg, var(--earned-star-gold), var(--earned-star-gold-lt));
+
+  /* Mobile bottom nav — paper strip */
+  --nav-bg: rgba(249, 243, 225, 0.92);
+  --nav-shadow: 0 -2px 0 rgba(78, 60, 28, 0.10), 0 -8px 24px rgba(78, 60, 28, 0.08);
+  --nav-indicator: rgba(0, 144, 216, 0.12);
+  --nav-radius: 10px;
+}
+
+/* Earned-only utility classes. Scoped under [data-theme="earned"] so they
+   only style elements when the user has the Earned theme active —
+   prevents leaking the cream paper backdrop into the other themes. */
+[data-theme="earned"] .paper-ruled {
+  background-color: var(--earned-cream);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 31px,
+    var(--earned-rule-line) 31px,
+    var(--earned-rule-line) 32px
+  );
+  background-position: 0 12px;
+}
+
+[data-theme="earned"] .paper-ruled-margin {
+  position: relative;
+}
+[data-theme="earned"] .paper-ruled-margin::before {
+  content: "";
+  position: absolute;
+  left: 36px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--earned-margin-line);
+  pointer-events: none;
+}
+
+/* ==========================================
    GLOBAL LAYOUT TOKENS
    Shared across themes. Bottom nav height is the pill
    nav (66px) + its bottom offset (1.25rem = 20px). Components

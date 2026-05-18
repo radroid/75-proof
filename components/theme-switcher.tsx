@@ -80,6 +80,25 @@ const themeSignatures: Record<
     badgeLabel: "12",
     chipRadius: "rounded-full",
   },
+  earned: {
+    fontFamily: "'Caveat', 'Patrick Hand', cursive",
+    badgeRadius: "rounded-lg",
+    badgeFontClass: "font-bold",
+    badgeLabel: "12",
+    chipRadius: "rounded-full",
+    flourish: (
+      // Faint horizontal rule lines evoking notebook paper
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.18]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(to bottom, transparent 0, transparent 15px, currentColor 15px, currentColor 16px)",
+          backgroundPosition: "0 6px",
+        }}
+      />
+    ),
+  },
 };
 
 export function ThemePreviewArt({ personality }: { personality: ThemePersonality }) {

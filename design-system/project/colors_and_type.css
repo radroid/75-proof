@@ -1,0 +1,205 @@
+/* =========================================================
+   EARNED — Design Tokens
+   Colors & Typography for a paper-feel habit tracker
+   ========================================================= */
+
+/* Fonts —
+   Poppins served locally from /fonts (full 9-weight family + italics).
+   Caveat is the secondary handwritten face (Google Fonts).
+   Alternates (Kalam, Patrick Hand) exposed via Tweaks. */
+
+/* Poppins — local @font-face for every weight + italic */
+@font-face { font-family: 'Poppins'; font-weight: 100; font-style: normal; src: url('fonts/Poppins-Thin.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 100; font-style: italic; src: url('fonts/Poppins-ThinItalic.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 200; font-style: normal; src: url('fonts/Poppins-ExtraLight.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 200; font-style: italic; src: url('fonts/Poppins-ExtraLightItalic.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 300; font-style: normal; src: url('fonts/Poppins-Light.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 300; font-style: italic; src: url('fonts/Poppins-LightItalic.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 400; font-style: normal; src: url('fonts/Poppins-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 400; font-style: italic; src: url('fonts/Poppins-Italic.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 500; font-style: normal; src: url('fonts/Poppins-Medium.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 500; font-style: italic; src: url('fonts/Poppins-MediumItalic.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 600; font-style: normal; src: url('fonts/Poppins-SemiBold.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 600; font-style: italic; src: url('fonts/Poppins-SemiBoldItalic.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 700; font-style: normal; src: url('fonts/Poppins-Bold.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 700; font-style: italic; src: url('fonts/Poppins-BoldItalic.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 800; font-style: normal; src: url('fonts/Poppins-ExtraBold.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 800; font-style: italic; src: url('fonts/Poppins-ExtraBoldItalic.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 900; font-style: normal; src: url('fonts/Poppins-Black.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Poppins'; font-weight: 900; font-style: italic; src: url('fonts/Poppins-BlackItalic.ttf') format('truetype'); font-display: swap; }
+
+/* Caveat — local @font-face (primary handwritten face) */
+@font-face { font-family: 'Caveat'; font-weight: 400; font-style: normal; src: url('fonts/Caveat-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Caveat'; font-weight: 500; font-style: normal; src: url('fonts/Caveat-Medium.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Caveat'; font-weight: 600; font-style: normal; src: url('fonts/Caveat-SemiBold.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Caveat'; font-weight: 700; font-style: normal; src: url('fonts/Caveat-Bold.ttf') format('truetype'); font-display: swap; }
+
+/* Handwritten alternates — still Google Fonts (Kalam, Patrick Hand) */
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Patrick+Hand&display=swap');
+
+:root {
+  /* ---------- COLOR — Brand ---------- */
+  /* Sampled directly from the wordmark + star in the logo files. */
+  --earned-cream:        #F4ECD8;   /* primary paper */
+  --earned-cream-light:  #F9F3E1;   /* highlights, ruled paper top */
+  --earned-cream-dark:   #E8DEC4;   /* paper shadow, edges */
+  --earned-ink:          #1F1F1D;   /* the pen — almost-black charcoal */
+  --earned-ink-soft:     #3A3A36;   /* secondary ink */
+  --earned-star-gold:    #D8A830;   /* the star — gold/mustard */
+  --earned-star-gold-lt: #F2C94C;   /* highlighter yellow */
+  --earned-sky:          #0090D8;   /* the wordmark blue */
+  --earned-sky-deep:     #0B6FA3;   /* hover/pressed */
+  --earned-rose:         #C75F4A;   /* missed-day ink-red (used sparingly) */
+  --earned-sage:         #7A8C6B;   /* "rest day" muted green */
+
+  /* Rule lines on paper — subtle, like a real notebook */
+  --earned-rule-line:    rgba(78, 60, 28, 0.18);
+  --earned-margin-line:  rgba(199, 95, 74, 0.45); /* the red left margin */
+
+  /* ---------- COLOR — Semantic ---------- */
+  --bg:                  var(--earned-cream);
+  --bg-elev:             var(--earned-cream-light);
+  --bg-sunken:           var(--earned-cream-dark);
+
+  --fg:                  var(--earned-ink);
+  --fg-2:                var(--earned-ink-soft);
+  --fg-muted:            rgba(31, 31, 29, 0.55);
+  --fg-faint:            rgba(31, 31, 29, 0.32);
+  --fg-on-blue:          var(--earned-cream-light);
+
+  --accent:              var(--earned-sky);
+  --accent-deep:         var(--earned-sky-deep);
+  --reward:              var(--earned-star-gold);
+  --reward-lt:           var(--earned-star-gold-lt);
+  --danger:              var(--earned-rose);
+  --rest:                var(--earned-sage);
+
+  --border:              rgba(31, 31, 29, 0.88); /* hand-drawn ink border */
+  --border-soft:         rgba(31, 31, 29, 0.32);
+
+  /* ---------- TYPE — Faces ---------- */
+  --font-sans:           'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --font-hand:           'Caveat', 'Kalam', 'Patrick Hand', 'Bradley Hand', cursive;
+  --font-mono:           ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ---------- TYPE — Scale ----------
+     Mobile-first; iOS reference sizing. Handwritten font runs ~1.4×
+     larger than its sans equivalent because Caveat's x-height is small. */
+  --t-display:           54px;   /* big day number, streak count */
+  --t-display-hand:      88px;   /* the same, handwritten */
+  --t-h1:                28px;
+  --t-h1-hand:           40px;
+  --t-h2:                22px;
+  --t-h2-hand:           32px;
+  --t-h3:                18px;
+  --t-body:              16px;
+  --t-body-hand:         22px;
+  --t-small:             14px;
+  --t-caption:           12px;
+  --t-overline:          11px;
+
+  --lh-tight:            1.15;
+  --lh-snug:             1.3;
+  --lh-body:             1.5;
+  --lh-loose:            1.7;
+
+  --tracking-tight:      -0.01em;
+  --tracking-normal:     0;
+  --tracking-wide:       0.04em;
+  --tracking-overline:   0.12em;
+
+  /* ---------- SPACING ----------
+     Loosely modeled on a 4pt grid with notebook-margin scale. */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  24px;
+  --space-6:  32px;
+  --space-7:  48px;
+  --space-8:  64px;
+
+  /* Ruled-paper line height — every UI sits on these baselines */
+  --rule-gap: 32px;
+
+  /* ---------- RADII ----------
+     Mostly square — paper doesn't have rounded corners. Soft radii
+     reserved for chips, buttons, and floating cards. */
+  --r-0:  0;
+  --r-1:  2px;
+  --r-2:  6px;
+  --r-3:  10px;
+  --r-4:  14px;
+  --r-pill: 999px;
+
+  /* ---------- SHADOWS ----------
+     Two shadow families:
+     - "paper": soft, warm, simulating page lift off desk
+     - "ink":  tight black, like a sticker on the page */
+  --shadow-paper-sm:  0 1px 0 rgba(78, 60, 28, 0.12), 0 2px 6px rgba(78, 60, 28, 0.08);
+  --shadow-paper:     0 2px 0 rgba(78, 60, 28, 0.10), 0 6px 18px rgba(78, 60, 28, 0.10);
+  --shadow-paper-lg:  0 4px 0 rgba(78, 60, 28, 0.10), 0 14px 40px rgba(78, 60, 28, 0.14);
+  --shadow-ink:       2px 2px 0 var(--earned-ink);   /* "stuck on" sticker */
+  --shadow-ink-lg:    3px 3px 0 var(--earned-ink);
+
+  /* ---------- MOTION ---------- */
+  --ease-out:    cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-paper:  cubic-bezier(0.34, 1.2, 0.4, 1);  /* slight overshoot, like a page settling */
+  --dur-fast:    140ms;
+  --dur-base:    220ms;
+  --dur-slow:    420ms;
+}
+
+/* =========================================================
+   Base element styles — apply directly when this CSS is loaded.
+   Components that want to opt out should override.
+   ========================================================= */
+
+html, body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1 { font-family: var(--font-hand); font-weight: 600; font-size: var(--t-h1-hand); line-height: var(--lh-tight); letter-spacing: var(--tracking-tight); margin: 0; }
+h2 { font-family: var(--font-hand); font-weight: 600; font-size: var(--t-h2-hand); line-height: var(--lh-snug); margin: 0; }
+h3 { font-family: var(--font-sans); font-weight: 600; font-size: var(--t-h3); line-height: var(--lh-snug); margin: 0; }
+p  { font-family: var(--font-sans); font-size: var(--t-body); line-height: var(--lh-body); margin: 0; }
+
+.t-display       { font-family: var(--font-sans); font-weight: 600; font-size: var(--t-display); line-height: 1; letter-spacing: -0.02em; }
+.t-display-hand  { font-family: var(--font-hand); font-weight: 700; font-size: var(--t-display-hand); line-height: 1; }
+.t-h1-hand       { font-family: var(--font-hand); font-weight: 600; font-size: var(--t-h1-hand); line-height: var(--lh-tight); }
+.t-h2-hand       { font-family: var(--font-hand); font-weight: 600; font-size: var(--t-h2-hand); line-height: var(--lh-snug); }
+.t-body          { font-family: var(--font-sans); font-size: var(--t-body); line-height: var(--lh-body); }
+.t-body-hand     { font-family: var(--font-hand); font-weight: 500; font-size: var(--t-body-hand); line-height: var(--lh-snug); }
+.t-small         { font-family: var(--font-sans); font-size: var(--t-small); line-height: var(--lh-snug); color: var(--fg-2); }
+.t-overline      { font-family: var(--font-sans); font-size: var(--t-overline); letter-spacing: var(--tracking-overline); text-transform: uppercase; color: var(--fg-muted); font-weight: 600; }
+
+/* Ruled-paper background — the foundational surface */
+.paper-ruled {
+  background-color: var(--bg);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--rule-gap) - 1px),
+    var(--earned-rule-line) calc(var(--rule-gap) - 1px),
+    var(--earned-rule-line) var(--rule-gap)
+  );
+  background-position: 0 8px;
+}
+
+.paper-ruled-margin {
+  position: relative;
+}
+.paper-ruled-margin::before {
+  content: "";
+  position: absolute;
+  left: 32px; top: 0; bottom: 0;
+  width: 1px;
+  background: var(--earned-margin-line);
+}

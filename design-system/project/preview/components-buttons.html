@@ -1,0 +1,70 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{ width:700px; height:200px; padding:30px 28px; box-sizing:border-box; background:var(--bg); border:1px solid var(--earned-cream-dark) }
+  .label{ font-family:var(--font-sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted); font-weight:600; margin-bottom:24px }
+  .row{ display:flex; gap:16px; align-items:center; flex-wrap:wrap }
+
+  /* Primary — solid ink, sticker shadow */
+  .btn-primary{
+    font-family:var(--font-sans); font-weight:600; font-size:15px;
+    background:var(--earned-ink); color:var(--earned-cream-light);
+    border:1.5px solid var(--earned-ink);
+    padding:12px 22px; border-radius:10px;
+    box-shadow: var(--shadow-ink);
+    cursor:pointer;
+  }
+  /* Sky variant */
+  .btn-sky{
+    font-family:var(--font-sans); font-weight:600; font-size:15px;
+    background:var(--earned-sky); color:var(--earned-cream-light);
+    border:1.5px solid var(--earned-ink);
+    padding:12px 22px; border-radius:10px;
+    box-shadow: var(--shadow-ink);
+    cursor:pointer;
+  }
+  /* Secondary — outline */
+  .btn-outline{
+    font-family:var(--font-sans); font-weight:600; font-size:15px;
+    background:transparent; color:var(--earned-ink);
+    border:1.5px solid var(--earned-ink);
+    padding:12px 22px; border-radius:10px;
+    cursor:pointer;
+  }
+  /* Tertiary — text link, wavy underline */
+  .btn-text{
+    font-family:var(--font-sans); font-weight:600; font-size:15px;
+    background:transparent; color:var(--earned-sky-deep);
+    border:none; padding:12px 6px;
+    text-decoration: underline wavy var(--earned-sky);
+    text-underline-offset:5px;
+    cursor:pointer;
+  }
+  /* Hand-drawn button — wobbly border */
+  .btn-hand{
+    font-family:var(--font-hand); font-weight:700; font-size:24px;
+    background:var(--earned-cream-light); color:var(--earned-ink);
+    padding:6px 22px;
+    position:relative;
+    border:none;
+    cursor:pointer;
+  }
+  .btn-hand svg{ position:absolute; inset:0; width:100%; height:100% }
+</style></head>
+<body>
+<div class="card">
+  <div class="label">Buttons</div>
+  <div class="row">
+    <button class="btn-primary">Save habit</button>
+    <button class="btn-sky">Earn today</button>
+    <button class="btn-outline">Skip</button>
+    <button class="btn-text">Add a note</button>
+    <button class="btn-hand">
+      <svg viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M6 8 C 40 4, 120 6, 195 9 C 196 24, 197 40, 193 53 C 130 56, 60 55, 7 51 C 4 38, 5 22, 6 8 Z" fill="none" stroke="#1F1F1D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Mark as done
+    </button>
+  </div>
+</div>
+</body></html>

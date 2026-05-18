@@ -1,5 +1,10 @@
-// Theme types — 4 visual themes
-export type ThemePersonality = "arctic" | "broadsheet" | "military" | "zen";
+// Theme types — 5 visual themes
+export type ThemePersonality =
+  | "arctic"
+  | "broadsheet"
+  | "military"
+  | "zen"
+  | "earned";
 
 export interface ThemeConfig {
   personality: ThemePersonality;
@@ -57,6 +62,16 @@ export const themeMetadata: Record<ThemePersonality, ThemeMetadata> = {
       card: "#f7f3ee",
     },
   },
+  earned: {
+    name: "Earned",
+    description: "Notebook paper, handwritten moments, gold-star reward",
+    preview: {
+      bg: "#F4ECD8",
+      fg: "#1F1F1D",
+      accent: "#0090D8",
+      card: "#F9F3E1",
+    },
+  },
 };
 
 export const themeOrder: ThemePersonality[] = [
@@ -64,6 +79,7 @@ export const themeOrder: ThemePersonality[] = [
   "broadsheet",
   "military",
   "zen",
+  "earned",
 ];
 
 // Old theme names for migration
