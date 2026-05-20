@@ -22,6 +22,7 @@ import {
   X,
   Inbox,
   Send,
+  History,
   type LucideIcon,
 } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
@@ -44,6 +45,7 @@ import { RotateCwEarned } from "./rotate-cw";
 import { PlusEarned } from "./plus";
 import { InboxEarned } from "./inbox";
 import { CrossMarkEarned } from "./cross-mark";
+import { HistoryEarned } from "./history";
 
 // Named lookup of icon variants. Each entry pairs the Lucide
 // fallback (used on every non-Earned theme) with the hand-drawn
@@ -71,7 +73,8 @@ type IconName =
   | "plus"
   | "close"
   | "inbox"
-  | "send";
+  | "send"
+  | "history";
 
 const variants: Record<
   IconName,
@@ -114,6 +117,10 @@ const variants: Record<
   close: { lucide: X, earned: CrossMarkEarned },
   inbox: { lucide: Inbox, earned: InboxEarned },
   send: { lucide: Send, earned: PaperAirplaneEarned },
+  // Coach "recent chats" trigger — Lucide's History glyph is a clock
+  // with a counter-clockwise arrow; the hand-drawn variant keeps the
+  // same metaphor (rewind / previous pages) on cream paper.
+  history: { lucide: History, earned: HistoryEarned },
 };
 
 // Theme-aware icon. Renders the hand-drawn variant under Earned;

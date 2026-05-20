@@ -29,6 +29,7 @@ export function ChatBubble({ role, content, pending }: ChatBubbleProps) {
       aria-label={isUser ? "Your message" : "Coach message"}
     >
       <div
+        data-earned-bubble={isUser ? "user" : "assistant"}
         className={cn(
           "relative max-w-[85%] sm:max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
           // The asymmetric corner radius gives the bubble its tail on the

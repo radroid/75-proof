@@ -84,7 +84,7 @@ export function CoachRecentsSheet({
     setIsDeleting(true);
     try {
       await deleteThread({ threadId: pendingDeleteId });
-      toast.success("Conversation deleted");
+      toast.success("Page removed");
       setPendingDeleteId(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't delete — try again?");
@@ -114,11 +114,14 @@ export function CoachRecentsSheet({
           className="flex flex-col overflow-hidden p-0 gap-0 translate-y-0"
         >
           <div className="flex items-center justify-between border-b px-4 py-3">
-            <DialogTitle className="text-base font-semibold">
-              Recent chats
+            <DialogTitle
+              data-earned-recents-title
+              className="text-base font-semibold"
+            >
+              Previous pages
             </DialogTitle>
             <DialogDescription className="sr-only">
-              Search your past coach conversations
+              Search my past coach conversations
             </DialogDescription>
             <DialogClose asChild>
               <button
@@ -131,13 +134,14 @@ export function CoachRecentsSheet({
             </DialogClose>
           </div>
           <Command className="flex min-h-0 flex-1 flex-col [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-input]]:h-12 [&_[cmdk-input]]:text-base [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
-            <CommandInput placeholder="Search recent chats…" autoFocus={false} />
+            <CommandInput placeholder="Search my pages…" autoFocus={false} />
             <CommandList className="max-h-none flex-1">
-              <CommandEmpty>No conversations match.</CommandEmpty>
+              <CommandEmpty>Nothing matches.</CommandEmpty>
 
               <CommandGroup heading="Actions">
                 <CommandItem
                   value="new-chat-action"
+                  data-earned-recents-row
                   onSelect={() => {
                     onNewChat();
                     onClose();
@@ -145,7 +149,7 @@ export function CoachRecentsSheet({
                   className="data-[selected=true]:bg-transparent data-[selected=true]:text-foreground active:bg-accent/60"
                 >
                   <Plus className="text-foreground" />
-                  <span className="font-medium">New chat</span>
+                  <span className="font-medium">New page</span>
                 </CommandItem>
               </CommandGroup>
 
@@ -170,6 +174,7 @@ export function CoachRecentsSheet({
                               <CommandItem
                                 key={t._id}
                                 value={`${t.title} ${meta}`}
+                                data-earned-recents-row
                                 onSelect={() => onClose()}
                                 className="bg-primary/5 data-[selected=true]:bg-primary/5 data-[selected=true]:text-foreground"
                               >
@@ -202,6 +207,7 @@ export function CoachRecentsSheet({
                           <CommandItem
                             key={t._id}
                             value={`${t.title} ${meta}`}
+                            data-earned-recents-row
                             onSelect={() => {
                               onLoadThread(t._id);
                               onClose();
@@ -250,11 +256,11 @@ export function CoachRecentsSheet({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this conversation?</AlertDialogTitle>
+            <AlertDialogTitle>Remove this page?</AlertDialogTitle>
             <AlertDialogDescription>
               {pendingDeleteThread
-                ? `“${pendingDeleteThread.title}” will be permanently removed. This can't be undone.`
-                : "This conversation will be permanently removed. This can't be undone."}
+                ? `“${pendingDeleteThread.title}” will be torn out for good. I can't get it back.`
+                : "This page will be torn out for good. I can't get it back."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
