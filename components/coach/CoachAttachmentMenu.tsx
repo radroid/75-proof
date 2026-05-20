@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "convex/react";
-import { Plus, Search, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Search, Sparkles } from "lucide-react";
+import { EarnedLoadingText } from "@/components/earned/loading-text";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
@@ -165,9 +166,8 @@ export function CoachAttachmentMenu({
 
             <div className="max-h-72 overflow-y-auto py-1">
               {!popular && (
-                <div className="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Loading catalog…
+                <div className="px-3 py-3 text-xs text-muted-foreground">
+                  <EarnedLoadingText label="loading my routines" />
                 </div>
               )}
               {popular && filtered.length === 0 && (
