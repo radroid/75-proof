@@ -54,3 +54,8 @@ next-env.d.ts
 convex/_generated/ai/
 skills-lock.json
 .env.local
+
+# Playwright + Chrome DevTools MCP scratch (visual verification runs)
+.playwright-mcp/
+.smoke-test-*.png
+earned-dashboard-*.png
