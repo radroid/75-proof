@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { haptic } from "@/lib/haptics";
 
 interface ConfettiProps {
@@ -85,6 +85,7 @@ export function Confetti({ isActive, duration = 3000 }: ConfettiProps) {
   // re-runs the same animation on the same nodes and looks half-baked).
   const [activation, setActivation] = React.useState(0);
   const [running, setRunning] = React.useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
   React.useEffect(() => {
     if (!isActive) return;
@@ -108,6 +109,12 @@ export function Confetti({ isActive, duration = 3000 }: ConfettiProps) {
   // SSR-safe portal: bail out when running on the server where `document`
   // doesn't exist. A typeof-check is enough — no extra render pass needed.
   if (typeof document === "undefined") return null;
+
+  // Reduced-motion: skip the falling-particle render entirely. The haptic
+  // and any sibling celebration (e.g. the "Day N — earned." star in
+  // EarnedDashboard) still fire; this just suppresses the dizzying overlay
+  // for users who prefer no motion.
+  if (shouldReduceMotion) return null;
 
   return createPortal(
     <AnimatePresence>
