@@ -301,8 +301,8 @@ export function CoachPrivacySettings() {
                 </p>
               ) : (
                 <p className="rounded-md border border-dashed bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-                  Chat with the coach to start your bio — or click the pencil
-                  to write one yourself.
+                  Chat to start your bio — or click the pencil to write one
+                  yourself.
                 </p>
               )}
             </div>

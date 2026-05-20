@@ -407,7 +407,7 @@ function ChatTurnView({ turn }: { turn: ChatTurn }) {
 
       {turn.pending && (
         <div className="pl-1 text-xs text-muted-foreground">
-          <EarnedLoadingText label="coach is thinking" />
+          <EarnedLoadingText label="thinking" />
         </div>
       )}
 
