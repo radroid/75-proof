@@ -13,8 +13,8 @@ import {
   Pencil,
   Rocket,
   Check,
-  Loader2,
 } from "lucide-react";
+import { EarnedLoadingText } from "@/components/earned/loading-text";
 import { themeMetadata } from "@/lib/themes";
 import type { OnboardingState, OnboardingStep } from "@/lib/onboarding-types";
 import { formatEndDate } from "@/lib/day-utils";
@@ -245,10 +245,7 @@ export function OnboardingReview({
           className="flex-1 sm:flex-initial gap-2 sm:min-w-[180px] min-h-[48px]"
         >
           {isSubmitting ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-              Starting...
-            </>
+            <EarnedLoadingText label="starting" />
           ) : (
             <>
               <Rocket className="h-4 w-4" />

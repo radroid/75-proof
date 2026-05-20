@@ -8,9 +8,9 @@ import {
   useState,
 } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Loader2 } from "lucide-react";
 import { ChatBubble } from "@/components/ui/chat-bubble";
 import { ThemedIcon } from "@/components/earned/icons/themed-icon";
+import { EarnedLoadingText } from "@/components/earned/loading-text";
 import { cn } from "@/lib/utils";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -406,9 +406,8 @@ function ChatTurnView({ turn }: { turn: ChatTurn }) {
       <ChatBubble role="user" content={turn.user} />
 
       {turn.pending && (
-        <div className="flex items-center gap-2 pl-1 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-          Thinking…
+        <div className="pl-1 text-xs text-muted-foreground">
+          <EarnedLoadingText label="coach is thinking" />
         </div>
       )}
 
