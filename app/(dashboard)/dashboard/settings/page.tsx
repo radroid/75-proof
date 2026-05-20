@@ -27,15 +27,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import {
-  AlertTriangle,
-  Infinity as InfinityIcon,
-  Play,
-  Settings,
-  Smartphone,
-  Monitor,
-  Trash2,
-} from "lucide-react";
 import { ThemedIcon } from "@/components/earned/icons";
 import { useGuest } from "@/components/guest-provider";
 import { LocalSettingsPage } from "@/components/local-settings";
@@ -388,7 +379,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Play className="h-4 w-4 text-primary" />
+                    <ThemedIcon name="play" className="h-4 w-4 text-primary" />
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium text-sm">Replay Tour</p>
@@ -541,9 +532,14 @@ export default function SettingsPage() {
                 <div className="rounded-lg border bg-muted/40 p-4">
                   {challenge.isHabitTracker ? (
                     <div className="flex items-center gap-3">
-                      <InfinityIcon className="h-5 w-5 text-primary" />
+                      <ThemedIcon name="infinity" className="h-5 w-5 text-primary" />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium">Habit tracker mode</p>
+                        <p
+                          className="text-sm font-medium"
+                          data-earned-value="mode"
+                        >
+                          Habit tracker mode
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           No end date — keep going as long as you like.
                         </p>
@@ -551,7 +547,10 @@ export default function SettingsPage() {
                     </div>
                   ) : (
                     <div>
-                      <p className="text-sm font-medium">
+                      <p
+                        className="text-sm font-medium"
+                        data-earned-value="day-count"
+                      >
                         Day {challenge.currentDay} of {currentDaysTotal}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
@@ -971,8 +970,10 @@ export default function SettingsPage() {
                   <p className="text-sm font-medium mb-3">Active devices</p>
                   <ul className="space-y-2">
                     {mySubs.map((sub) => {
-                      const PlatformIcon =
-                        sub.platform === "desktop" ? Monitor : Smartphone;
+                      const platformIconName =
+                        sub.platform === "desktop"
+                          ? ("monitor" as const)
+                          : ("smartphone" as const);
                       const platformLabel =
                         sub.platform === "ios"
                           ? "iOS"
@@ -999,7 +1000,10 @@ export default function SettingsPage() {
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-9 h-9 rounded-md bg-background flex items-center justify-center shrink-0">
-                              <PlatformIcon className="h-4 w-4 text-muted-foreground" />
+                              <ThemedIcon
+                                name={platformIconName}
+                                className="h-4 w-4 text-muted-foreground"
+                              />
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-medium truncate flex items-center gap-2">
@@ -1026,7 +1030,7 @@ export default function SettingsPage() {
                             onClick={() => handleRemoveSubscription(sub.endpoint)}
                             className="min-h-11 min-w-11 shrink-0"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <ThemedIcon name="trash" className="h-4 w-4" />
                           </Button>
                         </li>
                       );
@@ -1060,7 +1064,7 @@ export default function SettingsPage() {
             <Card variant="bordered" className="border-destructive/50 bg-destructive/5">
               <CardHeader>
                 <CardTitle className="text-destructive flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5" />
+                  <ThemedIcon name="alert-triangle" className="h-5 w-5" />
                   Reset challenge
                 </CardTitle>
                 <CardDescription>

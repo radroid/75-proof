@@ -6,6 +6,13 @@ import {
   CalendarDays,
   Bell,
   Shield,
+  AlertTriangle,
+  Infinity as InfinityIcon,
+  Play,
+  Settings,
+  Smartphone,
+  Monitor,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
@@ -13,6 +20,13 @@ import { PaletteEarned } from "./palette";
 import { CalendarDaysEarned } from "./calendar-days";
 import { BellEarned } from "./bell";
 import { ShieldEarned } from "./shield";
+import { AlertTriangleEarned } from "./alert-triangle";
+import { InfinityEarned } from "./infinity";
+import { PlayEarned } from "./play";
+import { SettingsGearEarned } from "./settings-gear";
+import { SmartphoneEarned } from "./smartphone";
+import { MonitorEarned } from "./monitor";
+import { TrashEarned } from "./trash";
 
 // Named lookup of icon variants. Each entry pairs the Lucide
 // fallback (used on every non-Earned theme) with the hand-drawn
@@ -20,7 +34,18 @@ import { ShieldEarned } from "./shield";
 // renderers' API matching `className` so the swap is invisible to
 // callers.
 
-type IconName = "palette" | "calendar-days" | "bell" | "shield";
+type IconName =
+  | "palette"
+  | "calendar-days"
+  | "bell"
+  | "shield"
+  | "alert-triangle"
+  | "infinity"
+  | "play"
+  | "settings"
+  | "smartphone"
+  | "monitor"
+  | "trash";
 
 const variants: Record<
   IconName,
@@ -33,6 +58,13 @@ const variants: Record<
   "calendar-days": { lucide: CalendarDays, earned: CalendarDaysEarned },
   bell: { lucide: Bell, earned: BellEarned },
   shield: { lucide: Shield, earned: ShieldEarned },
+  "alert-triangle": { lucide: AlertTriangle, earned: AlertTriangleEarned },
+  infinity: { lucide: InfinityIcon, earned: InfinityEarned },
+  play: { lucide: Play, earned: PlayEarned },
+  settings: { lucide: Settings, earned: SettingsGearEarned },
+  smartphone: { lucide: Smartphone, earned: SmartphoneEarned },
+  monitor: { lucide: Monitor, earned: MonitorEarned },
+  trash: { lucide: Trash2, earned: TrashEarned },
 };
 
 // Theme-aware icon. Renders the hand-drawn variant under Earned;
