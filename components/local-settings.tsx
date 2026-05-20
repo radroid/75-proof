@@ -163,7 +163,7 @@ export function LocalSettingsPage() {
       setProfilePristine(true);
       toast.success("Settings saved");
     } catch {
-      toast.error("Failed to save settings");
+      toast.error("That didn't save — try again?");
     }
   };
 
@@ -240,7 +240,7 @@ export function LocalSettingsPage() {
       toast.success("Progress reset — back to Day 1 with your habits");
       router.push("/dashboard");
     } catch {
-      toast.error("Failed to reset progress");
+      toast.error("That didn't reset — try again?");
     }
   };
 
@@ -254,7 +254,7 @@ export function LocalSettingsPage() {
       toast.success("Challenge reset — let's reconfigure your habits");
       router.push("/onboarding");
     } catch {
-      toast.error("Failed to reset challenge");
+      toast.error("That didn't reset — try again?");
     }
   };
 

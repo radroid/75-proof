@@ -159,9 +159,9 @@ function SearchResultRow({
     try {
       await sendRequest({ toUserId: user._id });
       posthog.capture("friend_request_sent");
-      toast.success("Friend request sent!");
+      toast.success("Friend request sent.");
     } catch {
-      toast.error("Could not send request");
+      toast.error("That didn't send — try again?");
     }
     setLoading(false);
   };
@@ -171,9 +171,9 @@ function SearchResultRow({
     setLoading(true);
     try {
       await acceptRequest({ friendshipId: acceptFriendshipId });
-      toast.success("Friend request accepted!");
+      toast.success("Friend request accepted.");
     } catch {
-      toast.error("Failed to accept request");
+      toast.error("That didn't accept — try again?");
     }
     setLoading(false);
   };
