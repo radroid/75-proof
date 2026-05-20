@@ -13,6 +13,7 @@ import {
   Smartphone,
   Monitor,
   Trash2,
+  HandHeart,
   type LucideIcon,
 } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
@@ -27,6 +28,7 @@ import { SettingsGearEarned } from "./settings-gear";
 import { SmartphoneEarned } from "./smartphone";
 import { MonitorEarned } from "./monitor";
 import { TrashEarned } from "./trash";
+import { PaperAirplaneEarned } from "./paper-airplane";
 
 // Named lookup of icon variants. Each entry pairs the Lucide
 // fallback (used on every non-Earned theme) with the hand-drawn
@@ -45,7 +47,8 @@ type IconName =
   | "settings"
   | "smartphone"
   | "monitor"
-  | "trash";
+  | "trash"
+  | "nudge";
 
 const variants: Record<
   IconName,
@@ -65,6 +68,11 @@ const variants: Record<
   smartphone: { lucide: Smartphone, earned: SmartphoneEarned },
   monitor: { lucide: Monitor, earned: MonitorEarned },
   trash: { lucide: Trash2, earned: TrashEarned },
+  // Nudge: Lucide uses HandHeart (a hand cradling a heart) for the
+  // friend-nudge button; under Earned that becomes a paper airplane —
+  // a folded note flying to the friend, more in line with the
+  // notebook metaphor than a coloured glyph.
+  nudge: { lucide: HandHeart, earned: PaperAirplaneEarned },
 };
 
 // Theme-aware icon. Renders the hand-drawn variant under Earned;
