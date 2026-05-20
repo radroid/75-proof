@@ -1,5 +1,11 @@
 import Link from "next/link";
 
+// Earned brand 404 page. Inline visual choices — this page may
+// render outside the theme provider (Next.js routes a 404 before
+// client-side hydration), so we cannot depend on
+// `[data-theme="earned"]` selectors. Matches the iter-001 /offline
+// pattern: cream paper backdrop with faint ruled lines, gold star,
+// Caveat handwritten headline, Poppins muted body.
 export default function NotFound() {
   return (
     <div
@@ -13,45 +19,44 @@ export default function NotFound() {
         paddingRight: "max(1.25rem, env(safe-area-inset-right))",
         paddingBottom: "max(2rem, env(safe-area-inset-bottom))",
         paddingLeft: "max(1.25rem, env(safe-area-inset-left))",
-        backgroundColor: "#ffffff",
-        fontFamily: "system-ui, -apple-system, sans-serif",
+        backgroundColor: "#F4ECD8",
+        backgroundImage:
+          "repeating-linear-gradient(to bottom, transparent 0, transparent 31px, rgba(31,31,29,0.08) 31px, rgba(31,31,29,0.08) 32px)",
+        backgroundPosition: "0 6px",
+        fontFamily:
+          "var(--font-poppins), system-ui, -apple-system, sans-serif",
+        color: "#1F1F1D",
         textAlign: "center",
       }}
     >
-      {/* Coral "75" badge */}
-      <div
-        style={{
-          width: 96,
-          height: 96,
-          borderRadius: 24,
-          backgroundColor: "#FF6154",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 32,
-        }}
+      {/* Gold star, rotated 8° so the page reads as "slightly off" —
+          a star that didn't quite land where it was supposed to. */}
+      <svg
+        width={96}
+        height={96}
+        viewBox="0 0 24 24"
         aria-hidden="true"
+        style={{
+          display: "block",
+          marginBottom: 24,
+          transform: "rotate(-8deg)",
+        }}
       >
-        <span
-          style={{
-            fontSize: 48,
-            fontWeight: 900,
-            color: "#ffffff",
-            letterSpacing: "-0.04em",
-            lineHeight: 1,
-          }}
-        >
-          75
-        </span>
-      </div>
+        <path
+          d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 18 L6 22 L7 15 L2 10 L9 9 Z"
+          fill="#D8A830"
+          stroke="#1F1F1D"
+          strokeWidth={1.5}
+          strokeLinejoin="round"
+        />
+      </svg>
 
       <p
         style={{
-          fontSize: 12,
-          fontWeight: 700,
-          letterSpacing: "0.2em",
-          color: "#1a1a1a",
-          opacity: 0.5,
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: "0.18em",
+          color: "rgba(31,31,29,0.55)",
           margin: "0 0 8px",
           textTransform: "uppercase",
         }}
@@ -61,11 +66,14 @@ export default function NotFound() {
 
       <h1
         style={{
-          fontSize: 28,
-          fontWeight: 800,
-          color: "#1a1a1a",
-          margin: "0 0 12px",
-          letterSpacing: "-0.02em",
+          fontFamily:
+            "var(--font-caveat), 'Caveat', 'Brush Script MT', cursive",
+          fontSize: 56,
+          fontWeight: 700,
+          color: "#1F1F1D",
+          margin: "0 0 8px",
+          lineHeight: 1,
+          letterSpacing: "-0.01em",
         }}
       >
         Page not found
@@ -74,14 +82,13 @@ export default function NotFound() {
       <p
         style={{
           fontSize: 16,
-          color: "#1a1a1a",
-          opacity: 0.6,
+          color: "rgba(31,31,29,0.65)",
           margin: "0 0 32px",
           maxWidth: 320,
           lineHeight: 1.5,
         }}
       >
-        This page doesn&apos;t exist. Let&apos;s get you back to work.
+        I can&apos;t find this page — let&apos;s get back.
       </p>
 
       <div
@@ -101,17 +108,19 @@ export default function NotFound() {
             justifyContent: "center",
             minHeight: 48,
             padding: "12px 32px",
-            backgroundColor: "#FF6154",
-            color: "#ffffff",
+            backgroundColor: "#0090D8",
+            color: "#F9F3E1",
             textDecoration: "none",
             fontSize: 16,
-            fontWeight: 700,
+            fontWeight: 600,
             letterSpacing: "0.01em",
+            border: "1.5px solid #1F1F1D",
+            boxShadow: "2px 2px 0 #1F1F1D",
             touchAction: "manipulation",
             WebkitTapHighlightColor: "transparent",
           }}
         >
-          Back to Dashboard
+          Back to today
         </Link>
         <Link
           href="/"
@@ -122,17 +131,17 @@ export default function NotFound() {
             minHeight: 48,
             padding: "12px 32px",
             backgroundColor: "transparent",
-            color: "#1a1a1a",
+            color: "#1F1F1D",
             textDecoration: "none",
             fontSize: 16,
-            fontWeight: 600,
+            fontWeight: 500,
             letterSpacing: "0.01em",
-            border: "1px solid rgba(26,26,26,0.15)",
+            border: "1.5px dashed rgba(31,31,29,0.35)",
             touchAction: "manipulation",
             WebkitTapHighlightColor: "transparent",
           }}
         >
-          Go Home
+          Home
         </Link>
       </div>
     </div>
