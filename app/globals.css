@@ -546,6 +546,45 @@
   pointer-events: none;
 }
 
+/* Earned card treatment — gives shadcn Cards a notebook-page feel
+   without forking the Card component. Targets the data-slot attrs
+   shadcn emits so we stay in sync with upstream updates. Applied
+   globally under [data-theme="earned"] so Settings, Progress, and
+   any future surface using Cards picks up the visual without
+   per-page work. The Earned dashboard inlines its own visuals and
+   doesn't use shadcn Card, so it's unaffected. */
+[data-theme="earned"] [data-slot="card-title"] {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+/* Caveat renders visually smaller than Poppins at the same numeric
+   size; bump the most common section-header size up so handwritten
+   titles still read as the page's first hierarchy. */
+[data-theme="earned"] [data-slot="card-title"].text-lg {
+  font-size: 1.75rem;
+}
+
+[data-theme="earned"] [data-slot="card-description"] {
+  color: rgba(31, 31, 29, 0.65);
+}
+
+[data-theme="earned"] [data-slot="card"] {
+  border-width: 1.5px;
+}
+
+/* Dashed cream-dark separators between rows inside Earned cards —
+   matches the "notebook page" feel from the design-system MeScreen.
+   Scoped to direct children of card-content so it doesn't touch
+   nested layout grids. */
+[data-theme="earned"] [data-slot="card-content"] > * + * {
+  border-top: 1px dashed var(--earned-cream-dark);
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+
 /* ==========================================
    GLOBAL LAYOUT TOKENS
    Shared across themes. Bottom nav height is the pill
