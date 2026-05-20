@@ -629,6 +629,18 @@
   letter-spacing: -0.01em;
 }
 
+/* Metric tile treatment — apply the cream-paper + sticker-shadow
+   look to headline tiles on /dashboard/progress (and any future
+   surface that opts in via data-earned-tile="metric"). The numbers
+   inside already use var(--font-heading) which resolves to Caveat
+   under Earned, so this rule just dresses the container to match. */
+[data-theme="earned"] [data-earned-tile="metric"] {
+  background-color: var(--earned-cream-light);
+  border-width: 1.5px;
+  border-color: var(--border);
+  box-shadow: 2px 2px 0 var(--earned-ink);
+}
+
 /* ==========================================
    GLOBAL LAYOUT TOKENS
    Shared across themes. Bottom nav height is the pill
