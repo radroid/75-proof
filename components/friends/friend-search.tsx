@@ -73,7 +73,10 @@ export function FriendSearch({ variant = "compact" }: Props) {
   return (
     <div className="space-y-3">
       {isExpanded && (
-        <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
+        <p
+          className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground"
+          data-earned-section-heading
+        >
           Add a friend
         </p>
       )}
@@ -88,6 +91,7 @@ export function FriendSearch({ variant = "compact" }: Props) {
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         className={isExpanded ? "h-12" : "h-11 md:h-9"}
+        data-earned-input
       />
 
       {searchResults && searchResults.length > 0 && debouncedTerm.length >= 2 && (

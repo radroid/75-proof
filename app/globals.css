@@ -678,6 +678,37 @@
   font-weight: 600;
 }
 
+/* Notebook-style text input — cream-light surface with a hand-trembled
+   ink border. The 1.5px ink border replaces the default 1px so the
+   field reads as drawn-onto-paper, and the sky-blue focus ring matches
+   the Earned interactive accent. Targets inputs opted in via
+   data-earned-input. The shadcn Input class for `border-input` is
+   superseded here without leaking to non-Earned themes. */
+[data-theme="earned"] [data-earned-input] {
+  background-color: var(--earned-cream-light);
+  border-width: 1.5px;
+  border-color: var(--earned-ink);
+  caret-color: var(--earned-sky);
+}
+
+[data-theme="earned"] [data-earned-input]::placeholder {
+  color: rgba(31, 31, 29, 0.45);
+}
+
+/* 3-up grid shadow density — when a grid of [data-earned-tile] cards
+   grows to 3+ columns, the stacked sticker shadows can read as
+   chaotic. Future surfaces opting into the recipe should add
+   data-earned-grid="cards" to the grid container, after which this
+   rule offsets every-other tile's shadow direction so the page reads
+   as cards tossed onto the desk rather than a regular pattern.
+   Currently no surface uses this; FriendsList stays 2-up where the
+   uniform shadow direction reads fine. Documented here so iter-019+
+   can flip the attribute on without a new CSS migration. */
+[data-theme="earned"] [data-earned-grid="cards"]
+  > [data-earned-tile]:nth-child(even) {
+  box-shadow: -2px 2px 0 var(--earned-ink);
+}
+
 /* ==========================================
    GLOBAL LAYOUT TOKENS
    Shared across themes. Bottom nav height is the pill
