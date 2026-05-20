@@ -678,6 +678,18 @@
   font-weight: 600;
 }
 
+/* Focus-visible ring under Earned — shadcn's default `ring-ring/50`
+   utility renders the sky token at 50% alpha, which on cream-light
+   (≈ #F9F3E1) drops below WCAG non-text 3:1. Replace it with a hard
+   2px sky outline so focus is unambiguous across every interactive
+   surface on the page. `outline` is universally supported, renders
+   outside the element, and bypasses Tailwind's ring opacity
+   composition entirely. Scoped under [data-theme="earned"] only. */
+[data-theme="earned"] *:focus-visible {
+  outline: 2px solid var(--earned-sky);
+  outline-offset: 2px;
+}
+
 /* Notebook-style text input — cream-light surface with a hand-trembled
    ink border. The 1.5px ink border replaces the default 1px so the
    field reads as drawn-onto-paper, and the sky-blue focus ring matches

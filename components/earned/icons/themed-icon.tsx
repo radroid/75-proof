@@ -18,6 +18,10 @@ import {
   Trophy,
   Flame,
   RotateCcw,
+  Plus,
+  X,
+  Inbox,
+  Send,
   type LucideIcon,
 } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
@@ -37,6 +41,9 @@ import { RocketEarned } from "./rocket";
 import { TrophyEarned } from "./trophy";
 import { FlameEarned } from "./flame";
 import { RotateCwEarned } from "./rotate-cw";
+import { PlusEarned } from "./plus";
+import { InboxEarned } from "./inbox";
+import { CrossMarkEarned } from "./cross-mark";
 
 // Named lookup of icon variants. Each entry pairs the Lucide
 // fallback (used on every non-Earned theme) with the hand-drawn
@@ -60,7 +67,11 @@ type IconName =
   | "rocket"
   | "trophy"
   | "flame"
-  | "rotate-cw";
+  | "rotate-cw"
+  | "plus"
+  | "close"
+  | "inbox"
+  | "send";
 
 const variants: Record<
   IconName,
@@ -93,6 +104,16 @@ const variants: Record<
   trophy: { lucide: Trophy, earned: TrophyEarned },
   flame: { lucide: Flame, earned: FlameEarned },
   "rotate-cw": { lucide: RotateCcw, earned: RotateCwEarned },
+  // UI chrome glyphs for picker triggers + close buttons + inbox /
+  // send empty-state markers. `close` reuses CrossMarkEarned (same
+  // hand-drawn × used for missed-day cells on /progress); `send`
+  // reuses PaperAirplaneEarned (same folded plane used for the
+  // friend-nudge button) since "outgoing requests" and "send a
+  // nudge" both read as "this note is going somewhere".
+  plus: { lucide: Plus, earned: PlusEarned },
+  close: { lucide: X, earned: CrossMarkEarned },
+  inbox: { lucide: Inbox, earned: InboxEarned },
+  send: { lucide: Send, earned: PaperAirplaneEarned },
 };
 
 // Theme-aware icon. Renders the hand-drawn variant under Earned;

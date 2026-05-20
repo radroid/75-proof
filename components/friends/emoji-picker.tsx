@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { ThemedIcon } from "@/components/earned/icons";
 
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -110,7 +110,7 @@ export function EmojiPicker({
           triggerClassName,
         ].join(" ")}
       >
-        <Plus className="h-4 w-4" aria-hidden="true" />
+        <ThemedIcon name="plus" className="h-4 w-4" />
       </button>
 
       {open && (
@@ -133,7 +133,7 @@ export function EmojiPicker({
               aria-label="Close emoji picker"
               className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 touch-manipulation active:scale-95 transition-transform -mr-1"
             >
-              <X className="h-4 w-4" />
+              <ThemedIcon name="close" className="h-4 w-4" />
             </button>
           </div>
           <div className="grid grid-cols-6 gap-1">
