@@ -121,7 +121,7 @@ self.addEventListener("fetch", (event) => {
           // Last-resort: a minimal inline response so we never fall through
           // to the browser's native offline UI.
           return new Response(
-            "<!doctype html><meta charset=utf-8><title>Offline</title><p>You're offline.</p>",
+            "<!doctype html><meta charset=utf-8><title>Offline</title><p>No connection — your page will be here when you're back.</p>",
             {
               status: 503,
               statusText: "Service Unavailable",
@@ -158,7 +158,7 @@ self.addEventListener("push", (event) => {
 
   let payload = {
     title: "earned",
-    body: "You have a new reminder.",
+    body: "Today's page is ready when you are.",
     icon: defaultIcon,
     badge: defaultBadge,
     tag: undefined,
