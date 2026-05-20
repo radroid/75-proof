@@ -24,11 +24,10 @@ import {
   ChevronDown,
   ChevronRight,
   Filter,
-  Trophy,
-  Play,
   XCircle,
   X,
 } from "lucide-react";
+import { ThemedIcon } from "@/components/earned/icons/themed-icon";
 import { cn } from "@/lib/utils";
 import { Id } from "@/convex/_generated/dataModel";
 import { useGuest } from "@/components/guest-provider";
@@ -741,10 +740,10 @@ export default function ProgressPage() {
                       <SelectItem key={ch._id} value={ch._id}>
                         <div className="flex items-center gap-2">
                           {ch.status === "active" && (
-                            <Play className="h-3 w-3 text-primary" />
+                            <ThemedIcon name="play" className="h-3 w-3 text-primary" />
                           )}
                           {ch.status === "completed" && (
-                            <Trophy className="h-3 w-3 text-success" />
+                            <ThemedIcon name="trophy" className="h-3 w-3 text-success" />
                           )}
                           {ch.status === "failed" && (
                             <XCircle className="h-3 w-3 text-destructive" />
