@@ -1,4 +1,4 @@
-import { HandCheckbox } from "./hand-checkbox";
+import { HandCheckbox, type HandCheckboxState } from "./hand-checkbox";
 
 export interface HabitRowData {
   id: string;
@@ -24,7 +24,7 @@ export function HandHabitRow({
   const creamLight = "var(--earned-cream-light, #F9F3E1)";
   const muted = "rgba(31,31,29,0.55)";
   const checked = habit.completed;
-  const state: "empty" | "star" | "locked" = !isEditable && !checked
+  const state: HandCheckboxState = !isEditable && !checked
     ? "locked"
     : checked
       ? "star"

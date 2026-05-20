@@ -18,14 +18,19 @@ export function HandCheckbox({
   disabled?: boolean;
   label: string;
 }) {
+  // `locked` is contractually read-only — make it self-disabling so callers
+  // can't accidentally wire an onClick that fires when the state says it
+  // shouldn't.
+  const isLocked = state === "locked";
+  const isDisabled = disabled || isLocked;
   const ink = "var(--earned-ink, #1F1F1D)";
   const gold = "var(--earned-star-gold, #D8A830)";
   const sage = "var(--earned-sage, #7A8C6B)";
   return (
     <button
       type="button"
-      onClick={onClick}
-      disabled={disabled}
+      onClick={isDisabled ? undefined : onClick}
+      disabled={isDisabled}
       aria-label={label}
       aria-pressed={state === "star"}
       style={{
@@ -34,7 +39,7 @@ export function HandCheckbox({
         padding: 0,
         background: "transparent",
         border: "none",
-        cursor: disabled ? "default" : "pointer",
+        cursor: isDisabled ? "default" : "pointer",
         flexShrink: 0,
       }}
     >
