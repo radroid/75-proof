@@ -53,6 +53,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (mounted) {
       document.documentElement.setAttribute("data-theme", personality);
       localStorage.setItem(PERSONALITY_STORAGE_KEY, personality);
+      // Keep the PWA chrome (status bar, browser bar) in sync with the
+      // active theme's page background — otherwise iOS standalone mode
+      // shows a stale colour from the static <meta> in layout.tsx.
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) {
+        meta.setAttribute("content", themeMetadata[personality].preview.bg);
+      }
     }
   }, [personality, mounted]);
 

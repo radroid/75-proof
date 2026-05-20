@@ -101,7 +101,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#FF6154" />
+        {/* Static fallback — ThemeProvider rewrites this at runtime to match the active personality's background. */}
+        <meta name="theme-color" content="#ffffff" />
         {/* Google Fonts for all themes */}
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
