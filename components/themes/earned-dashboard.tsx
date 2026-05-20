@@ -681,20 +681,47 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
           </div>
         )}
 
-        {/* Loading skeleton */}
+        {/* Loading — handwritten "loading…" with a subtle dot-pulse
+            scribble. The design rule for Earned is "no spinners"; this
+            keeps the paper-page feel while still signalling activity. */}
         {isLoading && (
-          <div style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 10 }}>
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                style={{
-                  height: 64,
-                  border: "1.5px dashed rgba(31,31,29,0.25)",
-                  borderRadius: 10,
-                  opacity: 0.6,
-                }}
-              />
-            ))}
+          <div
+            style={{
+              marginTop: 32,
+              display: "flex",
+              alignItems: "baseline",
+              gap: 4,
+              fontFamily: "var(--font-caveat), 'Caveat', cursive",
+              fontSize: 26,
+              color: "rgba(31,31,29,0.55)",
+              fontWeight: 500,
+            }}
+            role="status"
+            aria-live="polite"
+            aria-label="Loading today's page"
+          >
+            <span>loading</span>
+            <span style={{ display: "inline-flex", gap: 1 }} aria-hidden>
+              {shouldReduceMotion ? (
+                <span>…</span>
+              ) : (
+                [0, 1, 2].map((i) => (
+                  <motion.span
+                    key={i}
+                    initial={{ opacity: 0.3 }}
+                    animate={{ opacity: [0.3, 1, 0.3] }}
+                    transition={{
+                      duration: 1.2,
+                      repeat: Infinity,
+                      delay: i * 0.18,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    .
+                  </motion.span>
+                ))
+              )}
+            </span>
           </div>
         )}
 
