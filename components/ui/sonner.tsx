@@ -3,11 +3,11 @@
 import {
   CircleCheckIcon,
   InfoIcon,
-  Loader2Icon,
   OctagonXIcon,
   TriangleAlertIcon,
 } from "lucide-react"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
+import { EarnedLoadingText } from "@/components/earned/loading-text"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
@@ -19,7 +19,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         info: <InfoIcon className="size-4" />,
         warning: <TriangleAlertIcon className="size-4" />,
         error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
+        loading: <EarnedLoadingText dotsOnly label="loading" />,
       }}
       // On mobile, push toasts above the floating bottom-nav pill so they
       // are never hidden behind it. Desktop keeps Sonner's default offsets.
