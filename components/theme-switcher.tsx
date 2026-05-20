@@ -3,6 +3,7 @@
 import * as React from "react";
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
+import posthog from "posthog-js";
 import { cn } from "@/lib/utils";
 import { useThemePersonality } from "@/components/theme-provider";
 import {
@@ -196,7 +197,16 @@ export function ThemeSwitcher({ className }: ThemeSwitcherProps) {
               role="radio"
               aria-checked={isSelected}
               aria-label={`${meta.name}. ${meta.description}`}
-              onClick={() => setPersonality(key)}
+              onClick={() => {
+                if (key !== personality) {
+                  posthog.capture("theme_switched", {
+                    from: personality,
+                    to: key,
+                    source: "switcher",
+                  });
+                }
+                setPersonality(key);
+              }}
               className={cn(
                 "relative flex flex-col overflow-hidden rounded-xl border-2 text-left",
                 "min-h-[44px] transition-all",

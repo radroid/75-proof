@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import posthog from "posthog-js";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
@@ -407,6 +408,22 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
   const { isActive: confettiActive, trigger: triggerConfetti } = useConfetti();
   const markDayCompleteConvex = useMutation(api.habitEntries.markDayComplete);
   const shouldReduceMotion = useReducedMotion();
+
+  // Engagement-funnel denominator for the Earned A/B (Phase 8). Fires
+  // once per mount, scoped by challenge so a single user mounting
+  // multiple challenges in one session reports correctly.
+  const loadedKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const key = String(challenge._id);
+    if (loadedKeyRef.current === key) return;
+    loadedKeyRef.current = key;
+    posthog.capture("earned_today_loaded", {
+      challengeId: key,
+      dayNumber: displayDay,
+      isGuest,
+      isHabitTracker,
+    });
+  }, [challenge._id, displayDay, isGuest, isHabitTracker]);
 
   const onToggleHabit = (habitId: string, isCounter: boolean) => {
     const entry = entryMap.get(habitId);
