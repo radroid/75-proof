@@ -69,6 +69,7 @@ export function CoachComposer({
             "flex items-end gap-2 rounded-3xl border border-border bg-background/95 p-2 shadow-lg backdrop-blur",
             "supports-[backdrop-filter]:bg-background/80",
           )}
+          data-earned-composer
         >
           <CoachAttachmentMenu onPick={onAttach} disabled={pending} />
 
@@ -80,6 +81,7 @@ export function CoachComposer({
             placeholder={placeholder}
             rows={1}
             disabled={pending}
+            data-earned-input
             className={cn(
               // text-base (16px) on mobile prevents iOS Safari from
               // auto-zooming the viewport when the textarea takes focus —
