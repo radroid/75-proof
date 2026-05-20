@@ -10,6 +10,7 @@ import { ServiceWorkerRegistration } from "@/components/service-worker-registrat
 import { InstallPromptCapture } from "@/components/pwa/install-prompt-capture";
 import { clerkProviderAppearance } from "@/lib/clerk-appearance";
 import { PostHogUserIdentifier } from "@/components/PostHogUserIdentifier";
+import { ThemeConvexSync } from "@/components/theme-convex-sync";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -148,6 +149,7 @@ export default function RootLayout({
           <ThemeProvider>
             <ConvexClientProvider>
               <PostHogUserIdentifier />
+              <ThemeConvexSync />
               <GuestProvider>{children}</GuestProvider>
             </ConvexClientProvider>
             <Toaster />
