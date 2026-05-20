@@ -657,7 +657,9 @@
    friends restyle brief ("friend cards as sticker-shadow cream
    chips"). Same recipe as identity/metric tiles. Sits inside the
    friends-progress section of /dashboard/progress. */
-[data-theme="earned"] [data-earned-tile="friend"] {
+[data-theme="earned"] [data-earned-tile="friend"],
+[data-theme="earned"] [data-earned-tile="pulse"],
+[data-theme="earned"] [data-earned-tile="board"] {
   background-color: var(--earned-cream-light);
   border-width: 1.5px;
   border-color: var(--border);
