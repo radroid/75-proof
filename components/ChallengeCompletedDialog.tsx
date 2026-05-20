@@ -16,7 +16,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import posthog from "posthog-js";
-import { Trophy, Infinity as InfinityIcon, RefreshCcw } from "lucide-react";
+import { ThemedIcon } from "@/components/earned/icons/themed-icon";
 
 interface ChallengeCompletedDialogProps {
   open: boolean;
@@ -81,7 +81,7 @@ export function ChallengeCompletedDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-success/10">
-            <Trophy className="h-7 w-7 text-success" />
+            <ThemedIcon name="trophy" className="h-7 w-7 text-success" />
           </div>
           <DialogTitle className="text-center text-2xl">
             I did it.
@@ -101,7 +101,7 @@ export function ChallengeCompletedDialog({
           >
             <div className="flex items-start gap-3">
               <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-md bg-primary/15 text-primary shrink-0">
-                <InfinityIcon className="h-4 w-4" />
+                <ThemedIcon name="infinity" className="h-4 w-4" />
               </div>
               <div className="min-w-0">
                 <p className="font-semibold">Continue as a habit tracker</p>
@@ -121,7 +121,7 @@ export function ChallengeCompletedDialog({
           >
             <div className="flex items-start gap-3">
               <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground shrink-0">
-                <RefreshCcw className="h-4 w-4" />
+                <ThemedIcon name="rotate-cw" className="h-4 w-4" />
               </div>
               <div className="min-w-0">
                 <p className="font-semibold">Start a new challenge</p>
