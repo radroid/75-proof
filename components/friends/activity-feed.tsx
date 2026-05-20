@@ -6,17 +6,13 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  CheckCircle2,
-  Rocket,
-  Trophy,
-  RotateCcw,
-  Flame,
-  Activity,
-} from "lucide-react";
+import { CheckCircle2, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { EmojiPicker } from "./emoji-picker";
 import { haptic } from "@/lib/haptics";
+import { useThemePersonality } from "@/components/theme-provider";
+import { Star } from "@/components/earned";
+import { ThemedIcon } from "@/components/earned/icons";
 
 export type FeedItem = {
   _id: string;
@@ -33,12 +29,44 @@ export type FeedItem = {
   } | null;
 };
 
+// Default (non-Earned) icons for the activity feed. Each event type
+// gets a colour-coded Lucide glyph. The Earned variant lives in
+// `earnedTypeIcons` below and uses hand-drawn equivalents from the
+// `components/earned/icons/` module — day-completed/challenge-completed
+// reuse the brand gold Star (no new icon needed) since "earning a star"
+// is the product's central metaphor.
 const typeIcons: Record<FeedItem["type"], React.ReactNode> = {
   day_completed: <CheckCircle2 className="h-4 w-4 text-success" />,
-  challenge_started: <Rocket className="h-4 w-4 text-primary" />,
-  challenge_completed: <Trophy className="h-4 w-4 text-yellow-500" />,
-  challenge_failed: <RotateCcw className="h-4 w-4 text-destructive" />,
-  milestone: <Flame className="h-4 w-4 text-orange-500" />,
+  challenge_started: (
+    <ThemedIcon name="rocket" className="h-4 w-4 text-primary" />
+  ),
+  challenge_completed: (
+    <ThemedIcon name="trophy" className="h-4 w-4 text-yellow-500" />
+  ),
+  challenge_failed: (
+    <ThemedIcon name="rotate-cw" className="h-4 w-4 text-destructive" />
+  ),
+  milestone: <ThemedIcon name="flame" className="h-4 w-4 text-orange-500" />,
+};
+
+// Earned-theme overrides. day_completed reuses the brand gold Star
+// so the feed reads as "I earned a star here" rather than "I checked
+// a box". challenge_completed gets the distinct hand-drawn trophy —
+// reusing Star at both day + challenge granularity would collapse
+// the visual hierarchy of the feed at-a-glance. The remaining glyphs
+// route through ThemedIcon to pick up their hand-drawn variants.
+const earnedTypeIcons: Record<FeedItem["type"], React.ReactNode> = {
+  day_completed: <Star size={16} />,
+  challenge_started: (
+    <ThemedIcon name="rocket" className="h-4 w-4 text-primary" />
+  ),
+  challenge_completed: (
+    <ThemedIcon name="trophy" className="h-4 w-4 text-[var(--earned-star-gold)]" />
+  ),
+  challenge_failed: (
+    <ThemedIcon name="rotate-cw" className="h-4 w-4 text-destructive" />
+  ),
+  milestone: <ThemedIcon name="flame" className="h-4 w-4 text-primary" />,
 };
 
 // Legacy preset keys → display glyph (kept for backwards compat with v1 data)
@@ -84,6 +112,9 @@ type OverrideKey = `${string}:${string}`;
 type Override = { reacted: boolean; delta: number };
 
 export function ActivityFeed({ feed }: ActivityFeedProps) {
+  const { personality } = useThemePersonality();
+  const isEarned = personality === "earned";
+  const iconMap = isEarned ? earnedTypeIcons : typeIcons;
   const activityIds = useMemo(
     () => (feed ?? []).map((f) => f._id as Id<"activityFeed">),
     [feed]
@@ -208,7 +239,7 @@ export function ActivityFeed({ feed }: ActivityFeedProps) {
                       {item.user?.displayName ?? "Unknown"}
                     </span>
                     <span className="shrink-0" aria-hidden="true">
-                      {typeIcons[item.type]}
+                      {iconMap[item.type]}
                     </span>
                     <span className="text-xs text-muted-foreground/60 shrink-0 ml-auto">
                       {relativeTime(item.createdAt)}

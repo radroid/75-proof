@@ -11,4 +11,8 @@ export { MonitorEarned } from "./monitor";
 export { TrashEarned } from "./trash";
 export { CrossMarkEarned } from "./cross-mark";
 export { PaperAirplaneEarned } from "./paper-airplane";
+export { RocketEarned } from "./rocket";
+export { TrophyEarned } from "./trophy";
+export { FlameEarned } from "./flame";
+export { RotateCwEarned } from "./rotate-cw";
 export { ThemedIcon } from "./themed-icon";
