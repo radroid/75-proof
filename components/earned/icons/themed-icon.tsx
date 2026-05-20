@@ -14,6 +14,10 @@ import {
   Monitor,
   Trash2,
   HandHeart,
+  Rocket,
+  Trophy,
+  Flame,
+  RotateCcw,
   type LucideIcon,
 } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
@@ -29,6 +33,10 @@ import { SmartphoneEarned } from "./smartphone";
 import { MonitorEarned } from "./monitor";
 import { TrashEarned } from "./trash";
 import { PaperAirplaneEarned } from "./paper-airplane";
+import { RocketEarned } from "./rocket";
+import { TrophyEarned } from "./trophy";
+import { FlameEarned } from "./flame";
+import { RotateCwEarned } from "./rotate-cw";
 
 // Named lookup of icon variants. Each entry pairs the Lucide
 // fallback (used on every non-Earned theme) with the hand-drawn
@@ -48,7 +56,11 @@ type IconName =
   | "smartphone"
   | "monitor"
   | "trash"
-  | "nudge";
+  | "nudge"
+  | "rocket"
+  | "trophy"
+  | "flame"
+  | "rotate-cw";
 
 const variants: Record<
   IconName,
@@ -73,6 +85,14 @@ const variants: Record<
   // a folded note flying to the friend, more in line with the
   // notebook metaphor than a coloured glyph.
   nudge: { lucide: HandHeart, earned: PaperAirplaneEarned },
+  // Activity feed glyphs — marking challenge_started / completed /
+  // failed / milestone entries. Lucide's glyphs (Rocket, Trophy,
+  // RotateCcw, Flame) are colour-emoji-shaped on most platforms; the
+  // hand-drawn variants keep the timeline reading as a notebook.
+  rocket: { lucide: Rocket, earned: RocketEarned },
+  trophy: { lucide: Trophy, earned: TrophyEarned },
+  flame: { lucide: Flame, earned: FlameEarned },
+  "rotate-cw": { lucide: RotateCcw, earned: RotateCwEarned },
 };
 
 // Theme-aware icon. Renders the hand-drawn variant under Earned;
