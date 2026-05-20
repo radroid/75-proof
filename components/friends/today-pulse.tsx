@@ -64,15 +64,21 @@ export function TodayPulse() {
   };
 
   return (
-    <Card aria-label="Friends' activity today">
+    <Card aria-label="Friends' activity today" data-earned-tile="pulse">
       <CardContent className="py-3 px-4 space-y-2.5">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-baseline gap-2 min-w-0">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <span
+              className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              data-earned-section-heading
+            >
               Today
             </span>
             <span className="text-sm">
-              <span className="font-semibold tabular-nums">
+              <span
+                className="font-semibold tabular-nums"
+                data-earned-value
+              >
                 {completeWithSelf}
               </span>
               <span className="text-muted-foreground">

@@ -5,8 +5,29 @@ import { api } from "@/convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trophy, Medal, Award, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { useThemePersonality } from "@/components/theme-provider";
+import { Star } from "@/components/earned";
 
-function rankIcon(rank: number) {
+function rankIcon(rank: number, isEarned: boolean) {
+  if (isEarned) {
+    // Under Earned, the brand gold Star carries the reward semantic
+    // at every podium position — sizes step down to keep the 1-2-3
+    // hierarchy without inventing rank-specific glyphs.
+    if (rank === 1) return <Star size={14} />;
+    if (rank === 2)
+      return (
+        <span style={{ opacity: 0.7, display: "inline-flex" }}>
+          <Star size={12} />
+        </span>
+      );
+    if (rank === 3)
+      return (
+        <span style={{ opacity: 0.5, display: "inline-flex" }}>
+          <Star size={10} />
+        </span>
+      );
+    return null;
+  }
   if (rank === 1)
     return <Trophy className="h-3.5 w-3.5 text-yellow-500" aria-hidden="true" />;
   if (rank === 2)
@@ -27,6 +48,8 @@ function formatRange(startIso: string, endIso: string): string {
 
 export function WeeklyLeaderboard() {
   const data = useQuery(api.leaderboard.getFriendsLeaderboard);
+  const { personality } = useThemePersonality();
+  const isEarned = personality === "earned";
 
   if (data === undefined || data.rows.length <= 1) {
     return null;
@@ -39,10 +62,13 @@ export function WeeklyLeaderboard() {
   const showSelfBelow = selfRow && selfRank !== null && selfRank > 3;
 
   return (
-    <Card aria-label="Weekly leaderboard">
+    <Card aria-label="Weekly leaderboard" data-earned-tile="board">
       <CardContent className="py-4 px-4 sm:px-5">
         <div className="flex items-center justify-between gap-2 mb-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h3
+            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            data-earned-section-heading
+          >
             This Week
           </h3>
           <span className="text-[11px] text-muted-foreground/70 tabular-nums">
@@ -51,7 +77,12 @@ export function WeeklyLeaderboard() {
         </div>
         <ol className="space-y-1.5">
           {topThree.map((row, idx) => (
-            <LeaderboardRow key={row.user._id} row={row} rank={idx + 1} />
+            <LeaderboardRow
+              key={row.user._id}
+              row={row}
+              rank={idx + 1}
+              isEarned={isEarned}
+            />
           ))}
           {showSelfBelow && selfRow && selfRank !== null && (
             <>
@@ -61,7 +92,11 @@ export function WeeklyLeaderboard() {
               >
                 ···
               </li>
-              <LeaderboardRow row={selfRow} rank={selfRank} />
+              <LeaderboardRow
+                row={selfRow}
+                rank={selfRank}
+                isEarned={isEarned}
+              />
             </>
           )}
         </ol>
@@ -106,6 +141,7 @@ function Delta({ delta }: { delta: number }) {
 function LeaderboardRow({
   row,
   rank,
+  isEarned,
 }: {
   row: {
     user: { _id: string; displayName: string; avatarUrl?: string };
@@ -115,8 +151,9 @@ function LeaderboardRow({
     isSelf: boolean;
   };
   rank: number;
+  isEarned: boolean;
 }) {
-  const icon = rankIcon(rank);
+  const icon = rankIcon(rank, isEarned);
   const delta = row.daysThisWeek - row.daysLastWeek;
   return (
     <li
