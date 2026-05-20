@@ -9,6 +9,10 @@
 
 import { notFound } from "next/navigation";
 import { ThemedIcon } from "@/components/earned/icons/themed-icon";
+import { Button } from "@/components/ui/button";
+import { ChatBubble } from "@/components/ui/chat-bubble";
+import { EmptyState } from "@/components/ui/empty-state";
+import { EarnedLoadingText } from "@/components/earned/loading-text";
 
 export const dynamic = "force-dynamic";
 
@@ -29,12 +33,12 @@ const COLORS = [
 
 // Hand-drawn icon variants currently registered in `ThemedIcon`. Keep
 // in sync with `components/earned/icons/themed-icon.tsx` — adding a
-// variant there means adding a row here. Open PRs that add variants
-// (#81 `check`, #82 `calendar-clock`) will need this list extended on
-// their merge.
+// variant there means adding a row here. PR #81 (still open, adds
+// `check`) will need this list extended on its merge.
 const ICON_NAMES = [
   "palette",
   "calendar-days",
+  "calendar-clock",
   "bell",
   "shield",
   "alert-triangle",
@@ -178,6 +182,109 @@ export default function DesignSystemPage() {
                 </p>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="space-y-6">
+          <h2
+            className="text-2xl font-semibold"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            Components
+          </h2>
+          <p className="text-sm text-muted-foreground max-w-prose">
+            Live React renders of the Earned UI primitives. These are the
+            actual components shipped to users — not visual reproductions.
+          </p>
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              Button — variants
+            </h3>
+            <div className="flex flex-wrap gap-2 rounded-xl border bg-card p-4">
+              <Button variant="default">Default</Button>
+              <Button variant="outline">Outline</Button>
+              <Button variant="ghost">Ghost</Button>
+              <Button variant="secondary">Secondary</Button>
+              <Button variant="destructive">Destructive</Button>
+              <Button variant="success">Success</Button>
+              <Button variant="link">Link</Button>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              Button — sizes
+            </h3>
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-card p-4">
+              <Button size="sm">sm</Button>
+              <Button size="default">default</Button>
+              <Button size="lg">lg</Button>
+              <Button size="xl">xl</Button>
+              <Button size="icon" aria-label="Icon button">
+                <ThemedIcon name="plus" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              Button — loading state
+            </h3>
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-card p-4">
+              <Button loading>Saving</Button>
+              <Button variant="outline" loading>Loading</Button>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              Chat bubble — user + assistant
+            </h3>
+            <div className="space-y-2 rounded-xl border bg-card p-4">
+              <ChatBubble
+                role="user"
+                content="What habit should I start with?"
+              />
+              <ChatBubble
+                role="assistant"
+                content="Pick one you can do every day in under five minutes. The point isn't the habit yet — it's showing up."
+              />
+              <ChatBubble role="assistant" content="" pending />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              Empty state
+            </h3>
+            <div className="rounded-xl border bg-card p-4">
+              <EmptyState
+                icon={<ThemedIcon name="inbox" className="h-10 w-10" />}
+                title="Nothing here yet"
+                description="When something lands, you'll see it on this page."
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              Loading text
+            </h3>
+            <div className="flex flex-wrap items-center gap-6 rounded-xl border bg-card p-4">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground font-mono">
+                  default
+                </p>
+                <EarnedLoadingText label="thinking" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground font-mono">
+                  dotsOnly
+                </p>
+                <EarnedLoadingText dotsOnly label="loading" />
+              </div>
+            </div>
           </div>
         </section>
 
