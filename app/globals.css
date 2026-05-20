@@ -653,6 +653,29 @@
   box-shadow: 2px 2px 0 var(--earned-ink);
 }
 
+/* Friend progress card — sticker-shadow cream chip per the Phase 2
+   friends restyle brief ("friend cards as sticker-shadow cream
+   chips"). Same recipe as identity/metric tiles. Sits inside the
+   friends-progress section of /dashboard/progress. */
+[data-theme="earned"] [data-earned-tile="friend"] {
+  background-color: var(--earned-cream-light);
+  border-width: 1.5px;
+  border-color: var(--border);
+  box-shadow: 2px 2px 0 var(--earned-ink);
+}
+
+/* Section heading swap — uppercase-tracking labels read awkwardly
+   in Caveat at small sizes, so we keep Poppins but lift the colour
+   from muted to full ink and tighten letter-spacing (from 0.3em →
+   0.18em) so the caption reads as a deliberate notebook section
+   header. Targets section h2 elements opted in via
+   data-earned-section-heading. */
+[data-theme="earned"] [data-earned-section-heading] {
+  color: var(--earned-ink);
+  letter-spacing: 0.18em;
+  font-weight: 600;
+}
+
 /* ==========================================
    GLOBAL LAYOUT TOKENS
    Shared across themes. Bottom nav height is the pill

@@ -24,7 +24,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Check, MoreHorizontal, UserMinus, Ban, HandHeart } from "lucide-react";
+import { Check, MoreHorizontal, UserMinus, Ban } from "lucide-react";
+import { ThemedIcon } from "@/components/earned/icons";
 import { CoStreakChip } from "./co-streak-chip";
 import { FriendHabitsStrip, type FriendHabit } from "./friend-habits-strip";
 import { toast } from "sonner";
@@ -98,7 +99,7 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
 
   return (
     <>
-      <Card>
+      <Card data-earned-tile="friend">
         <CardContent className="pt-4">
           <div className="flex items-center gap-3">
             <Avatar className="shrink-0">
@@ -148,7 +149,8 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
                 className="h-11 w-11 transition-transform duration-200 touch-manipulation active:scale-95 disabled:active:scale-100"
                 data-just-nudged={justNudged ? "true" : undefined}
               >
-                <HandHeart
+                <ThemedIcon
+                  name="nudge"
                   className={[
                     "h-4 w-4 transition-transform duration-200",
                     alreadyNudged ? "text-primary" : "text-muted-foreground",

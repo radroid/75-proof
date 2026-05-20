@@ -10,4 +10,5 @@ export { SmartphoneEarned } from "./smartphone";
 export { MonitorEarned } from "./monitor";
 export { TrashEarned } from "./trash";
 export { CrossMarkEarned } from "./cross-mark";
+export { PaperAirplaneEarned } from "./paper-airplane";
 export { ThemedIcon } from "./themed-icon";
