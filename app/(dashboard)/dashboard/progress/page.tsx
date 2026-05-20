@@ -1010,7 +1010,7 @@ export default function ProgressPage() {
                                   )}
                                   {log?.completedAt && (
                                     <p className="text-xs text-muted-foreground mt-3">
-                                      Completed at{" "}
+                                      Showed up at{" "}
                                       {new Date(log.completedAt).toLocaleTimeString(
                                         "en-US",
                                         {
@@ -1082,8 +1082,8 @@ function HabitDayDetail({
           h.blockType === "counter" && typeof entry?.value === "number"
             ? `${entry.value}${h.target ? ` / ${h.target}` : ""}${h.unit ? ` ${h.unit}` : ""}`
             : done
-              ? "Completed"
-              : "Not done";
+              ? "Showed up"
+              : "Skipped";
         return (
           <div
             key={h._id}

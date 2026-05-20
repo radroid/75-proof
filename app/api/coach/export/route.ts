@@ -56,7 +56,7 @@ export async function GET() {
   } catch (err) {
     console.error("[coach/export] snapshot failed", err);
     return NextResponse.json(
-      { error: "Failed to build export bundle" },
+      { error: "Couldn't build the export bundle — try again?" },
       { status: 500 },
     );
   }

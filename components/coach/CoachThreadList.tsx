@@ -125,7 +125,7 @@ function DeleteThreadButton({ threadId }: { threadId: Id<"coachThreads"> }) {
       await deleteThread({ threadId });
       toast.success("Conversation deleted");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete");
+      toast.error(err instanceof Error ? err.message : "Couldn't delete — try again?");
     } finally {
       setBusy(false);
     }

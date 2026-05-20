@@ -56,10 +56,10 @@ export function ReconciliationDialog({
         <DialogHeader>
           <DialogTitle>Catch up or reset?</DialogTitle>
           <DialogDescription>
-            {dayList} {isPlural ? "are" : "is"} incomplete. Confirm you
-            finished {isPlural ? "them" : "it"} in real life, or reset the
-            challenge. If nothing happens within 7 days of a missed day, the
-            challenge resets automatically.
+            {dayList} {isPlural ? "are" : "is"} incomplete. Confirm I finished
+            {isPlural ? " them" : " it"}, or reset the challenge. If nothing
+            happens within 7 days of a missed day, the challenge resets
+            automatically.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex-col gap-2 pb-[max(0px,env(safe-area-inset-bottom))] sm:flex-col sm:justify-stretch">
@@ -74,7 +74,7 @@ export function ReconciliationDialog({
             size="lg"
             className="w-full active:scale-[0.98]"
           >
-            I completed the HARD tasks
+            I showed up for the HARD habits
           </Button>
           {showSoftOption && (
             <Button
@@ -89,7 +89,7 @@ export function ReconciliationDialog({
               variant="secondary"
               className="w-full active:scale-[0.98]"
             >
-              I completed HARD + soft tasks
+              I showed up for HARD + soft habits
             </Button>
           )}
           <Button
