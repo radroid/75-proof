@@ -1,11 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, X } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fadeUp, staggerContainerFast } from "@/components/ui/motion";
 import { useThemePersonality } from "@/components/theme-provider";
-import { Star } from "@/components/earned";
+import { CrossMarkEarned } from "@/components/earned/icons";
 
 interface Props {
   /** Inclusive day count to render. */
@@ -38,11 +38,12 @@ export function CalendarGrid({ totalDays, currentDay, completionMap }: Props) {
           const isToday = dayNumber === currentDay;
           const isPast = dayNumber < currentDay;
 
-          // Earned variant: cells become handwritten paper rather than
-          // solid colour swatches. Earned days carry a small gold star;
-          // missed days a red ink X; today a sky ring with the day
-          // number; future cells a faint outline so the page reads as
-          // "pages to fill in".
+          // Earned variant: each cell IS the sticker, not a container
+          // for an icon. Earned days fill gold with an ink border so
+          // the cell reads as a stuck-on gold star at any size; today
+          // fills sky with a cream-light digit + 2px ink sticker
+          // shadow; missed days carry an ink-rose border + a hand-
+          // drawn cross mark; future cells stay faint and dashed.
           if (isEarned) {
             return (
               <motion.div
@@ -52,39 +53,45 @@ export function CalendarGrid({ totalDays, currentDay, completionMap }: Props) {
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 className={cn(
                   "aspect-square rounded-md flex items-center justify-center min-w-0",
-                  "text-[10px] sm:text-xs",
-                  "cursor-default transition-all",
-                  isToday && "border-[1.5px] border-primary",
-                  !isComplete &&
-                    !isToday &&
-                    !isPast &&
-                    "border border-dashed border-[var(--earned-cream-dark)]",
+                  "text-[10px] sm:text-xs cursor-default transition-all",
                 )}
-                style={{ fontFamily: "var(--font-caveat), 'Caveat', cursive" }}
+                style={{
+                  fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                  ...(isComplete
+                    ? {
+                        backgroundColor: "var(--earned-star-gold)",
+                        border: "1.5px solid var(--earned-ink)",
+                        boxShadow: "2px 2px 0 var(--earned-ink)",
+                      }
+                    : isToday
+                      ? {
+                          backgroundColor: "var(--earned-sky)",
+                          color: "var(--earned-cream-light)",
+                          boxShadow: "2px 2px 0 var(--earned-ink)",
+                          border: "1.5px solid var(--earned-ink)",
+                        }
+                      : isPast
+                        ? {
+                            border: "1.5px solid var(--earned-rose)",
+                            color: "var(--earned-rose)",
+                          }
+                        : {
+                            border:
+                              "1px dashed var(--earned-cream-dark)",
+                            color: "rgba(31,31,29,0.4)",
+                          }),
+                }}
                 title={`Day ${dayNumber}${isComplete ? " — earned" : isToday ? " — today" : isPast ? " — missed" : ""}`}
               >
                 {isComplete ? (
-                  <Star size={18} />
+                  // Cell IS the sticker — no inset glyph.
+                  <span aria-hidden />
                 ) : isToday ? (
-                  <span
-                    className="font-semibold"
-                    style={{ color: "var(--earned-ink)" }}
-                  >
-                    {dayNumber}
-                  </span>
+                  <span className="font-semibold">{dayNumber}</span>
                 ) : isPast ? (
-                  <X
-                    className="h-3 w-3 sm:h-3.5 sm:w-3.5"
-                    style={{ color: "var(--earned-rose)" }}
-                    strokeWidth={1.8}
-                  />
+                  <CrossMarkEarned className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 ) : (
-                  <span
-                    className="text-muted-foreground"
-                    style={{ fontSize: "0.7rem" }}
-                  >
-                    {dayNumber}
-                  </span>
+                  <span style={{ fontSize: "0.7rem" }}>{dayNumber}</span>
                 )}
               </motion.div>
             );
@@ -122,17 +129,35 @@ export function CalendarGrid({ totalDays, currentDay, completionMap }: Props) {
       <div className="mt-4 md:mt-6 flex flex-wrap items-center gap-3 md:gap-4 text-xs">
         {isEarned ? (
           <>
-            <Legend swatch={<Star size={14} />} label="Showed up" />
             <Legend
-              swatchClass="border-[1.5px] border-primary"
+              swatch={
+                <div
+                  className="h-3.5 w-3.5 rounded-sm"
+                  style={{
+                    backgroundColor: "var(--earned-star-gold)",
+                    border: "1.5px solid var(--earned-ink)",
+                  }}
+                />
+              }
+              label="Showed up"
+            />
+            <Legend
+              swatch={
+                <div
+                  className="h-3.5 w-3.5 rounded-sm"
+                  style={{
+                    backgroundColor: "var(--earned-sky)",
+                    border: "1.5px solid var(--earned-ink)",
+                  }}
+                />
+              }
               label="Today"
             />
             <Legend
               swatch={
-                <X
-                  className="h-3 w-3"
-                  style={{ color: "var(--earned-rose)" }}
-                  strokeWidth={1.8}
+                <div
+                  className="h-3.5 w-3.5 rounded-sm"
+                  style={{ border: "1.5px solid var(--earned-rose)" }}
                 />
               }
               label="Missed"

@@ -9,4 +9,5 @@ export { SettingsGearEarned } from "./settings-gear";
 export { SmartphoneEarned } from "./smartphone";
 export { MonitorEarned } from "./monitor";
 export { TrashEarned } from "./trash";
+export { CrossMarkEarned } from "./cross-mark";
 export { ThemedIcon } from "./themed-icon";
