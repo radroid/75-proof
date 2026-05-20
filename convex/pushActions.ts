@@ -182,8 +182,8 @@ export function buildNudgePayload(
   platform: Platform
 ): PushPayload {
   const name = clampName(fromName);
-  const title = `${name} nudged you 👊`;
-  const body = "They're cheering you on — finish today strong.";
+  const title = `${name} nudged you`;
+  const body = "They're showing up — are you?";
   const tag = `nudge-${fromUserId}`;
   // Friends merge Phase 3: nudges deep-link into Progress now. Old pushes
   // pointing at `/dashboard/friends` still work via the redirect file.
