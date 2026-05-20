@@ -21,10 +21,17 @@ export function EarnedLoadingText({
   label = "loading",
   className,
   size = "sm",
+  dotsOnly = false,
 }: {
   label?: string;
   className?: string;
   size?: "sm" | "md";
+  // When true, render only the animated dots — no visible word.
+  // Use this for icon-only slots (e.g. icon-sized round buttons
+  // mid-action) where there's no room for "loading…". The sr-only
+  // status text is still rendered so screen-reader users hear "label,
+  // please wait" once on mount.
+  dotsOnly?: boolean;
 }) {
   const [dots, setDots] = useState(3);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -72,7 +79,7 @@ export function EarnedLoadingText({
           letterSpacing: "0.01em",
         }}
       >
-        {label}
+        {!dotsOnly && label}
         <span>{".".repeat(dots)}</span>
       </span>
       <span role="status" aria-live="polite" className="sr-only">

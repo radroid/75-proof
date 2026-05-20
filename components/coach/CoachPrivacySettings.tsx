@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Brain, Download, History, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Brain, Download, History, Pencil, Trash2 } from "lucide-react";
+import { EarnedLoadingText } from "@/components/earned/loading-text";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -286,7 +287,7 @@ export function CoachPrivacySettings() {
                         disabled={saving || busy || !draftDirty}
                       >
                         {saving ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <EarnedLoadingText dotsOnly label="saving" />
                         ) : (
                           "Save"
                         )}
@@ -316,7 +317,7 @@ export function CoachPrivacySettings() {
             disabled={downloading}
           >
             {downloading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <EarnedLoadingText dotsOnly label="downloading" />
             ) : (
               <Download className="h-4 w-4" />
             )}

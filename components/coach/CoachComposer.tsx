@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ArrowUp, Loader2 } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CoachAttachmentMenu } from "./CoachAttachmentMenu";
+import { EarnedLoadingText } from "@/components/earned/loading-text";
 import {
   CoachAttachmentChip,
   type RoutineAttachment,
@@ -109,7 +110,7 @@ export function CoachComposer({
             )}
           >
             {pending ? (
-              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+              <EarnedLoadingText dotsOnly label="sending" />
             ) : (
               <ArrowUp className="h-4 w-4" />
             )}
