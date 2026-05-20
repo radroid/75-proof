@@ -453,63 +453,66 @@ export default function SettingsPage() {
         <MotionItem>
           <Card>
             <CardContent className="p-5 sm:p-6">
-              <div className="space-y-5">
-                {/* Haptics (device-local) */}
-                <div>
-                  <div className="flex items-center justify-between gap-4 min-h-11">
-                    <div className="min-w-0 flex-1">
-                      <Label htmlFor="haptics-toggle" className="cursor-pointer">
-                        Haptic feedback
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Subtle buzz on toggles, taps, and completions. Stored
-                        only on this device.
-                      </p>
-                    </div>
-                    <Switch
-                      id="haptics-toggle"
-                      checked={hapticsOn}
-                      onCheckedChange={(checked) => {
-                        setHapticsEnabled(checked);
-                        setHapticsOn(checked);
-                      }}
-                      className="scale-125 origin-right"
-                    />
+              {/* Direct children of CardContent here (no space-y wrapper)
+                  so the Earned theme's dashed-row separator rule lands
+                  between Haptics and Water Unit. The subsequent block
+                  carries its own `mt-5` so non-Earned themes still get
+                  the 1.25rem vertical rhythm; the Earned rule's higher
+                  specificity overrides that gap with the dashed border. */}
+              <div>
+                <div className="flex items-center justify-between gap-4 min-h-11">
+                  <div className="min-w-0 flex-1">
+                    <Label htmlFor="haptics-toggle" className="cursor-pointer">
+                      Haptic feedback
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Subtle buzz on toggles, taps, and completions. Stored
+                      only on this device.
+                    </p>
                   </div>
+                  <Switch
+                    id="haptics-toggle"
+                    checked={hapticsOn}
+                    onCheckedChange={(checked) => {
+                      setHapticsEnabled(checked);
+                      setHapticsOn(checked);
+                    }}
+                    className="scale-125 origin-right"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => haptic("success")}
+                  disabled={!hapticsOn}
+                  className="mt-3 min-h-11"
+                >
+                  Test haptic
+                </Button>
+              </div>
+
+              <div className="mt-5 space-y-2">
+                <Label>Water Unit</Label>
+                <div className="flex gap-2">
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => haptic("success")}
-                    disabled={!hapticsOn}
-                    className="mt-3 min-h-11"
+                    variant={waterUnit === "oz" ? "default" : "outline"}
+                    onClick={() => setWaterUnit("oz")}
+                    aria-pressed={waterUnit === "oz"}
+                    className="flex-1 min-h-11"
                   >
-                    Test haptic
+                    Ounces (oz)
                   </Button>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Water Unit</Label>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={waterUnit === "oz" ? "default" : "outline"}
-                      onClick={() => setWaterUnit("oz")}
-                      aria-pressed={waterUnit === "oz"}
-                      className="flex-1 min-h-11"
-                    >
-                      Ounces (oz)
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={waterUnit === "ml" ? "default" : "outline"}
-                      onClick={() => setWaterUnit("ml")}
-                      aria-pressed={waterUnit === "ml"}
-                      className="flex-1 min-h-11"
-                    >
-                      Milliliters (ml)
-                    </Button>
-                  </div>
+                  <Button
+                    type="button"
+                    variant={waterUnit === "ml" ? "default" : "outline"}
+                    onClick={() => setWaterUnit("ml")}
+                    aria-pressed={waterUnit === "ml"}
+                    className="flex-1 min-h-11"
+                  >
+                    Milliliters (ml)
+                  </Button>
                 </div>
               </div>
             </CardContent>

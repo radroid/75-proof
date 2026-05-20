@@ -585,6 +585,29 @@
   margin-top: 0.75rem;
 }
 
+/* Page header treatment — matches the MeScreen pattern (Caveat 40px
+   handwritten title + Poppins 13px muted subtitle). Targets the
+   data-slot attrs added to PageHeader so this applies to every page
+   without per-route work. The 3xl/font-bold Tailwind utility on the
+   h1 is overridden because Caveat needs different sizing to read as
+   the same hierarchy. */
+[data-theme="earned"] [data-slot="page-title"] {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 2.5rem;
+  letter-spacing: -0.01em;
+  /* 1.05 gives Caveat's descenders (g/y/p) enough room without
+     visibly inflating the header rhythm. Pure `1` clipped them. */
+  line-height: 1.05;
+}
+
+[data-theme="earned"] [data-slot="page-description"] {
+  font-family: var(--font-body);
+  color: rgba(31, 31, 29, 0.55);
+  font-size: 0.8125rem;
+  margin-top: 0.25rem;
+}
+
 /* ==========================================
    GLOBAL LAYOUT TOKENS
    Shared across themes. Bottom nav height is the pill

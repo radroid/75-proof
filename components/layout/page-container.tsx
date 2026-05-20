@@ -56,9 +56,19 @@ export function PageHeader({
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+          <h1
+            data-slot="page-title"
+            className="text-3xl font-bold tracking-tight"
+          >
+            {title}
+          </h1>
           {description && (
-            <p className="mt-2 text-muted-foreground">{description}</p>
+            <p
+              data-slot="page-description"
+              className="mt-2 text-muted-foreground"
+            >
+              {description}
+            </p>
           )}
         </div>
         {action && <div className="flex-shrink-0">{action}</div>}
