@@ -12,6 +12,7 @@ import { ChallengeCompletedDialog } from "@/components/ChallengeCompletedDialog"
 import { ReconciliationDialog } from "@/components/ReconciliationDialog";
 import {
   Star,
+  StarBurst,
   PaperChip,
   HandHabitRow,
   type HabitRowData,
@@ -535,7 +536,7 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
               role="status"
               aria-live="polite"
             >
-              <Star size={72} />
+              <StarBurst size={72} />
               <div
                 style={{
                   fontFamily: "var(--font-caveat), 'Caveat', cursive",
