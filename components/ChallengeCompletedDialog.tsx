@@ -84,10 +84,10 @@ export function ChallengeCompletedDialog({
             <Trophy className="h-7 w-7 text-success" />
           </div>
           <DialogTitle className="text-center text-2xl">
-            You did it.
+            I did it.
           </DialogTitle>
           <DialogDescription className="text-center">
-            You finished your {daysTotal}-day challenge — every habit, every
+            I finished my {daysTotal}-day challenge — every habit, every
             day. What&apos;s next?
           </DialogDescription>
         </DialogHeader>

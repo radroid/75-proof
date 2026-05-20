@@ -32,11 +32,10 @@ export function ChallengeFailedDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onDismiss()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>A fresh start</DialogTitle>
+          <DialogTitle>Today&apos;s a fresh page</DialogTitle>
           <DialogDescription>
-            Day {failedOnDay} sat incomplete for more than 7 days, so per 75
-            HARD rules the counter goes back to Day 0. That&apos;s it — no
-            penalty, just a reset.
+            Day {failedOnDay} sat incomplete for more than 7 days, so the
+            counter goes back to Day 0. No penalty — just a clean page.
           </DialogDescription>
         </DialogHeader>
         {streakReached !== undefined && streakReached > 0 && (
@@ -64,9 +63,9 @@ export function ChallengeFailedDialog({
           </div>
         )}
         <p className="text-sm text-muted-foreground">
-          Every restart is data, not failure. You made it
+          Every restart is data, not failure. I made it
           {streakReached ? ` ${streakReached} day${streakReached === 1 ? "" : "s"}` : " this far"}
-          {" "}— you can do it again, stronger.
+          {" "}— I can do it again, stronger.
         </p>
         <DialogFooter className="flex-col-reverse gap-2 pb-[max(0px,env(safe-area-inset-bottom))] sm:flex-row">
           <Button
@@ -89,7 +88,7 @@ export function ChallengeFailedDialog({
             size="lg"
             className="w-full active:scale-[0.98] sm:flex-1"
           >
-            Start New Challenge
+            Start a new one
           </Button>
         </DialogFooter>
       </DialogContent>

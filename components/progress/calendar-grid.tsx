@@ -60,7 +60,7 @@ export function CalendarGrid({ totalDays, currentDay, completionMap }: Props) {
         })}
       </motion.div>
       <div className="mt-4 md:mt-6 flex flex-wrap items-center gap-3 md:gap-4 text-xs">
-        <Legend swatchClass="bg-success" label="Completed" />
+        <Legend swatchClass="bg-success" label="Showed up" />
         <Legend swatchClass="border-2 border-primary" label="Today" />
         <Legend swatchClass="bg-destructive/10" label="Missed" />
         <Legend swatchClass="bg-muted" label="Upcoming" />

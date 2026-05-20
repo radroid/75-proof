@@ -87,7 +87,7 @@ export function CoachRecentsSheet({
       toast.success("Conversation deleted");
       setPendingDeleteId(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete");
+      toast.error(err instanceof Error ? err.message : "Couldn't delete — try again?");
     } finally {
       setIsDeleting(false);
     }

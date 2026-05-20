@@ -264,8 +264,8 @@ export function markDayComplete(args: {
     if (existing) return;
 
     const message = challenge.isHabitTracker
-      ? `Completed Day ${args.dayNumber}!`
-      : `Completed Day ${args.dayNumber} of ${challenge.daysTotal ?? 75}!`;
+      ? `Day ${args.dayNumber} — showed up.`
+      : `Day ${args.dayNumber} of ${challenge.daysTotal ?? 75} — showed up.`;
     draft.activityFeed.push({
       _id: genId("feed"),
       _creationTime: Date.now(),
@@ -330,7 +330,7 @@ export function syncChallengeStatus(args: {
           type: "challenge_completed",
           challengeId: challenge._id,
           dayNumber: daysTotal,
-          message: `Completed the ${daysTotal}-day challenge!`,
+          message: `Showed up for all ${daysTotal} days.`,
           createdAt: new Date().toISOString(),
         });
         return;
