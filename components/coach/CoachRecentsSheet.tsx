@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Loader2, MessageSquareText, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { ThemedIcon } from "@/components/earned/icons/themed-icon";
+import { EarnedLoadingText } from "@/components/earned/loading-text";
 import {
   Command,
   CommandEmpty,
@@ -129,7 +130,7 @@ export function CoachRecentsSheet({
                 aria-label="Close"
                 className="-mr-1 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <X className="h-5 w-5" />
+                <ThemedIcon name="close" className="h-5 w-5" />
               </button>
             </DialogClose>
           </div>
@@ -148,15 +149,14 @@ export function CoachRecentsSheet({
                   }}
                   className="data-[selected=true]:bg-transparent data-[selected=true]:text-foreground active:bg-accent/60"
                 >
-                  <Plus className="text-foreground" />
+                  <ThemedIcon name="plus" className="h-5 w-5 text-foreground" />
                   <span className="font-medium">New page</span>
                 </CommandItem>
               </CommandGroup>
 
               {threads === undefined && (
-                <div className="flex items-center gap-2 px-3 py-4 text-xs text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Loading conversations…
+                <div className="px-3 py-4 text-xs text-muted-foreground">
+                  <EarnedLoadingText label="loading my pages" />
                 </div>
               )}
 
@@ -178,7 +178,7 @@ export function CoachRecentsSheet({
                                 onSelect={() => onClose()}
                                 className="bg-primary/5 data-[selected=true]:bg-primary/5 data-[selected=true]:text-foreground"
                               >
-                                <MessageSquareText className="text-primary" />
+                                <ThemedIcon name="note" className="h-5 w-5 text-primary" />
                                 <div className="min-w-0 flex-1">
                                   <p className="truncate text-sm font-medium leading-tight">
                                     {t.title}
@@ -214,7 +214,7 @@ export function CoachRecentsSheet({
                             }}
                             className="data-[selected=true]:bg-transparent data-[selected=true]:text-foreground active:bg-accent/60"
                           >
-                            <MessageSquareText className="text-muted-foreground" />
+                            <ThemedIcon name="note" className="h-5 w-5 text-muted-foreground" />
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-medium leading-tight">
                                 {t.title}
@@ -235,7 +235,7 @@ export function CoachRecentsSheet({
                               aria-label={`Delete ${t.title}`}
                               className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <ThemedIcon name="trash" className="h-4 w-4" />
                             </button>
                           </CommandItem>
                         );
@@ -274,10 +274,7 @@ export function CoachRecentsSheet({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting…
-                </>
+                <EarnedLoadingText label="tearing out" className="text-current" />
               ) : (
                 "Delete"
               )}

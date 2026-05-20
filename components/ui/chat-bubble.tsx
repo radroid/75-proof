@@ -59,12 +59,7 @@ export function MarkdownInline({
   isUser: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "prose-chat",
-        isUser ? "prose-chat-user" : "prose-chat-assistant",
-      )}
-    >
+    <div>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

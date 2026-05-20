@@ -18,4 +18,5 @@ export { RotateCwEarned } from "./rotate-cw";
 export { PlusEarned } from "./plus";
 export { InboxEarned } from "./inbox";
 export { HistoryEarned } from "./history";
+export { NoteEarned } from "./note";
 export { ThemedIcon } from "./themed-icon";
