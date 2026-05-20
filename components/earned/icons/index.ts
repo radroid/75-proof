@@ -15,4 +15,6 @@ export { RocketEarned } from "./rocket";
 export { TrophyEarned } from "./trophy";
 export { FlameEarned } from "./flame";
 export { RotateCwEarned } from "./rotate-cw";
+export { PlusEarned } from "./plus";
+export { InboxEarned } from "./inbox";
 export { ThemedIcon } from "./themed-icon";
