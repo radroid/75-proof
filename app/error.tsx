@@ -4,6 +4,10 @@ import { useEffect } from "react";
 import Link from "next/link";
 import posthog from "posthog-js";
 
+// Earned brand error boundary. Same visual + inline-token approach
+// as /offline + /not-found — must render even when the theme
+// provider hasn't mounted (hydration errors land here before any
+// client context is up).
 export default function Error({
   error,
   reset,
@@ -12,7 +16,6 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log to console; telemetry hook-point for future
     console.error("App error boundary:", error);
     posthog.captureException(error, { digest: error.digest });
   }, [error]);
@@ -29,61 +32,61 @@ export default function Error({
         paddingRight: "max(1.25rem, env(safe-area-inset-right))",
         paddingBottom: "max(2rem, env(safe-area-inset-bottom))",
         paddingLeft: "max(1.25rem, env(safe-area-inset-left))",
-        backgroundColor: "#ffffff",
-        fontFamily: "system-ui, -apple-system, sans-serif",
+        backgroundColor: "#F4ECD8",
+        backgroundImage:
+          "repeating-linear-gradient(to bottom, transparent 0, transparent 31px, rgba(31,31,29,0.08) 31px, rgba(31,31,29,0.08) 32px)",
+        backgroundPosition: "0 6px",
+        fontFamily:
+          "var(--font-poppins), system-ui, -apple-system, sans-serif",
+        color: "#1F1F1D",
         textAlign: "center",
       }}
     >
-      <div
-        style={{
-          width: 96,
-          height: 96,
-          borderRadius: 24,
-          backgroundColor: "#FF6154",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 32,
-        }}
+      {/* Gold star with a rose ink dot at the centre — "earned, but
+          something interrupted it". Communicates "this isn't a fail
+          state, just a hiccup" without leaning on a sad emoji. */}
+      <svg
+        width={96}
+        height={96}
+        viewBox="0 0 24 24"
         aria-hidden="true"
+        style={{ display: "block", marginBottom: 24 }}
       >
-        <span
-          style={{
-            fontSize: 48,
-            fontWeight: 900,
-            color: "#ffffff",
-            letterSpacing: "-0.04em",
-            lineHeight: 1,
-          }}
-        >
-          75
-        </span>
-      </div>
+        <path
+          d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 18 L6 22 L7 15 L2 10 L9 9 Z"
+          fill="#D8A830"
+          stroke="#1F1F1D"
+          strokeWidth={1.5}
+          strokeLinejoin="round"
+        />
+        <circle cx="12" cy="13.2" r="1.7" fill="#C75F4A" />
+      </svg>
 
       <h1
         style={{
-          fontSize: 28,
-          fontWeight: 800,
-          color: "#1a1a1a",
-          margin: "0 0 12px",
-          letterSpacing: "-0.02em",
+          fontFamily:
+            "var(--font-caveat), 'Caveat', 'Brush Script MT', cursive",
+          fontSize: 56,
+          fontWeight: 700,
+          color: "#1F1F1D",
+          margin: "0 0 8px",
+          lineHeight: 1,
+          letterSpacing: "-0.01em",
         }}
       >
-        Something went wrong
+        Something broke
       </h1>
 
       <p
         style={{
           fontSize: 16,
-          color: "#1a1a1a",
-          opacity: 0.6,
+          color: "rgba(31,31,29,0.65)",
           margin: "0 0 32px",
           maxWidth: 320,
           lineHeight: 1.5,
         }}
       >
-        Unexpected error. Your progress is safe &mdash; try again or head back
-        to the dashboard.
+        My progress is safe. Try again, or head back.
       </p>
 
       <div
@@ -100,18 +103,19 @@ export default function Error({
           style={{
             minHeight: 48,
             padding: "12px 32px",
-            backgroundColor: "#FF6154",
-            color: "#ffffff",
-            border: "none",
+            backgroundColor: "#0090D8",
+            color: "#F9F3E1",
             fontSize: 16,
-            fontWeight: 700,
-            cursor: "pointer",
+            fontWeight: 600,
             letterSpacing: "0.01em",
+            border: "1.5px solid #1F1F1D",
+            boxShadow: "2px 2px 0 #1F1F1D",
+            cursor: "pointer",
             touchAction: "manipulation",
             WebkitTapHighlightColor: "transparent",
           }}
         >
-          Try Again
+          Try again
         </button>
         <Link
           href="/dashboard"
@@ -122,17 +126,17 @@ export default function Error({
             minHeight: 48,
             padding: "12px 32px",
             backgroundColor: "transparent",
-            color: "#1a1a1a",
+            color: "#1F1F1D",
             textDecoration: "none",
             fontSize: 16,
-            fontWeight: 600,
+            fontWeight: 500,
             letterSpacing: "0.01em",
-            border: "1px solid rgba(26,26,26,0.15)",
+            border: "1.5px dashed rgba(31,31,29,0.35)",
             touchAction: "manipulation",
             WebkitTapHighlightColor: "transparent",
           }}
         >
-          Back to Dashboard
+          Back to today
         </Link>
       </div>
 
@@ -141,8 +145,7 @@ export default function Error({
           style={{
             marginTop: 24,
             fontSize: 11,
-            color: "#1a1a1a",
-            opacity: 0.3,
+            color: "rgba(31,31,29,0.4)",
             fontFamily: "ui-monospace, SFMono-Regular, monospace",
             letterSpacing: "0.05em",
           }}
