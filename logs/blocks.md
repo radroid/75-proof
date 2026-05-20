@@ -67,3 +67,9 @@ Items flagged by the per-iter Class A reviewer that were ratified as ship-as-is 
 
 ### From iter-028 (this iter) survey
 - 43 non-coach files still import Lucide (`grep "from \"lucide-react\"" components/ app/`). Most are utility / structural icons (chevrons, locks, calendars) where ThemedIcon doesn't yet have a matching variant. Adding variants for `chevron-left`, `chevron-right`, `lock`, `check`, `calendar-clock`, `refresh-ccw` (well, that's `rotate-cw`) would close the remaining gap. **Not blocking** — Lucide rendering on Earned reads as system-icon-on-paper, which is acceptable for utility chrome (vs the brand-visible Trophy/Infinity icons we just swapped).
+  - `check` — **resolved iter-029** (`CheckEarned` variant + theme-switcher swap, in PR #81).
+  - `calendar-clock` — **resolved iter-030** (`CalendarClockEarned` variant + ChallengeUpcoming swap).
+
+### From iter-029 design-review
+- **Extend `ThemedIcon` with optional `strokeWidth?: number` prop**, forwarded only to the Lucide branch (the Earned variants intentionally own their own stroke weight via their inline SVG). At the theme-switcher call site, the old Lucide `Check` used `strokeWidth={3}` (bold selected-tick); the swap to `ThemedIcon` silently drops that to Lucide's default `=2` on arctic / broadsheet / military / zen, losing ~0.6px of rendered stroke at 14px display. After the extension lands, restore `strokeWidth={3}` at the theme-switcher call site.
+- **Visual smoke test on all four non-Earned theme cards** after the Earned merge — confirm the thinner tick (1.17px rendered) still reads clearly inside the gold disc on arctic / broadsheet / military / zen previews before Phase 9 lands on main.

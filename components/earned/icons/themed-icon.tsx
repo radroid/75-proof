@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   Palette,
   CalendarDays,
+  CalendarClock,
   Bell,
   Shield,
   AlertTriangle,
@@ -29,6 +30,7 @@ import {
 import { useThemePersonality } from "@/components/theme-provider";
 import { PaletteEarned } from "./palette";
 import { CalendarDaysEarned } from "./calendar-days";
+import { CalendarClockEarned } from "./calendar-clock";
 import { BellEarned } from "./bell";
 import { ShieldEarned } from "./shield";
 import { AlertTriangleEarned } from "./alert-triangle";
@@ -58,6 +60,7 @@ import { NoteEarned } from "./note";
 type IconName =
   | "palette"
   | "calendar-days"
+  | "calendar-clock"
   | "bell"
   | "shield"
   | "alert-triangle"
@@ -88,6 +91,13 @@ const variants: Record<
 > = {
   palette: { lucide: Palette, earned: PaletteEarned },
   "calendar-days": { lucide: CalendarDays, earned: CalendarDaysEarned },
+  // Pre-start countdown surface (ChallengeUpcoming) — a calendar
+  // page with a small clock face nesting into the bottom-right
+  // corner to signal "scheduled for a future moment". Lucide's
+  // CalendarClock is the same metaphor; the Earned variant keeps
+  // it inside the notebook vocabulary (wobbly page outline + ring
+  // clock with hands at 12 and 3).
+  "calendar-clock": { lucide: CalendarClock, earned: CalendarClockEarned },
   bell: { lucide: Bell, earned: BellEarned },
   shield: { lucide: Shield, earned: ShieldEarned },
   "alert-triangle": { lucide: AlertTriangle, earned: AlertTriangleEarned },
