@@ -31,6 +31,17 @@ export default defineSchema({
         nudges: v.optional(v.boolean()),
         reactions: v.optional(v.boolean()),
       })),
+      // Multi-device theme sync. localStorage still owns first-paint to
+      // avoid a flash-of-wrong-theme round-trip; when an authed user
+      // signs in on a fresh device we hydrate from this field if
+      // present. Optional so legacy rows stay valid.
+      themePersonality: v.optional(v.union(
+        v.literal("arctic"),
+        v.literal("broadsheet"),
+        v.literal("military"),
+        v.literal("zen"),
+        v.literal("earned"),
+      )),
     }),
     onboardingComplete: v.optional(v.boolean()),
     hasSeenTutorial: v.optional(v.boolean()),
