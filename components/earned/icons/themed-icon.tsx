@@ -60,6 +60,14 @@ import { CheckEarned } from "./check";
 // Earned variant. Add new icons as additional entries — keep both
 // renderers' API matching `className` so the swap is invisible to
 // callers.
+//
+// a11y: lucide-react v0.562+ auto-applies `aria-hidden="true"` to any
+// icon rendered without children + without an a11y prop (`aria-label`,
+// `role`, etc.), per `node_modules/lucide-react/dist/esm/Icon.js`
+// line 32. So swap sites migrating from a bare Lucide icon to
+// `ThemedIcon` can safely drop their JSX-level `aria-hidden`. The
+// Earned variants declare `aria-hidden` directly on their SVG, so
+// either branch is correctly hidden from assistive tech.
 
 type IconName =
   | "palette"
