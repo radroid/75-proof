@@ -29,17 +29,14 @@ import {
 import { toast } from "sonner";
 import {
   AlertTriangle,
-  Bell,
-  CalendarDays,
   Infinity as InfinityIcon,
-  Palette,
   Play,
   Settings,
-  Shield,
   Smartphone,
   Monitor,
   Trash2,
 } from "lucide-react";
+import { ThemedIcon } from "@/components/earned/icons";
 import { useGuest } from "@/components/guest-provider";
 import { LocalSettingsPage } from "@/components/local-settings";
 import { CoachPrivacySettings } from "@/components/coach/CoachPrivacySettings";
@@ -362,10 +359,14 @@ export default function SettingsPage() {
       {/* Appearance section */}
       <Section title="Appearance">
         <MotionItem>
-          <Card>
+          {/* `data-earned-card="theme"` hooks the sticker-shadow surround
+              that distinguishes this card as the highest-discovery
+              surface on the page. The override is scoped under
+              [data-theme="earned"] so other themes are unaffected. */}
+          <Card data-earned-card="theme">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Palette className="h-5 w-5 text-primary" />
+                <ThemedIcon name="palette" className="h-5 w-5 text-primary" />
                 <CardTitle className="text-lg">Theme</CardTitle>
               </div>
               <CardDescription>
@@ -527,7 +528,7 @@ export default function SettingsPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <CalendarDays className="h-5 w-5 text-primary" />
+                  <ThemedIcon name="calendar-days" className="h-5 w-5 text-primary" />
                   <CardTitle className="text-lg">Duration</CardTitle>
                 </div>
                 <CardDescription>
@@ -684,7 +685,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-primary" />
+                <ThemedIcon name="shield" className="h-5 w-5 text-primary" />
                 <CardTitle className="text-lg">Sharing Preferences</CardTitle>
               </div>
               <CardDescription>
@@ -778,7 +779,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
+                <ThemedIcon name="bell" className="h-5 w-5 text-primary" />
                 <CardTitle className="text-lg">Daily Reminders</CardTitle>
               </div>
               <CardDescription>

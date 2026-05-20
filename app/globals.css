@@ -608,6 +608,14 @@
   margin-top: 0.25rem;
 }
 
+/* Sticker-shadow surround on the Theme switcher card — the most
+   "discoverable" surface on the page (it's how users find Earned in
+   the first place). The 3px-offset hard ink shadow gives the card a
+   "stuck-on" feel matching the PaperChip + Earned brand pattern. */
+[data-theme="earned"] [data-earned-card="theme"] {
+  box-shadow: 3px 3px 0 var(--earned-ink);
+}
+
 /* ==========================================
    GLOBAL LAYOUT TOKENS
    Shared across themes. Bottom nav height is the pill
