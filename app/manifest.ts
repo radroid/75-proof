@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "earned",
     short_name: "earned",
-    description: "Show up. Every day. Build the streak.",
+    description: "Show up. Every day. Earn the star.",
     start_url: "/dashboard",
     display: "standalone",
     theme_color: "#ffffff",
