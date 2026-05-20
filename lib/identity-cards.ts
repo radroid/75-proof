@@ -58,18 +58,18 @@ const TEMPLATES: Template[] = [
     weight: 1,
     match: ({ currentDay }) => currentDay >= 1 && currentDay <= 7,
     render: ({ currentDay }) =>
-      `You showed up. That's the whole game on Day ${currentDay}.`,
+      `I showed up. That's the whole game on Day ${currentDay}.`,
   },
   {
     weight: 1,
     match: ({ currentDay }) => currentDay >= 1 && currentDay <= 7,
     render: ({ currentDay }) =>
-      `${days(currentDay)} in. The hardest part is convincing yourself it's possible — you just did.`,
+      `${days(currentDay)} in. The hardest part is convincing myself it's possible — I just did.`,
   },
   {
     weight: 1,
     match: ({ currentDay }) => currentDay >= 3 && currentDay <= 7,
-    render: () => `Most people quit before Day 7. You're not most people.`,
+    render: () => `Most people quit before Day 7. I'm not most people.`,
   },
 
   // ── Days 7–14 ─────────────────────────────────────────────────
@@ -77,18 +77,18 @@ const TEMPLATES: Template[] = [
     weight: 1,
     match: ({ currentDay }) => currentDay >= 7 && currentDay <= 14,
     render: ({ currentDay }) =>
-      `You're making it past the hardest part. ${days(currentDay)} down.`,
+      `I'm making it past the hardest part. ${days(currentDay)} down.`,
   },
   {
     weight: 1,
     match: ({ currentDay }) => currentDay >= 14 && currentDay < 21,
-    render: () => `Two weeks of evidence: you're someone who shows up.`,
+    render: () => `Two weeks of evidence: I'm someone who shows up.`,
   },
   {
     weight: 1,
     match: ({ currentDay }) => currentDay >= 7 && currentDay <= 14,
     render: ({ currentDay }) =>
-      `You've already done this ${times(currentDay)}. That's the proof.`,
+      `I've already done this ${times(currentDay)}. That's the proof.`,
   },
 
   // ── Days 14–30, with a strong habit ──────────────────────────
@@ -97,14 +97,14 @@ const TEMPLATES: Template[] = [
     match: ({ currentDay, topHabit }) =>
       currentDay >= 14 && currentDay <= 30 && !!topHabit && topHabit.streak >= 3,
     render: ({ topHabit }) =>
-      `You did ${topHabit!.name} ${days(topHabit!.streak)} in a row. That's not a streak — that's a pattern.`,
+      `${days(topHabit!.streak)} of ${topHabit!.name} in a row. That's not a streak — that's a pattern.`,
   },
   {
     weight: 2,
     match: ({ currentDay, topHabit }) =>
       currentDay >= 14 && currentDay <= 30 && !!topHabit && topHabit.streak >= 5,
     render: ({ topHabit }) =>
-      `${topHabit!.name} is starting to look like who you are.`,
+      `${topHabit!.name} is starting to look like who I am.`,
   },
   // Fitness-flavored variant: only fires for fitness routines so the
   // body-vocabulary doesn't crash a productivity user's identity card.
@@ -114,7 +114,7 @@ const TEMPLATES: Template[] = [
     match: ({ currentDay, topHabit }) =>
       currentDay >= 14 && currentDay <= 30 && !!topHabit && topHabit.streak >= 5,
     render: ({ topHabit }) =>
-      `Your body is starting to expect ${topHabit!.name}. ${days(topHabit!.streak)} straight.`,
+      `My body is starting to expect ${topHabit!.name}. ${days(topHabit!.streak)} straight.`,
   },
 
   // ── Fixed-length, all stages ─────────────────────────────────
@@ -123,7 +123,7 @@ const TEMPLATES: Template[] = [
     match: ({ daysTotal, currentDay }) =>
       daysTotal !== null && currentDay <= 30 && daysTotal <= 365,
     render: ({ currentDay, daysTotal }) =>
-      `${currentDay} of ${daysTotal}. The version of you on Day ${daysTotal} is waiting.`,
+      `${currentDay} of ${daysTotal}. The version of me on Day ${daysTotal} is waiting.`,
   },
 
   // ── Days 21–30 (closing formation window) ────────────────────
@@ -173,9 +173,9 @@ export function pickIdentityTemplate(input: IdentityCardInput): string {
   if (eligible.length === 0) {
     // Fall back to a generic phrasing. Use the routine label as-is when
     // present (the `bareLabel` callsite — Progress page — already strips a
-    // leading "your "/"the ", so we won't render "your your routine"); if
-    // no label survived, fall back to the literal "your routine".
-    const tail = (input.routineLabel ?? "").trim() || "your routine";
+    // leading "my "/"the ", so we won't render "my my routine"); if
+    // no label survived, fall back to the literal "my routine".
+    const tail = (input.routineLabel ?? "").trim() || "my routine";
     return `Day ${input.currentDay} of ${tail}.`;
   }
 

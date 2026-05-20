@@ -641,6 +641,18 @@
   box-shadow: 2px 2px 0 var(--earned-ink);
 }
 
+/* Identity card treatment — the hero card at the top of /progress.
+   Uses the same paper-tile recipe as metric tiles, but rounded-2xl
+   stays at 16px (matches Tailwind's rounded-2xl) and the headline
+   inside is already Caveat via var(--font-heading). The card now
+   reads as a handwritten note on cream paper. */
+[data-theme="earned"] [data-earned-tile="identity"] {
+  background-color: var(--earned-cream-light);
+  border-width: 1.5px;
+  border-color: var(--border);
+  box-shadow: 2px 2px 0 var(--earned-ink);
+}
+
 /* ==========================================
    GLOBAL LAYOUT TOKENS
    Shared across themes. Bottom nav height is the pill

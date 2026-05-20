@@ -30,9 +30,11 @@ export function IdentityCard({
   const useUserCopy = trimmed.length > 0;
   // Onboarding prompts the user with "I'm becoming…" so the input is a noun
   // phrase like "a runner". Punctuation is up to the user — we add a period
-  // only if they didn't.
+  // only if they didn't. First-person voice per the Earned design rules —
+  // "I'm becoming X" rather than "You're becoming X" — keeps the card
+  // reading as the user's own internal voice across every theme.
   const headline = useUserCopy
-    ? `You're becoming ${trimmed}${/[.!?]$/.test(trimmed) ? "" : "."}`
+    ? `I'm becoming ${trimmed}${/[.!?]$/.test(trimmed) ? "" : "."}`
     : pickIdentityTemplate(templateInput);
   const annotation = weeklyAnnotation(rolling7CompleteDays);
 
@@ -42,9 +44,13 @@ export function IdentityCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
       className="rounded-2xl border bg-card/40 p-5 md:p-8"
+      data-earned-tile="identity"
     >
-      <p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground mb-3">
-        {useUserCopy ? "Your identity" : "Today"}
+      <p
+        className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground mb-3"
+        data-earned-label
+      >
+        {useUserCopy ? "My identity" : "Today"}
       </p>
       <p
         className="text-2xl md:text-3xl font-light leading-snug"
