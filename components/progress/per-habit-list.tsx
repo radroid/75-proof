@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { PerHabitStats } from "@/lib/progress-metrics";
+import { useThemePersonality } from "@/components/theme-provider";
 
 interface Props {
   stats: PerHabitStats[];
@@ -62,10 +63,61 @@ export function PerHabitList({ stats }: Props) {
 function Sparkline({ series }: { series: number[] }) {
   // Compact 96×24 SVG. Each step is a thin vertical bar — easier to parse
   // than a polyline at this size and forgives the 0/1 binary domain.
+  const { personality } = useThemePersonality();
+  const isEarned = personality === "earned";
   const w = 96;
   const h = 24;
   const n = series.length;
   if (n === 0) return <div className="hidden md:block w-24" />;
+
+  // Earned variant: a "marker-filled" progress bar. Render a single
+  // hand-stroked dashed cream-dark baseline as the empty track, then
+  // overlay a solid ink stroke from x=0 to the proportional completion
+  // width. This trades the per-day granularity of the bar series for
+  // a clearer "how much ink have I laid down" read that matches the
+  // notebook metaphor. Per-day detail still lives in the calendar
+  // grid above; the sparkline is a small at-a-glance summary.
+  if (isEarned) {
+    const sum = series.reduce((acc, v) => acc + v, 0);
+    const completion = sum / n; // 0..1
+    const midY = h / 2;
+    const inkX = Math.round(completion * w);
+    return (
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        width={w}
+        height={h}
+        className="hidden md:block"
+        aria-hidden="true"
+      >
+        {/* dashed baseline = empty track */}
+        <line
+          x1={2}
+          y1={midY}
+          x2={w - 2}
+          y2={midY}
+          stroke="var(--earned-cream-dark)"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeDasharray="3 3"
+        />
+        {/* solid ink = days completed so far */}
+        {inkX > 2 && (
+          <line
+            x1={2}
+            y1={midY}
+            x2={inkX}
+            y2={midY}
+            stroke="var(--earned-ink)"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+          />
+        )}
+      </svg>
+    );
+  }
+
+  // Default (non-Earned themes) — unchanged bar variant.
   const stepW = w / Math.max(n, 1);
   return (
     <svg
