@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { ThemedIcon } from "@/components/earned/icons/themed-icon";
 import { Button } from "@/components/ui/button";
 import { useGuest } from "@/components/guest-provider";
 import posthog from "posthog-js";
@@ -44,7 +44,7 @@ export function GuestSignupBanner() {
             className="shrink-0 h-11 w-11 -mr-1 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 active:bg-muted transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Dismiss local mode prompt"
           >
-            <X className="h-4 w-4" aria-hidden="true" />
+            <ThemedIcon name="close" className="h-4 w-4" />
           </button>
         </div>
       </div>
