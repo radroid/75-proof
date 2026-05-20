@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,34 @@ interface Props {
   currentDay: number;
   completionMap: Record<number, boolean>;
 }
+
+// Earned cell-state recipe. Each entry IS the sticker — gold-fill +
+// ink border for earned days, sky-fill + ink border for today,
+// ink-rose border for missed, dashed cream-dark for future. The
+// HabitHeatmap reuses the same vocabulary to keep the page coherent.
+type EarnedCellState = "earned" | "today" | "missed" | "future";
+
+const EARNED_CELL_STYLES: Record<EarnedCellState, CSSProperties> = {
+  earned: {
+    backgroundColor: "var(--earned-star-gold)",
+    border: "1.5px solid var(--earned-ink)",
+    boxShadow: "2px 2px 0 var(--earned-ink)",
+  },
+  today: {
+    backgroundColor: "var(--earned-sky)",
+    color: "var(--earned-cream-light)",
+    border: "1.5px solid var(--earned-ink)",
+    boxShadow: "2px 2px 0 var(--earned-ink)",
+  },
+  missed: {
+    border: "1.5px solid var(--earned-rose)",
+    color: "var(--earned-rose)",
+  },
+  future: {
+    border: "1px dashed var(--earned-cream-dark)",
+    color: "rgba(31,31,29,0.4)",
+  },
+};
 
 /**
  * Bounded calendar grid. Three states (research §3.4): complete (filled
@@ -39,12 +68,16 @@ export function CalendarGrid({ totalDays, currentDay, completionMap }: Props) {
           const isPast = dayNumber < currentDay;
 
           // Earned variant: each cell IS the sticker, not a container
-          // for an icon. Earned days fill gold with an ink border so
-          // the cell reads as a stuck-on gold star at any size; today
-          // fills sky with a cream-light digit + 2px ink sticker
-          // shadow; missed days carry an ink-rose border + a hand-
-          // drawn cross mark; future cells stay faint and dashed.
+          // for an icon. State recipes live in EARNED_CELL_STYLES so the
+          // heatmap can reuse the same vocabulary.
           if (isEarned) {
+            const cellState: EarnedCellState = isComplete
+              ? "earned"
+              : isToday
+                ? "today"
+                : isPast
+                  ? "missed"
+                  : "future";
             return (
               <motion.div
                 key={dayNumber}
@@ -57,38 +90,15 @@ export function CalendarGrid({ totalDays, currentDay, completionMap }: Props) {
                 )}
                 style={{
                   fontFamily: "var(--font-caveat), 'Caveat', cursive",
-                  ...(isComplete
-                    ? {
-                        backgroundColor: "var(--earned-star-gold)",
-                        border: "1.5px solid var(--earned-ink)",
-                        boxShadow: "2px 2px 0 var(--earned-ink)",
-                      }
-                    : isToday
-                      ? {
-                          backgroundColor: "var(--earned-sky)",
-                          color: "var(--earned-cream-light)",
-                          boxShadow: "2px 2px 0 var(--earned-ink)",
-                          border: "1.5px solid var(--earned-ink)",
-                        }
-                      : isPast
-                        ? {
-                            border: "1.5px solid var(--earned-rose)",
-                            color: "var(--earned-rose)",
-                          }
-                        : {
-                            border:
-                              "1px dashed var(--earned-cream-dark)",
-                            color: "rgba(31,31,29,0.4)",
-                          }),
+                  ...EARNED_CELL_STYLES[cellState],
                 }}
                 title={`Day ${dayNumber}${isComplete ? " — earned" : isToday ? " — today" : isPast ? " — missed" : ""}`}
               >
-                {isComplete ? (
-                  // Cell IS the sticker — no inset glyph.
+                {cellState === "earned" ? (
                   <span aria-hidden />
-                ) : isToday ? (
+                ) : cellState === "today" ? (
                   <span className="font-semibold">{dayNumber}</span>
-                ) : isPast ? (
+                ) : cellState === "missed" ? (
                   <CrossMarkEarned className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 ) : (
                   <span style={{ fontSize: "0.7rem" }}>{dayNumber}</span>
@@ -129,14 +139,15 @@ export function CalendarGrid({ totalDays, currentDay, completionMap }: Props) {
       <div className="mt-4 md:mt-6 flex flex-wrap items-center gap-3 md:gap-4 text-xs">
         {isEarned ? (
           <>
+            {/* Legend swatches mirror cell affordances — sticker shadow
+                on earned + today, hand-drawn cross mark inside the
+                missed swatch — so the legend reads as a caption of the
+                grid above. */}
             <Legend
               swatch={
                 <div
                   className="h-3.5 w-3.5 rounded-sm"
-                  style={{
-                    backgroundColor: "var(--earned-star-gold)",
-                    border: "1.5px solid var(--earned-ink)",
-                  }}
+                  style={EARNED_CELL_STYLES.earned}
                 />
               }
               label="Showed up"
@@ -145,10 +156,7 @@ export function CalendarGrid({ totalDays, currentDay, completionMap }: Props) {
               swatch={
                 <div
                   className="h-3.5 w-3.5 rounded-sm"
-                  style={{
-                    backgroundColor: "var(--earned-sky)",
-                    border: "1.5px solid var(--earned-ink)",
-                  }}
+                  style={EARNED_CELL_STYLES.today}
                 />
               }
               label="Today"
@@ -156,9 +164,11 @@ export function CalendarGrid({ totalDays, currentDay, completionMap }: Props) {
             <Legend
               swatch={
                 <div
-                  className="h-3.5 w-3.5 rounded-sm"
-                  style={{ border: "1.5px solid var(--earned-rose)" }}
-                />
+                  className="h-3.5 w-3.5 rounded-sm flex items-center justify-center"
+                  style={EARNED_CELL_STYLES.missed}
+                >
+                  <CrossMarkEarned className="h-2.5 w-2.5" />
+                </div>
               }
               label="Missed"
             />
