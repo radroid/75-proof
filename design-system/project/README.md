@@ -26,7 +26,7 @@ This design system codifies the look, feel, voice, and component vocabulary so a
 | `assets/` | Brand logos (mark + wordmark, black and blue variants) and shared visual assets. |
 | `preview/` | Standalone HTML cards that populate the Design System preview tab. One concept per card. |
 | `ui_kits/earned-ios/` | iOS-first interactive prototype. Today screen + Journal entry. JSX components, click-thru `index.html`. |
-| `SKILL.md` | Cross-compatible Agent Skill description. Use this skill to generate Earned-branded artifacts. |
+| `SKILL.md` | Cross-compatible Agent Skill description. Use this skill to generate Earned-branded artifacts. Also exposed as an installable Claude Code skill at [`.claude/skills/earned-design/`](../../.claude/skills/earned-design/) — auto-loads in-repo and can be copied into `~/.claude/skills/` for global use. |
 
 ---
 
