@@ -707,6 +707,30 @@
   color: rgba(31, 31, 29, 0.45);
 }
 
+/* Notebook-style composer chrome — the rounded-pill form that wraps
+   the coach textarea + attach + send button. Cream-light paper
+   surface so the textarea inside reads as written on the page; ink
+   border + sticker shadow gives it the "stuck to the page" feel
+   shared with PaperChip + iter-008's theme card. The textarea inside
+   stays bg-transparent and inherits the cream-light surface.
+   Targets the form opted in via data-earned-composer. */
+[data-theme="earned"] [data-earned-composer] {
+  background-color: var(--earned-cream-light);
+  border-width: 1.5px;
+  border-color: var(--earned-ink);
+  box-shadow: 2px 2px 0 var(--earned-ink);
+}
+
+/* The composer's inner textarea opts in to data-earned-input, but the
+   surrounding form already provides the cream-light surface — so the
+   inner element should NOT repeat the bg or border (which would
+   double-stack visually). Override the iter-018 input recipe for the
+   composer-nested case. */
+[data-theme="earned"] [data-earned-composer] [data-earned-input] {
+  background-color: transparent;
+  border: 0;
+}
+
 /* 3-up grid shadow density — when a grid of [data-earned-tile] cards
    grows to 3+ columns, the stacked sticker shadows can read as
    chaotic. Future surfaces opting into the recipe should add
