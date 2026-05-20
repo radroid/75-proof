@@ -616,6 +616,19 @@
   box-shadow: 3px 3px 0 var(--earned-ink);
 }
 
+/* Handwritten value treatment — apply Caveat to "the protagonist
+   number" per the design-system rule ("handwritten where the number
+   is the protagonist"). Use the data-earned-value attribute on
+   elements whose copy *is* the data (day counter, mode label,
+   streak total, etc.). Sub-labels and helper copy stay Poppins. */
+[data-theme="earned"] [data-earned-value] {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
 /* ==========================================
    GLOBAL LAYOUT TOKENS
    Shared across themes. Bottom nav height is the pill
