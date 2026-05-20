@@ -26,6 +26,12 @@ Do not proactively rewrite Tailwind utility classes into canonical shorthand for
 
 When you open a PR, set the assignee to `@me` (the authenticated gh user — currently `radroid`) and request a review from `radroid`. GitHub silently rejects the review request when the author and requested reviewer are the same account, so until a separate collaborator or bot identity is added to the repo, only the assignee field will stick — this is expected, not a failure to report. Use `gh pr edit <N> --add-assignee @me --add-reviewer radroid` right after `gh pr create`.
 
+## Earned transition — branch + merge rule (active)
+
+While the Earned UX transition is in flight, **do not merge anything to `main`**. All work targets `ux-refresh-simplified-challenge-driven` as the integration branch. Open PRs from sub-branches *into* `ux-refresh-simplified-challenge-driven`, let CodeRabbit / review pass, and merge there. The full feature branch will land on `main` later (see Phase 9 of `docs/EARNED_TRANSITION.md`).
+
+Use `gh pr create --base ux-refresh-simplified-challenge-driven` so PRs target the right base. This rule lifts once the transition is ready to ship to prod.
+
 <!-- convex-ai-start -->
 This project uses [Convex](https://convex.dev) as its backend.
 
