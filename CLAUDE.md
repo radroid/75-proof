@@ -26,6 +26,26 @@ Do not proactively rewrite Tailwind utility classes into canonical shorthand for
 
 When you open a PR, set the assignee to `@me` (the authenticated gh user — currently `radroid`) and request a review from `radroid`. GitHub silently rejects the review request when the author and requested reviewer are the same account, so until a separate collaborator or bot identity is added to the repo, only the assignee field will stick — this is expected, not a failure to report. Use `gh pr edit <N> --add-assignee @me --add-reviewer radroid` right after `gh pr create`.
 
+## Earned voice + visual conventions
+
+The product is mid-transition to the Earned brand. When writing UI copy or building new surfaces, follow these rules (full spec in `design-system/project/README.md`):
+
+**Voice**
+- First-person where it lands naturally: "I showed up" over "You completed."
+- Sentence case for headings, labels, and toasts. No trailing exclamations.
+- No emoji in UI strings. Carve-outs: user-entered habit names, journal entries, and reaction-emoji content the user picked themselves.
+- Word swaps: "Completed" → "Showed up"; "Failed" → "Skipped"; "Score" → "Streak"; "Goal" → "Habit"; "Today's tasks" → "Today's page."
+- Errors stay clear but kind: "That didn't save — try again?" instead of "Failed to update."
+
+**Visual (when working inside the Earned theme)**
+- Cream paper background (`#F4ECD8`), ink text (`#1F1F1D`), gold star (`#D8A830`), sky accent (`#0090D8`).
+- Caveat (handwritten) for moments + numbers; Poppins for structure.
+- Hand-trembled SVG strokes, 1.5–2px, round caps/joins, slight rotation. No icon library defaults inside Earned surfaces — pick a hand-drawn variant or leave a TODO.
+- No spinners. Loading states use handwritten "loading…" with a subtle scribble; reduced-motion users get a static ellipsis.
+- Sticker shadow on accent chips: `2px 2px 0 var(--earned-ink)`.
+
+Other themes (arctic / broadsheet / military / zen) keep their original voice + visual rules. The Earned restyle lands per-surface; check `docs/EARNED_TRANSITION.md` for which surfaces have already flipped.
+
 ## Earned transition — branch + merge rule (active)
 
 While the Earned UX transition is in flight, **do not merge anything to `main`**. All work targets `ux-refresh-simplified-challenge-driven` as the integration branch. Open PRs from sub-branches *into* `ux-refresh-simplified-challenge-driven`, let CodeRabbit / review pass, and merge there. The full feature branch will land on `main` later (see Phase 9 of `docs/EARNED_TRANSITION.md`).
