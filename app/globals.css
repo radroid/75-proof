@@ -713,12 +713,22 @@
    border + sticker shadow gives it the "stuck to the page" feel
    shared with PaperChip + iter-008's theme card. The textarea inside
    stays bg-transparent and inherits the cream-light surface.
-   Targets the form opted in via data-earned-composer. */
+   Targets the form opted in via data-earned-composer.
+
+   We also explicitly kill `backdrop-filter` here. The composer
+   carries Tailwind `backdrop-blur` + `supports-[backdrop-filter]:
+   bg-background/80` for the iMessage-style glass look on other
+   themes; on cream paper that translucent blur reads as glass-iOS
+   chrome rather than a paper sticker. Setting backdrop-filter:none
+   makes the cream-light surface opaque and lets the sticker shadow
+   carry the lift. */
 [data-theme="earned"] [data-earned-composer] {
   background-color: var(--earned-cream-light);
   border-width: 1.5px;
   border-color: var(--earned-ink);
   box-shadow: 2px 2px 0 var(--earned-ink);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* The composer's inner textarea opts in to data-earned-input, but the
