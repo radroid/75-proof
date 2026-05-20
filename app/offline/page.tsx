@@ -78,7 +78,7 @@ export default function OfflinePage() {
           lineHeight: 1.5,
         }}
       >
-        No connection right now — today&apos;s page will be here when you&apos;re back.
+        No connection right now — today&apos;s page is waiting.
       </p>
 
       <TryAgainButton />
