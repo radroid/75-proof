@@ -62,10 +62,10 @@ export function StartChallengeModal({
         start_date: startDate,
         visibility,
       });
-      toast.success("Challenge started! Let's go!");
+      toast.success("Day 1 starts now.");
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to start challenge");
+      toast.error(err instanceof Error ? err.message : "That didn't start — try again?");
     } finally {
       setIsStarting(false);
     }

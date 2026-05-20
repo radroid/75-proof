@@ -221,9 +221,9 @@ export default function SettingsPage() {
         },
       });
       posthog.capture("settings_saved", { water_unit: waterUnit });
-      toast.success("Settings saved!");
+      toast.success("Settings saved.");
     } catch {
-      toast.error("Failed to save settings");
+      toast.error("That didn't save — try again?");
     } finally {
       setIsSaving(false);
     }
@@ -242,7 +242,7 @@ export default function SettingsPage() {
       toast.success("Challenge reset — let's reconfigure your habits");
       router.push("/onboarding");
     } catch {
-      toast.error("Failed to reset challenge");
+      toast.error("That didn't reset — try again?");
     }
   };
 
@@ -264,7 +264,7 @@ export default function SettingsPage() {
       toast.success("Progress reset — back to Day 1 with your habits");
       router.push("/dashboard");
     } catch {
-      toast.error("Failed to reset progress");
+      toast.error("That didn't reset — try again?");
     }
   };
 
@@ -274,7 +274,7 @@ export default function SettingsPage() {
       posthog.capture("tour_replay_requested");
       router.push("/dashboard");
     } catch {
-      toast.error("Failed to replay tour");
+      toast.error("That didn't restart — try again?");
     }
   }, [resetTutorial, router]);
 

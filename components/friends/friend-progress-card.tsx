@@ -68,7 +68,7 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
       await sendNudge({ toUserId: friend.user._id });
       setJustNudged(true);
       window.setTimeout(() => setJustNudged(false), 400);
-      toast.success(`Nudged ${friend.user.displayName} 👋`);
+      toast.success(`Nudge sent to ${friend.user.displayName}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Could not send nudge";
       toast.error(msg);
@@ -81,7 +81,7 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
       await removeFriend({ friendId: friend.user._id });
       toast.success("Friend removed");
     } catch {
-      toast.error("Failed to remove friend");
+      toast.error("That didn't remove — try again?");
     }
     setConfirmAction(null);
   };
@@ -91,7 +91,7 @@ export function FriendProgressCard({ friend }: FriendProgressCardProps) {
       await blockUser({ targetUserId: friend.user._id });
       toast.success("User blocked");
     } catch {
-      toast.error("Failed to block user");
+      toast.error("That didn't block — try again?");
     }
     setConfirmAction(null);
   };

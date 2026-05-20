@@ -84,9 +84,9 @@ export function DailyChecklist({
         userTimezone,
         [field]: value,
       });
-      toast.success(value ? "Marked as complete!" : "Unmarked");
+      toast.success(value ? "Showed up." : "Unmarked.");
     } catch {
-      toast.error("Failed to update");
+      toast.error("That didn't save — try again?");
     }
   };
 
@@ -107,9 +107,9 @@ export function DailyChecklist({
         day_number: dayNumber,
         method: "quick",
       });
-      toast.success("Workout logged!");
+      toast.success("Workout logged.");
     } catch {
-      toast.error("Failed to log workout");
+      toast.error("That didn't log — try again?");
     }
   };
 
@@ -124,7 +124,7 @@ export function DailyChecklist({
       });
       toast.success("Workout cleared");
     } catch {
-      toast.error("Failed to clear workout");
+      toast.error("That didn't clear — try again?");
     }
   };
 
@@ -773,10 +773,10 @@ function WorkoutButton({
         day_number: dayNumber,
         is_edit: !!existingWorkout,
       });
-      toast.success("Workout logged!");
+      toast.success("Workout logged.");
       setShowForm(false);
     } catch {
-      toast.error("Failed to save workout");
+      toast.error("That didn't save — try again?");
     } finally {
       setIsSaving(false);
     }
@@ -921,9 +921,9 @@ function PhotoRow({
         day_number: dayNumber,
         has_thumbnail: !!thumbStorageId,
       });
-      toast.success("Photo uploaded!");
+      toast.success("Photo saved.");
     } catch {
-      toast.error("Failed to upload photo");
+      toast.error("That didn't upload — try again?");
     } finally {
       setIsUploading(false);
     }

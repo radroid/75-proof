@@ -106,9 +106,9 @@ function ReceivedRequestCard({
     try {
       await acceptRequest({ friendshipId: requestId });
       posthog.capture("friend_request_accepted");
-      toast.success("Friend request accepted!");
+      toast.success("Friend request accepted.");
     } catch {
-      toast.error("Failed to accept request");
+      toast.error("That didn't accept — try again?");
     }
   };
 
@@ -118,7 +118,7 @@ function ReceivedRequestCard({
       posthog.capture("friend_request_declined");
       toast.success("Request declined");
     } catch {
-      toast.error("Failed to decline request");
+      toast.error("That didn't decline — try again?");
     }
   };
 
@@ -175,7 +175,7 @@ function SentRequestCard({
       await cancelRequest({ friendshipId: requestId });
       toast.success("Request cancelled");
     } catch {
-      toast.error("Failed to cancel request");
+      toast.error("That didn't cancel — try again?");
     }
   };
 

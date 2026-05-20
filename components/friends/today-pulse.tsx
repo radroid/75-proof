@@ -54,7 +54,7 @@ export function TodayPulse() {
     setPendingNudge(key);
     try {
       await sendNudge({ toUserId: friendId });
-      toast.success(`Nudged ${displayName} 👋`);
+      toast.success(`Nudge sent to ${displayName}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Could not send nudge";
       toast.error(msg);
