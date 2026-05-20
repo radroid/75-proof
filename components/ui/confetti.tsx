@@ -4,19 +4,38 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { haptic } from "@/lib/haptics";
+import { useThemePersonality } from "@/components/theme-provider";
+import type { ThemePersonality } from "@/lib/themes";
 
 interface ConfettiProps {
   isActive: boolean;
   duration?: number;
 }
 
-const colors = [
+// Default celebration palette — emerald/teal/amber/blue/lime — works on
+// the cool-toned arctic/military and warm-toned broadsheet/zen themes.
+const defaultColors = [
   "oklch(0.650 0.200 155)", // emerald
   "oklch(0.700 0.150 175)", // teal
   "oklch(0.800 0.150 85)", // amber
   "oklch(0.700 0.150 250)", // blue
   "oklch(0.750 0.180 155)", // lime
 ];
+
+// Earned brand palette — gold star, sky, sage, ink, rose. Keeps the
+// celebration in the notebook universe instead of dropping arctic-blue
+// confetti on a cream paper page.
+const earnedColors = [
+  "#D8A830", // gold (star)
+  "#0090D8", // sky
+  "#7A8C6B", // sage
+  "#1F1F1D", // ink
+  "#C75F4A", // rose
+];
+
+function paletteFor(personality: ThemePersonality): string[] {
+  return personality === "earned" ? earnedColors : defaultColors;
+}
 
 const shapes = ["circle", "square", "triangle"] as const;
 
@@ -31,11 +50,11 @@ interface Particle {
   duration: number;
 }
 
-function generateParticles(count: number): Particle[] {
+function generateParticles(count: number, palette: string[]): Particle[] {
   return Array.from({ length: count }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
-    color: colors[Math.floor(Math.random() * colors.length)],
+    color: palette[Math.floor(Math.random() * palette.length)],
     shape: shapes[Math.floor(Math.random() * shapes.length)],
     delay: Math.random() * 0.3,
     rotation: Math.random() * 360,
@@ -86,6 +105,7 @@ export function Confetti({ isActive, duration = 3000 }: ConfettiProps) {
   const [activation, setActivation] = React.useState(0);
   const [running, setRunning] = React.useState(false);
   const shouldReduceMotion = useReducedMotion();
+  const { personality } = useThemePersonality();
 
   React.useEffect(() => {
     if (!isActive) return;
@@ -100,9 +120,13 @@ export function Confetti({ isActive, duration = 3000 }: ConfettiProps) {
   }, [isActive, duration]);
 
   const particles = React.useMemo(
-    () => (activation > 0 ? generateParticles(50) : []),
-    // Fresh particle set per activation; `running` flipping back to false
-    // shouldn't regenerate them.
+    () => (activation > 0 ? generateParticles(50, paletteFor(personality)) : []),
+    // Deps are [activation] only so a mid-celebration theme switch doesn't
+    // recolour particles that are already falling — the memo holds onto the
+    // palette that was current the last time activation bumped. ESLint's
+    // exhaustive-deps rule wants `personality` here, but that's the bug
+    // we're avoiding.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activation],
   );
 
