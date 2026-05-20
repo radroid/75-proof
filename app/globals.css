@@ -745,6 +745,50 @@
   box-shadow: -2px 2px 0 var(--earned-ink);
 }
 
+/* Coach chat bubble treatment — user turns read as sticky-note chips
+   on the paper page (cream-light + 1.5px ink border + 2px sticker
+   shadow), assistant turns read as ink written directly on the page
+   (transparent, no border, no shadow — Poppins body stays for
+   legibility per design-system § coach row). The default shadcn
+   bg-primary / bg-muted is overridden under Earned so non-Earned
+   themes keep the iMessage look. */
+[data-theme="earned"] [data-earned-bubble="user"] {
+  background-color: var(--earned-cream-light);
+  color: var(--earned-ink);
+  border: 1.5px solid var(--earned-ink);
+  box-shadow: 2px 2px 0 var(--earned-ink);
+}
+
+[data-theme="earned"] [data-earned-bubble="assistant"] {
+  background-color: transparent;
+  color: var(--earned-ink);
+  /* Slight negative margin pulls the left edge into the rule line so
+     the text reads as written in the notebook margin rather than
+     floating in a balloon. */
+  padding-left: 0.5rem;
+}
+
+/* Recents sheet — handwritten title + dashed cream-dark row
+   separators. Re-themes the cmdk Command list so each thread row
+   reads as a torn page in the notebook. Scoped tightly so non-
+   Earned themes keep the shadcn Command palette. */
+[data-theme="earned"] [data-earned-recents-title] {
+  font-family: var(--font-heading);
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  color: var(--earned-ink);
+}
+
+[data-theme="earned"] [data-earned-recents-row] {
+  border-bottom: 1px dashed var(--earned-cream-dark);
+}
+
+[data-theme="earned"] [data-earned-recents-row]:last-child {
+  border-bottom: 0;
+}
+
 /* ==========================================
    GLOBAL LAYOUT TOKENS
    Shared across themes. Bottom nav height is the pill

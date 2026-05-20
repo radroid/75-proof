@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Loader2, MessageSquareText, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { ThemedIcon } from "@/components/earned/icons/themed-icon";
+import { EarnedLoadingText } from "@/components/earned/loading-text";
 import {
   Command,
   CommandEmpty,
@@ -84,7 +85,7 @@ export function CoachRecentsSheet({
     setIsDeleting(true);
     try {
       await deleteThread({ threadId: pendingDeleteId });
-      toast.success("Conversation deleted");
+      toast.success("Page removed");
       setPendingDeleteId(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't delete — try again?");
@@ -114,11 +115,14 @@ export function CoachRecentsSheet({
           className="flex flex-col overflow-hidden p-0 gap-0 translate-y-0"
         >
           <div className="flex items-center justify-between border-b px-4 py-3">
-            <DialogTitle className="text-base font-semibold">
-              Recent chats
+            <DialogTitle
+              data-earned-recents-title
+              className="text-base font-semibold"
+            >
+              Previous pages
             </DialogTitle>
             <DialogDescription className="sr-only">
-              Search your past coach conversations
+              Search my past coach conversations
             </DialogDescription>
             <DialogClose asChild>
               <button
@@ -126,33 +130,33 @@ export function CoachRecentsSheet({
                 aria-label="Close"
                 className="-mr-1 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <X className="h-5 w-5" />
+                <ThemedIcon name="close" className="h-5 w-5" />
               </button>
             </DialogClose>
           </div>
           <Command className="flex min-h-0 flex-1 flex-col [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-input]]:h-12 [&_[cmdk-input]]:text-base [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
-            <CommandInput placeholder="Search recent chats…" autoFocus={false} />
+            <CommandInput placeholder="Search my pages…" autoFocus={false} />
             <CommandList className="max-h-none flex-1">
-              <CommandEmpty>No conversations match.</CommandEmpty>
+              <CommandEmpty>Nothing matches.</CommandEmpty>
 
               <CommandGroup heading="Actions">
                 <CommandItem
                   value="new-chat-action"
+                  data-earned-recents-row
                   onSelect={() => {
                     onNewChat();
                     onClose();
                   }}
                   className="data-[selected=true]:bg-transparent data-[selected=true]:text-foreground active:bg-accent/60"
                 >
-                  <Plus className="text-foreground" />
-                  <span className="font-medium">New chat</span>
+                  <ThemedIcon name="plus" className="h-5 w-5 text-foreground" />
+                  <span className="font-medium">New page</span>
                 </CommandItem>
               </CommandGroup>
 
               {threads === undefined && (
-                <div className="flex items-center gap-2 px-3 py-4 text-xs text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Loading conversations…
+                <div className="px-3 py-4 text-xs text-muted-foreground">
+                  <EarnedLoadingText label="loading my pages" />
                 </div>
               )}
 
@@ -170,10 +174,11 @@ export function CoachRecentsSheet({
                               <CommandItem
                                 key={t._id}
                                 value={`${t.title} ${meta}`}
+                                data-earned-recents-row
                                 onSelect={() => onClose()}
                                 className="bg-primary/5 data-[selected=true]:bg-primary/5 data-[selected=true]:text-foreground"
                               >
-                                <MessageSquareText className="text-primary" />
+                                <ThemedIcon name="note" className="h-5 w-5 text-primary" />
                                 <div className="min-w-0 flex-1">
                                   <p className="truncate text-sm font-medium leading-tight">
                                     {t.title}
@@ -202,13 +207,14 @@ export function CoachRecentsSheet({
                           <CommandItem
                             key={t._id}
                             value={`${t.title} ${meta}`}
+                            data-earned-recents-row
                             onSelect={() => {
                               onLoadThread(t._id);
                               onClose();
                             }}
                             className="data-[selected=true]:bg-transparent data-[selected=true]:text-foreground active:bg-accent/60"
                           >
-                            <MessageSquareText className="text-muted-foreground" />
+                            <ThemedIcon name="note" className="h-5 w-5 text-muted-foreground" />
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-medium leading-tight">
                                 {t.title}
@@ -229,7 +235,7 @@ export function CoachRecentsSheet({
                               aria-label={`Delete ${t.title}`}
                               className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <ThemedIcon name="trash" className="h-4 w-4" />
                             </button>
                           </CommandItem>
                         );
@@ -250,11 +256,11 @@ export function CoachRecentsSheet({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this conversation?</AlertDialogTitle>
+            <AlertDialogTitle>Remove this page?</AlertDialogTitle>
             <AlertDialogDescription>
               {pendingDeleteThread
-                ? `“${pendingDeleteThread.title}” will be permanently removed. This can't be undone.`
-                : "This conversation will be permanently removed. This can't be undone."}
+                ? `“${pendingDeleteThread.title}” will be torn out for good. I can't get it back.`
+                : "This page will be torn out for good. I can't get it back."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -268,10 +274,7 @@ export function CoachRecentsSheet({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting…
-                </>
+                <EarnedLoadingText label="tearing out" className="text-current" />
               ) : (
                 "Delete"
               )}

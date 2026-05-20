@@ -8,8 +8,9 @@ import {
   useState,
 } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { History, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { ChatBubble } from "@/components/ui/chat-bubble";
+import { ThemedIcon } from "@/components/earned/icons/themed-icon";
 import { cn } from "@/lib/utils";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -329,7 +330,7 @@ export function CoachClient() {
         )}
         style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
       >
-        <History className="h-4 w-4" />
+        <ThemedIcon name="history" className="h-4 w-4" />
       </button>
 
       <div

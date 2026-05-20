@@ -22,6 +22,8 @@ import {
   X,
   Inbox,
   Send,
+  History,
+  MessageSquareText,
   type LucideIcon,
 } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
@@ -44,6 +46,8 @@ import { RotateCwEarned } from "./rotate-cw";
 import { PlusEarned } from "./plus";
 import { InboxEarned } from "./inbox";
 import { CrossMarkEarned } from "./cross-mark";
+import { HistoryEarned } from "./history";
+import { NoteEarned } from "./note";
 
 // Named lookup of icon variants. Each entry pairs the Lucide
 // fallback (used on every non-Earned theme) with the hand-drawn
@@ -71,7 +75,9 @@ type IconName =
   | "plus"
   | "close"
   | "inbox"
-  | "send";
+  | "send"
+  | "history"
+  | "note";
 
 const variants: Record<
   IconName,
@@ -114,6 +120,15 @@ const variants: Record<
   close: { lucide: X, earned: CrossMarkEarned },
   inbox: { lucide: Inbox, earned: InboxEarned },
   send: { lucide: Send, earned: PaperAirplaneEarned },
+  // Coach "recent chats" trigger — Lucide's History glyph is a clock
+  // with a counter-clockwise arrow; the hand-drawn variant keeps the
+  // same metaphor (rewind / previous pages) on cream paper.
+  history: { lucide: History, earned: HistoryEarned },
+  // Individual chat-thread row glyph. Lucide's MessageSquareText is a
+  // rounded speech-bubble with text lines; Earned threads read as
+  // torn pages from the notebook, so the hand-drawn variant is a
+  // sheet of paper with a folded corner and three written lines.
+  note: { lucide: MessageSquareText, earned: NoteEarned },
 };
 
 // Theme-aware icon. Renders the hand-drawn variant under Earned;
