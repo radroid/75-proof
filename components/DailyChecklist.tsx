@@ -19,7 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Dumbbell, Sparkles, Brain, Apple, Camera, Loader2, Lock } from "lucide-react";
+import { Check, Dumbbell, Sparkles, Brain, Apple, Camera, Lock } from "lucide-react";
+import { EarnedLoadingText } from "@/components/earned/loading-text";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { resizeImage } from "@/lib/image-utils";
@@ -1001,10 +1002,7 @@ function PhotoRow({
             aria-label="Upload progress photo"
           />
           {isUploading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              Uploading…
-            </>
+            <EarnedLoadingText label="uploading" />
           ) : (
             <>
               <Camera className="h-4 w-4" aria-hidden="true" />

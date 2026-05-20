@@ -56,11 +56,10 @@ export function CoachEmptyState({
       </div>
       <div className="space-y-2 text-left">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Hi, I&apos;m your coach.
+          What would you like to figure out today?
         </h1>
         <p className="max-w-md text-sm text-muted-foreground">
-          I help you reach your goals — pick a routine from the catalog, stack
-          habits, or customize one to your life. Ask me anything.
+          Pick a prompt below, or write your own.
         </p>
       </div>
 
