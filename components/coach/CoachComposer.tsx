@@ -104,9 +104,20 @@ export function CoachComposer({
             disabled={!canSend}
             className={cn(
               "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors",
-              canSend
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "bg-muted text-muted-foreground",
+              // 3-state styling so "sending in progress" reads
+              // differently from "empty draft". Previously both
+              // resolved to bg-muted and were indistinguishable —
+              // the dots would render on the same cream-dark surface
+              // as the disabled empty state. Pending uses ink-text
+              // (not cream-light) for the dots: at bg-primary/60
+              // composited over cream-light the surface lands around
+              // mid-sky (#6BAEDF), where cream-light dots fail AA at
+              // ~2.5:1 — ink-on-muted-sky hits ~7:1 instead.
+              pending
+                ? "bg-primary/60 text-foreground"
+                : canSend
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-muted text-muted-foreground",
             )}
           >
             {pending ? (

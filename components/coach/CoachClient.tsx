@@ -283,8 +283,8 @@ export function CoachClient() {
       attachment
         ? `Ask about ${attachment.title}…`
         : isEmpty
-          ? "Ask the coach anything…"
-          : "Reply to the coach…",
+          ? "Ask anything…"
+          : "Write back…",
     [attachment, isEmpty],
   );
 
