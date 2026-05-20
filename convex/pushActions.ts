@@ -89,16 +89,16 @@ function reminderCopy(slot: Slot): {
 } {
   if (slot === "morning") {
     return {
-      title: "Good morning — time to start",
-      body: "Your day begins now — let's get those habits in.",
-      openActionLabel: "Start checklist",
-      dismissActionLabel: "Not now",
+      title: "Today",
+      body: "Today's page is ready when you are.",
+      openActionLabel: "Open today",
+      dismissActionLabel: "Later",
     };
   }
   return {
-    title: "Evening check-in",
-    body: "Finish today strong — tap to log what's left.",
-    openActionLabel: "Mark complete",
+    title: "Tonight",
+    body: "Showing up tonight?",
+    openActionLabel: "Open today",
     dismissActionLabel: "Later",
   };
 }

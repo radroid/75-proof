@@ -59,7 +59,7 @@ export default function OfflinePage() {
           letterSpacing: "-0.02em",
         }}
       >
-        You&apos;re Offline
+        Offline
       </h1>
 
       <p
@@ -72,8 +72,7 @@ export default function OfflinePage() {
           lineHeight: 1.5,
         }}
       >
-        No internet connection right now, but don&apos;t break the chain.
-        Get back online and keep going.
+        No connection right now — today&apos;s page will be here when you&apos;re back.
       </p>
 
       <TryAgainButton />
