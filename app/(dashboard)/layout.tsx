@@ -53,7 +53,7 @@ function ProgressNavIcon() {
           : "Progress"
       }
     >
-      <TrendingUp className="h-5 w-5" />
+      <ThemedIcon name="trending-up" className="h-5 w-5" />
       {(count ?? 0) > 0 && (
         <span
           aria-hidden="true"
@@ -75,7 +75,7 @@ const guestSidebarNavItems = [
   {
     label: "Progress",
     href: "/dashboard/progress",
-    icon: <TrendingUp className="h-5 w-5 flex-shrink-0" />,
+    icon: <ThemedIcon name="trending-up" className="h-5 w-5 flex-shrink-0" />,
   },
   {
     label: "Coach",
