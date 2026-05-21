@@ -25,6 +25,7 @@ import {
   Send,
   History,
   MessageSquareText,
+  LayoutDashboard,
   type LucideIcon,
 } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
@@ -50,6 +51,7 @@ import { InboxEarned } from "./inbox";
 import { CrossMarkEarned } from "./cross-mark";
 import { HistoryEarned } from "./history";
 import { NoteEarned } from "./note";
+import { LayoutDashboardEarned } from "./layout-dashboard";
 
 // Named lookup of icon variants. Each entry pairs the Lucide
 // fallback (used on every non-Earned theme) with the hand-drawn
@@ -80,7 +82,8 @@ type IconName =
   | "inbox"
   | "send"
   | "history"
-  | "note";
+  | "note"
+  | "layout-dashboard";
 
 const variants: Record<
   IconName,
@@ -139,6 +142,12 @@ const variants: Record<
   // torn pages from the notebook, so the hand-drawn variant is a
   // sheet of paper with a folded corner and three written lines.
   note: { lucide: MessageSquareText, earned: NoteEarned },
+  // Desktop sidebar nav "Today" tab glyph (app/(dashboard)/layout.tsx).
+  // Lucide's LayoutDashboard is four rounded panels in a 2x2 grid;
+  // the Earned variant is four hand-drawn quadrangles sketched on
+  // the page so the nav row reads as a notebook tab marker rather
+  // than a system icon.
+  "layout-dashboard": { lucide: LayoutDashboard, earned: LayoutDashboardEarned },
 };
 
 // Theme-aware icon. Renders the hand-drawn variant under Earned;

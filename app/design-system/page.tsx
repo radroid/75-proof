@@ -59,6 +59,7 @@ const ICON_NAMES = [
   "send",
   "history",
   "note",
+  "layout-dashboard",
 ] as const;
 
 type IconName = (typeof ICON_NAMES)[number];
