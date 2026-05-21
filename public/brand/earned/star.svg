@@ -1,0 +1,8 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Earned star">
+  <g transform="rotate(-8 50 50)">
+    
+    <path d="M50 8 L61 38 L93 39 L67 58 L77 90 L50 72 L23 90 L33 58 L7 39 L39 38 Z" fill="#D8A830" stroke="#1F1F1D" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"></path>
+    
+    <path d="M28 26 Q34 22 40 27" fill="none" stroke="#FFF8E1" stroke-width="3.2" stroke-linecap="round" opacity="0.95"></path>
+  </g>
+</svg>

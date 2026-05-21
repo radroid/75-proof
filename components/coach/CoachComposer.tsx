@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ArrowUp, Loader2 } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CoachAttachmentMenu } from "./CoachAttachmentMenu";
+import { EarnedLoadingText } from "@/components/earned/loading-text";
 import {
   CoachAttachmentChip,
   type RoutineAttachment,
@@ -69,6 +70,7 @@ export function CoachComposer({
             "flex items-end gap-2 rounded-3xl border border-border bg-background/95 p-2 shadow-lg backdrop-blur",
             "supports-[backdrop-filter]:bg-background/80",
           )}
+          data-earned-composer
         >
           <CoachAttachmentMenu onPick={onAttach} disabled={pending} />
 
@@ -80,6 +82,7 @@ export function CoachComposer({
             placeholder={placeholder}
             rows={1}
             disabled={pending}
+            data-earned-input
             className={cn(
               // text-base (16px) on mobile prevents iOS Safari from
               // auto-zooming the viewport when the textarea takes focus —
@@ -101,13 +104,24 @@ export function CoachComposer({
             disabled={!canSend}
             className={cn(
               "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors",
-              canSend
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "bg-muted text-muted-foreground",
+              // 3-state styling so "sending in progress" reads
+              // differently from "empty draft". Previously both
+              // resolved to bg-muted and were indistinguishable —
+              // the dots would render on the same cream-dark surface
+              // as the disabled empty state. Pending uses ink-text
+              // (not cream-light) for the dots: at bg-primary/60
+              // composited over cream-light the surface lands around
+              // mid-sky (#6BAEDF), where cream-light dots fail AA at
+              // ~2.5:1 — ink-on-muted-sky hits ~7:1 instead.
+              pending
+                ? "bg-primary/60 text-foreground"
+                : canSend
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-muted text-muted-foreground",
             )}
           >
             {pending ? (
-              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+              <EarnedLoadingText dotsOnly label="sending" />
             ) : (
               <ArrowUp className="h-4 w-4" />
             )}

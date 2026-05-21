@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Brain, Download, History, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Brain, Download, History, Pencil, Trash2 } from "lucide-react";
+import { EarnedLoadingText } from "@/components/earned/loading-text";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -96,7 +97,7 @@ export function CoachPrivacySettings() {
       await updateSettings({ enabled: next });
       toast.success(next ? "Coach memory enabled" : "Coach memory disabled");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update");
+      toast.error(err instanceof Error ? err.message : "That didn't save — try again?");
     } finally {
       setBusy(false);
     }
@@ -108,7 +109,7 @@ export function CoachPrivacySettings() {
       await updateSettings({ ttlOptOut: next });
       toast.success(next ? "TTL purges paused" : "TTL purges enabled");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update");
+      toast.error(err instanceof Error ? err.message : "That didn't save — try again?");
     } finally {
       setBusy(false);
     }
@@ -120,7 +121,7 @@ export function CoachPrivacySettings() {
       await forgetMe({});
       toast.success("Memory and threads cleared");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to clear");
+      toast.error(err instanceof Error ? err.message : "Couldn't clear — try again?");
     } finally {
       setBusy(false);
     }
@@ -138,7 +139,7 @@ export function CoachPrivacySettings() {
       toast.success(next ? "Bio updated" : "Bio cleared");
       setEditing(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save bio");
+      toast.error(err instanceof Error ? err.message : "Couldn't save bio — try again?");
     } finally {
       setSaving(false);
     }
@@ -286,7 +287,7 @@ export function CoachPrivacySettings() {
                         disabled={saving || busy || !draftDirty}
                       >
                         {saving ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <EarnedLoadingText dotsOnly label="saving" />
                         ) : (
                           "Save"
                         )}
@@ -300,8 +301,8 @@ export function CoachPrivacySettings() {
                 </p>
               ) : (
                 <p className="rounded-md border border-dashed bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-                  Chat with the coach to start your bio — or click the pencil
-                  to write one yourself.
+                  Chat to start your bio — or click the pencil to write one
+                  yourself.
                 </p>
               )}
             </div>
@@ -316,7 +317,7 @@ export function CoachPrivacySettings() {
             disabled={downloading}
           >
             {downloading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <EarnedLoadingText dotsOnly label="downloading" />
             ) : (
               <Download className="h-4 w-4" />
             )}

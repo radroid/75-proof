@@ -1,6 +1,8 @@
 # earned
 
-> Pivot in progress. The product direction is being redefined as a school-style daily attendance / streak app. Logos, colors, and final copy are still TBD.
+A notebook-style habit tracker. Show up daily, mark the page, earn the star. Built around a single rule: **today, did I show up?**
+
+Visual + voice rules live in [`design-system/`](./design-system/). The active Earned brand is one of several themes today; the multi-week transition is tracked in [`docs/EARNED_TRANSITION.md`](./docs/EARNED_TRANSITION.md).
 
 ## Stack
 

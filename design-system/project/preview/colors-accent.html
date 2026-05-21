@@ -1,0 +1,35 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{ width:700px; height:240px; padding:24px 28px; box-sizing:border-box; background:var(--bg); border:1px solid var(--earned-cream-dark); display:flex; gap:14px; align-items:stretch }
+  .col{ display:flex; flex-direction:column; gap:6px; flex:1 }
+  .swatch{ flex:1; border:1px solid rgba(31,31,29,.10); display:flex; flex-direction:column; justify-content:flex-end; padding:8px 10px; min-height:64px }
+  .swatch .name{ font-family:var(--font-sans); font-weight:600; font-size:12px }
+  .swatch .hex{ font-family:var(--font-mono); font-size:10px; opacity:.7 }
+  .label{ font-family:var(--font-sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted); font-weight:600; margin-bottom:2px}
+  .desc{ font-family:var(--font-sans); font-size:11px; color:var(--fg-muted); line-height:1.4; margin-top:4px }
+</style></head>
+<body>
+<div class="card">
+  <div class="col">
+    <div class="label">Sky blue · interactive</div>
+    <div class="swatch" style="background:var(--earned-sky); color:var(--earned-cream-light)"><div class="name">sky</div><div class="hex">#0090D8</div></div>
+    <div class="swatch" style="background:var(--earned-sky-deep); color:var(--earned-cream-light)"><div class="name">sky-deep</div><div class="hex">#0B6FA3</div></div>
+    <div class="desc">Primary actions, links, "today"</div>
+  </div>
+  <div class="col">
+    <div class="label">Star gold · reward</div>
+    <div class="swatch" style="background:var(--earned-star-gold); color:var(--earned-ink)"><div class="name">star-gold</div><div class="hex">#D8A830</div></div>
+    <div class="swatch" style="background:var(--earned-star-gold-lt); color:var(--earned-ink)"><div class="name">gold-lt</div><div class="hex">#F2C94C</div></div>
+    <div class="desc">Earned stars only. Never decorative.</div>
+  </div>
+  <div class="col">
+    <div class="label">Ink red · careful</div>
+    <div class="swatch" style="background:var(--earned-rose); color:var(--earned-cream-light)"><div class="name">rose</div><div class="hex">#C75F4A</div></div>
+    <div class="swatch" style="background:var(--earned-sage); color:var(--earned-cream-light)"><div class="name">sage</div><div class="hex">#7A8C6B</div></div>
+    <div class="desc">Missed days, margin rule, rest days.</div>
+  </div>
+</div>
+</body></html>

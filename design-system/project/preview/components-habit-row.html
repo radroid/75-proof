@@ -1,0 +1,49 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{ width:700px; height:280px; padding:24px 28px; box-sizing:border-box; background:var(--bg); border:1px solid var(--earned-cream-dark) }
+  .label{ font-family:var(--font-sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted); font-weight:600; margin-bottom:14px }
+  /* Habit row */
+  .habit{ display:flex; align-items:center; gap:14px; padding:14px 14px; background:var(--earned-cream-light);
+    border:1.5px solid var(--earned-ink); box-shadow: var(--shadow-ink); margin-bottom:14px }
+  .habit + .habit{ margin-top:0 }
+  .habit .name{ flex:1; font-family:var(--font-hand); font-weight:600; font-size:26px; color:var(--fg); line-height:1 }
+  .habit .meta{ font-family:var(--font-sans); font-size:12px; color:var(--fg-muted); margin-top:2px }
+  .cb{ width:36px; height:36px; flex:none }
+  .cb svg{ width:100%; height:100%; display:block }
+  .end{ display:flex; flex-direction:column; align-items:flex-end; gap:2px }
+  .day{ font-family:var(--font-hand); font-size:22px; line-height:1; color:var(--fg) }
+  .tot{ font-family:var(--font-sans); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--fg-muted); font-weight:600 }
+</style></head>
+<body>
+<div class="card">
+  <div class="label">Habit row · checked, with streak</div>
+  <div class="habit">
+    <div class="cb">
+      <svg viewBox="0 0 36 36">
+        <path d="M4 5 C 14 3, 28 4, 33 6 C 33.5 16, 33 26, 32 32 C 22 33, 10 33, 4 31 C 3 22, 3.5 12, 4 5 Z" fill="none" stroke="#1F1F1D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 18 C 11 22, 13 26, 16 28 C 22 22, 26 14, 32 6" fill="none" stroke="#0090D8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div style="flex:1">
+      <div class="name">Read 20 pages</div>
+      <div class="meta">paired with <i>Atomic Habits</i> · 4:32pm</div>
+    </div>
+    <div class="end"><div class="day">12</div><div class="tot">days</div></div>
+  </div>
+  <div class="habit" style="background:var(--bg); box-shadow:none; border-style:dashed">
+    <div class="cb">
+      <svg viewBox="0 0 36 36">
+        <path d="M4 5 C 14 3, 28 4, 33 6 C 33.5 16, 33 26, 32 32 C 22 33, 10 33, 4 31 C 3 22, 3.5 12, 4 5 Z" fill="none" stroke="#1F1F1D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div style="flex:1">
+      <div class="name">Walk 30 minutes</div>
+      <div class="meta">forever habit</div>
+    </div>
+    <div class="end"><div class="day">5</div><div class="tot">days</div></div>
+  </div>
+</div>
+</body></html>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Poppins, Caveat } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
@@ -10,6 +10,7 @@ import { ServiceWorkerRegistration } from "@/components/service-worker-registrat
 import { InstallPromptCapture } from "@/components/pwa/install-prompt-capture";
 import { clerkProviderAppearance } from "@/lib/clerk-appearance";
 import { PostHogUserIdentifier } from "@/components/PostHogUserIdentifier";
+import { ThemeConvexSync } from "@/components/theme-convex-sync";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,6 +20,23 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Earned brand fonts — Poppins (structural) + Caveat (handwritten moments).
+// Exposed as CSS vars so the `earned` theme block in globals.css can
+// reference them via `--font-body` / `--font-heading`.
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const caveat = Caveat({
+  variable: "--font-caveat",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -33,7 +51,7 @@ export const metadata: Metadata = {
     default: "earned",
     template: "%s | earned",
   },
-  description: "Show up. Every day. Build the streak.",
+  description: "Show up. Every day. Earn the star.",
   authors: [{ name: "Create+ Club" }],
   creator: "Create+ Club",
   openGraph: {
@@ -42,7 +60,7 @@ export const metadata: Metadata = {
     url: "https://75.createplus.club",
     siteName: "earned",
     title: "earned",
-    description: "Show up. Every day. Build the streak.",
+    description: "Show up. Every day. Earn the star.",
     images: [
       {
         url: "/opengraph-image",
@@ -55,7 +73,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "earned",
-    description: "Show up. Every day. Build the streak.",
+    description: "Show up. Every day. Earn the star.",
     images: ["/opengraph-image"],
     creator: "@createplusclub",
   },
@@ -84,7 +102,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#FF6154" />
+        {/* Static fallback — ThemeProvider rewrites this at runtime to match the active personality's background. */}
+        <meta name="theme-color" content="#ffffff" />
         {/* Google Fonts for all themes */}
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
@@ -93,7 +112,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${caveat.variable} antialiased`}
       >
         <script
           type="application/ld+json"
@@ -104,7 +123,7 @@ export default function RootLayout({
                 {
                   "@type": "SoftwareApplication",
                   name: "earned",
-                  description: "Show up. Every day. Build the streak.",
+                  description: "Show up. Every day. Earn the star.",
                   url: "https://75.createplus.club",
                   applicationCategory: "LifestyleApplication",
                   operatingSystem: "Web",
@@ -130,6 +149,7 @@ export default function RootLayout({
           <ThemeProvider>
             <ConvexClientProvider>
               <PostHogUserIdentifier />
+              <ThemeConvexSync />
               <GuestProvider>{children}</GuestProvider>
             </ConvexClientProvider>
             <Toaster />

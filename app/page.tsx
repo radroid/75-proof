@@ -91,7 +91,7 @@ function LandingPage() {
             className="text-base sm:text-lg text-[#1a1a1a]/55 leading-relaxed max-w-md mx-auto mb-10"
             style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}
           >
-            Show up. Every day. Build the streak.
+            Show up. Every day. Earn the star.
           </p>
 
           <Unauthenticated>

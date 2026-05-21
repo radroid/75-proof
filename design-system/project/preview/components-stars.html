@@ -1,0 +1,56 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{ width:700px; height:240px; padding:22px 28px; box-sizing:border-box; background:var(--bg); border:1px solid var(--earned-cream-dark) }
+  .label{ font-family:var(--font-sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted); font-weight:600; margin-bottom:18px }
+  .row{ display:flex; gap:28px; align-items:center; justify-content:flex-start; flex-wrap:wrap }
+  .stars{ display:flex; gap:8px; align-items:flex-end }
+  .item{ display:flex; flex-direction:column; align-items:center; gap:8px }
+  .name{ font-family:var(--font-sans); font-size:11px; font-weight:600 }
+</style></head>
+<body>
+<div class="card">
+  <div class="label">Stars · the namesake reward</div>
+  <div class="row">
+    <div class="item">
+      <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 18 L6 22 L7 15 L2 10 L9 9 Z" fill="#D8A830" stroke="#1F1F1D" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      <div class="name">24px · chip</div>
+    </div>
+    <div class="item">
+      <svg width="48" height="48" viewBox="0 0 24 24"><path d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 18 L6 22 L7 15 L2 10 L9 9 Z" fill="#D8A830" stroke="#1F1F1D" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      <div class="name">48px · today</div>
+    </div>
+    <div class="item">
+      <div style="position:relative; width:120px; height:120px">
+        <svg style="position:absolute; inset:0" width="120" height="120" viewBox="0 0 120 120">
+          <!-- burst lines -->
+          <g stroke="#1F1F1D" stroke-width="2" stroke-linecap="round">
+            <path d="M60 8 L60 18"/>
+            <path d="M60 102 L60 112"/>
+            <path d="M8 60 L18 60"/>
+            <path d="M102 60 L112 60"/>
+            <path d="M22 22 L30 30"/>
+            <path d="M98 22 L90 30"/>
+            <path d="M22 98 L30 90"/>
+            <path d="M98 98 L90 90"/>
+          </g>
+          <path transform="translate(60 60) scale(3.4) translate(-12 -12)" d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 18 L6 22 L7 15 L2 10 L9 9 Z" fill="#D8A830" stroke="#1F1F1D" stroke-width="0.6" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="name">96px · celebration</div>
+    </div>
+    <div class="item">
+      <div class="stars">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 18 L6 22 L7 15 L2 10 L9 9 Z" fill="#D8A830" stroke="#1F1F1D" stroke-width="1.5"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 18 L6 22 L7 15 L2 10 L9 9 Z" fill="#D8A830" stroke="#1F1F1D" stroke-width="1.5"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 18 L6 22 L7 15 L2 10 L9 9 Z" fill="#D8A830" stroke="#1F1F1D" stroke-width="1.5"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 18 L6 22 L7 15 L2 10 L9 9 Z" fill="none" stroke="#1F1F1D" stroke-width="1.5"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 18 L6 22 L7 15 L2 10 L9 9 Z" fill="none" stroke="#1F1F1D" stroke-width="1.5"/></svg>
+      </div>
+      <div class="name">3 of 5 earned</div>
+    </div>
+  </div>
+</div>
+</body></html>

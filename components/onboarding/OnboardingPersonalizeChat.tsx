@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, Loader2, RotateCcw, Send, Sparkles } from "lucide-react";
+import { ChevronLeft, RotateCcw, Send, Sparkles } from "lucide-react";
+import { EarnedLoadingText } from "@/components/earned/loading-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChatBubble } from "@/components/ui/chat-bubble";
@@ -181,9 +182,8 @@ export function OnboardingPersonalizeChat({
           ))}
 
           {pending && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
-              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-              Thinking…
+            <div className="text-sm text-muted-foreground px-1">
+              <EarnedLoadingText label="coach is thinking" />
             </div>
           )}
 

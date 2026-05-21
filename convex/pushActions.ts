@@ -89,16 +89,16 @@ function reminderCopy(slot: Slot): {
 } {
   if (slot === "morning") {
     return {
-      title: "Good morning — time to start",
-      body: "Your day begins now — let's get those habits in.",
-      openActionLabel: "Start checklist",
-      dismissActionLabel: "Not now",
+      title: "Today",
+      body: "Today's page is ready when you are.",
+      openActionLabel: "Open today",
+      dismissActionLabel: "Later",
     };
   }
   return {
-    title: "Evening check-in",
-    body: "Finish today strong — tap to log what's left.",
-    openActionLabel: "Mark complete",
+    title: "Tonight",
+    body: "Showing up tonight?",
+    openActionLabel: "Open today",
     dismissActionLabel: "Later",
   };
 }
@@ -182,8 +182,8 @@ export function buildNudgePayload(
   platform: Platform
 ): PushPayload {
   const name = clampName(fromName);
-  const title = `${name} nudged you 👊`;
-  const body = "They're cheering you on — finish today strong.";
+  const title = `${name} nudged you`;
+  const body = "They're showing up — are you?";
   const tag = `nudge-${fromUserId}`;
   // Friends merge Phase 3: nudges deep-link into Progress now. Old pushes
   // pointing at `/dashboard/friends` still work via the redirect file.

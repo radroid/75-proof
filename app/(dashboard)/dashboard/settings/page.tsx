@@ -27,19 +27,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import {
-  AlertTriangle,
-  Bell,
-  CalendarDays,
-  Infinity as InfinityIcon,
-  Palette,
-  Play,
-  Settings,
-  Shield,
-  Smartphone,
-  Monitor,
-  Trash2,
-} from "lucide-react";
+import { ThemedIcon } from "@/components/earned/icons";
 import { useGuest } from "@/components/guest-provider";
 import { LocalSettingsPage } from "@/components/local-settings";
 import { CoachPrivacySettings } from "@/components/coach/CoachPrivacySettings";
@@ -221,9 +209,9 @@ export default function SettingsPage() {
         },
       });
       posthog.capture("settings_saved", { water_unit: waterUnit });
-      toast.success("Settings saved!");
+      toast.success("Settings saved.");
     } catch {
-      toast.error("Failed to save settings");
+      toast.error("That didn't save — try again?");
     } finally {
       setIsSaving(false);
     }
@@ -242,7 +230,7 @@ export default function SettingsPage() {
       toast.success("Challenge reset — let's reconfigure your habits");
       router.push("/onboarding");
     } catch {
-      toast.error("Failed to reset challenge");
+      toast.error("That didn't reset — try again?");
     }
   };
 
@@ -264,7 +252,7 @@ export default function SettingsPage() {
       toast.success("Progress reset — back to Day 1 with your habits");
       router.push("/dashboard");
     } catch {
-      toast.error("Failed to reset progress");
+      toast.error("That didn't reset — try again?");
     }
   };
 
@@ -274,7 +262,7 @@ export default function SettingsPage() {
       posthog.capture("tour_replay_requested");
       router.push("/dashboard");
     } catch {
-      toast.error("Failed to replay tour");
+      toast.error("That didn't restart — try again?");
     }
   }, [resetTutorial, router]);
 
@@ -362,10 +350,14 @@ export default function SettingsPage() {
       {/* Appearance section */}
       <Section title="Appearance">
         <MotionItem>
-          <Card>
+          {/* `data-earned-card="theme"` hooks the sticker-shadow surround
+              that distinguishes this card as the highest-discovery
+              surface on the page. The override is scoped under
+              [data-theme="earned"] so other themes are unaffected. */}
+          <Card data-earned-card="theme">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Palette className="h-5 w-5 text-primary" />
+                <ThemedIcon name="palette" className="h-5 w-5 text-primary" />
                 <CardTitle className="text-lg">Theme</CardTitle>
               </div>
               <CardDescription>
@@ -387,7 +379,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Play className="h-4 w-4 text-primary" />
+                    <ThemedIcon name="play" className="h-4 w-4 text-primary" />
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium text-sm">Replay Tour</p>
@@ -453,63 +445,66 @@ export default function SettingsPage() {
         <MotionItem>
           <Card>
             <CardContent className="p-5 sm:p-6">
-              <div className="space-y-5">
-                {/* Haptics (device-local) */}
-                <div>
-                  <div className="flex items-center justify-between gap-4 min-h-11">
-                    <div className="min-w-0 flex-1">
-                      <Label htmlFor="haptics-toggle" className="cursor-pointer">
-                        Haptic feedback
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Subtle buzz on toggles, taps, and completions. Stored
-                        only on this device.
-                      </p>
-                    </div>
-                    <Switch
-                      id="haptics-toggle"
-                      checked={hapticsOn}
-                      onCheckedChange={(checked) => {
-                        setHapticsEnabled(checked);
-                        setHapticsOn(checked);
-                      }}
-                      className="scale-125 origin-right"
-                    />
+              {/* Direct children of CardContent here (no space-y wrapper)
+                  so the Earned theme's dashed-row separator rule lands
+                  between Haptics and Water Unit. The subsequent block
+                  carries its own `mt-5` so non-Earned themes still get
+                  the 1.25rem vertical rhythm; the Earned rule's higher
+                  specificity overrides that gap with the dashed border. */}
+              <div>
+                <div className="flex items-center justify-between gap-4 min-h-11">
+                  <div className="min-w-0 flex-1">
+                    <Label htmlFor="haptics-toggle" className="cursor-pointer">
+                      Haptic feedback
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Subtle buzz on toggles, taps, and completions. Stored
+                      only on this device.
+                    </p>
                   </div>
+                  <Switch
+                    id="haptics-toggle"
+                    checked={hapticsOn}
+                    onCheckedChange={(checked) => {
+                      setHapticsEnabled(checked);
+                      setHapticsOn(checked);
+                    }}
+                    className="scale-125 origin-right"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => haptic("success")}
+                  disabled={!hapticsOn}
+                  className="mt-3 min-h-11"
+                >
+                  Test haptic
+                </Button>
+              </div>
+
+              <div className="mt-5 space-y-2">
+                <Label>Water Unit</Label>
+                <div className="flex gap-2">
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => haptic("success")}
-                    disabled={!hapticsOn}
-                    className="mt-3 min-h-11"
+                    variant={waterUnit === "oz" ? "default" : "outline"}
+                    onClick={() => setWaterUnit("oz")}
+                    aria-pressed={waterUnit === "oz"}
+                    className="flex-1 min-h-11"
                   >
-                    Test haptic
+                    Ounces (oz)
                   </Button>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Water Unit</Label>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={waterUnit === "oz" ? "default" : "outline"}
-                      onClick={() => setWaterUnit("oz")}
-                      aria-pressed={waterUnit === "oz"}
-                      className="flex-1 min-h-11"
-                    >
-                      Ounces (oz)
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={waterUnit === "ml" ? "default" : "outline"}
-                      onClick={() => setWaterUnit("ml")}
-                      aria-pressed={waterUnit === "ml"}
-                      className="flex-1 min-h-11"
-                    >
-                      Milliliters (ml)
-                    </Button>
-                  </div>
+                  <Button
+                    type="button"
+                    variant={waterUnit === "ml" ? "default" : "outline"}
+                    onClick={() => setWaterUnit("ml")}
+                    aria-pressed={waterUnit === "ml"}
+                    className="flex-1 min-h-11"
+                  >
+                    Milliliters (ml)
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -524,7 +519,7 @@ export default function SettingsPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <CalendarDays className="h-5 w-5 text-primary" />
+                  <ThemedIcon name="calendar-days" className="h-5 w-5 text-primary" />
                   <CardTitle className="text-lg">Duration</CardTitle>
                 </div>
                 <CardDescription>
@@ -537,9 +532,14 @@ export default function SettingsPage() {
                 <div className="rounded-lg border bg-muted/40 p-4">
                   {challenge.isHabitTracker ? (
                     <div className="flex items-center gap-3">
-                      <InfinityIcon className="h-5 w-5 text-primary" />
+                      <ThemedIcon name="infinity" className="h-5 w-5 text-primary" />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium">Habit tracker mode</p>
+                        <p
+                          className="text-sm font-medium"
+                          data-earned-value="mode"
+                        >
+                          Habit tracker mode
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           No end date — keep going as long as you like.
                         </p>
@@ -547,7 +547,10 @@ export default function SettingsPage() {
                     </div>
                   ) : (
                     <div>
-                      <p className="text-sm font-medium">
+                      <p
+                        className="text-sm font-medium"
+                        data-earned-value="day-count"
+                      >
                         Day {challenge.currentDay} of {currentDaysTotal}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
@@ -681,7 +684,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-primary" />
+                <ThemedIcon name="shield" className="h-5 w-5 text-primary" />
                 <CardTitle className="text-lg">Sharing Preferences</CardTitle>
               </div>
               <CardDescription>
@@ -775,7 +778,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
+                <ThemedIcon name="bell" className="h-5 w-5 text-primary" />
                 <CardTitle className="text-lg">Daily Reminders</CardTitle>
               </div>
               <CardDescription>
@@ -967,8 +970,10 @@ export default function SettingsPage() {
                   <p className="text-sm font-medium mb-3">Active devices</p>
                   <ul className="space-y-2">
                     {mySubs.map((sub) => {
-                      const PlatformIcon =
-                        sub.platform === "desktop" ? Monitor : Smartphone;
+                      const platformIconName =
+                        sub.platform === "desktop"
+                          ? ("monitor" as const)
+                          : ("smartphone" as const);
                       const platformLabel =
                         sub.platform === "ios"
                           ? "iOS"
@@ -995,7 +1000,10 @@ export default function SettingsPage() {
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-9 h-9 rounded-md bg-background flex items-center justify-center shrink-0">
-                              <PlatformIcon className="h-4 w-4 text-muted-foreground" />
+                              <ThemedIcon
+                                name={platformIconName}
+                                className="h-4 w-4 text-muted-foreground"
+                              />
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-medium truncate flex items-center gap-2">
@@ -1022,7 +1030,7 @@ export default function SettingsPage() {
                             onClick={() => handleRemoveSubscription(sub.endpoint)}
                             className="min-h-11 min-w-11 shrink-0"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <ThemedIcon name="trash" className="h-4 w-4" />
                           </Button>
                         </li>
                       );
@@ -1056,7 +1064,7 @@ export default function SettingsPage() {
             <Card variant="bordered" className="border-destructive/50 bg-destructive/5">
               <CardHeader>
                 <CardTitle className="text-destructive flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5" />
+                  <ThemedIcon name="alert-triangle" className="h-5 w-5" />
                   Reset challenge
                 </CardTitle>
                 <CardDescription>

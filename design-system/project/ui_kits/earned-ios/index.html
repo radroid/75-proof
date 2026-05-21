@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Earned — iOS UI kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; min-height: 100vh; background: #EAE3CE; }
+  body {
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 32px 16px 64px;
+    font-family: 'Poppins', system-ui, sans-serif;
+  }
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+  .stage h1 { font-family: 'Caveat', cursive; font-weight: 700; font-size: 36px; color: #1F1F1D; margin: 0; }
+  .stage p { font-family: 'Poppins', sans-serif; font-size: 13px; color: rgba(31,31,29,0.6); margin: 0; max-width: 420px; text-align: center; }
+  #root { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <h1>Earned — iOS</h1>
+    <p>Tap a habit checkbox to earn a star. Switch tabs at the bottom. The journal lets you write a quick note for today.</p>
+    <div id="root"></div>
+  </div>
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <!-- iOS frame + Earned components + screens -->
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="components.jsx"></script>
+  <script type="text/babel" src="screens.jsx"></script>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const INITIAL_HABITS = [
+      { id: 1, name: 'Read 20 pages',           note: 'paired with Atomic Habits',  streak: 12, total: 75, state: 'star' },
+      { id: 2, name: 'Walk 30 minutes',         note: 'forever habit',              streak: 5,  total: null, state: 'checked' },
+      { id: 3, name: 'No phone before 9am',     note: '12 days into 30',            streak: 12, total: 30, state: 'empty' },
+      { id: 4, name: 'Write one paragraph',     note: 'forever habit',              streak: 4,  total: null, state: 'empty' },
+      { id: 5, name: 'Drink 2L water',          note: 'rest day on Sundays',        streak: 6,  total: null, state: 'rest' },
+    ];
+
+    function App() {
+      const [tab, setTab] = useState('today');
+      const [habits, setHabits] = useState(INITIAL_HABITS);
+      const [journal, setJournal] = useState(
+        "sat with the book for 22 minutes. The chapter on identity-based habits landed — instead of 'I want to read more' it's 'I am a reader.' Keep it small. Keep it me."
+      );
+
+      const cycleState = (s) => {
+        // empty → checked → star → empty (rest/missed not in this cycle)
+        if (s === 'empty')   return 'checked';
+        if (s === 'checked') return 'star';
+        if (s === 'star')    return 'empty';
+        return s;
+      };
+
+      const toggle = (id) => {
+        setHabits(prev => prev.map(h => h.id === id ? { ...h, state: cycleState(h.state) } : h));
+      };
+
+      const screen = (
+        tab === 'today'   ? <TodayScreen   habits={habits} onToggle={toggle} /> :
+        tab === 'journal' ? <JournalScreen entry={journal} setEntry={setJournal} /> :
+        tab === 'stars'   ? <StarsScreen /> :
+                            <MeScreen />
+      );
+
+      return (
+        <div style={{ position: 'relative' }}>
+          <IOSDevice width={390} height={844}>
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              {/* paper wash to override the default iOS background */}
+              <div style={{ position: 'absolute', inset: 0, background: '#F4ECD8' }} />
+              <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                {screen}
+                <BottomNav tab={tab} onTab={setTab} />
+              </div>
+            </div>
+          </IOSDevice>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

@@ -19,6 +19,7 @@ import type * as habitDefinitions from "../habitDefinitions.js";
 import type * as habitEntries from "../habitEntries.js";
 import type * as leaderboard from "../leaderboard.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_coachConstants from "../lib/coachConstants.js";
 import type * as lib_dayCalculation from "../lib/dayCalculation.js";
 import type * as lib_displayName from "../lib/displayName.js";
 import type * as lib_habitCategories from "../lib/habitCategories.js";
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   habitEntries: typeof habitEntries;
   leaderboard: typeof leaderboard;
   "lib/auth": typeof lib_auth;
+  "lib/coachConstants": typeof lib_coachConstants;
   "lib/dayCalculation": typeof lib_dayCalculation;
   "lib/displayName": typeof lib_displayName;
   "lib/habitCategories": typeof lib_habitCategories;

@@ -38,6 +38,7 @@ export function HeadlineMetrics({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         className="rounded-xl border bg-card/40 p-4 md:p-6"
+        data-earned-tile="metric"
       >
         <div className="flex items-center gap-2 mb-2 min-w-0">
           <TrendingUp className="h-4 w-4 text-primary shrink-0" />
@@ -64,6 +65,7 @@ export function HeadlineMetrics({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
         className="rounded-xl border bg-card/40 p-4 md:p-6"
+        data-earned-tile="metric"
         aria-label={`Current streak: ${currentStreak} days, best ${bestStreak} days`}
       >
         <div className="flex items-center gap-2 mb-2 min-w-0">

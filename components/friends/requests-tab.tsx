@@ -6,7 +6,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Inbox, Send } from "lucide-react";
+import { ThemedIcon } from "@/components/earned/icons";
 import { toast } from "sonner";
 import posthog from "posthog-js";
 
@@ -36,7 +36,7 @@ export function RequestsTab({ pendingRequests, sentRequests }: RequestsTabProps)
       {/* Received */}
       <div>
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Inbox className="h-4 w-4" />
+          <ThemedIcon name="inbox" className="h-4 w-4" />
           Received
         </h3>
         {!pendingRequests || pendingRequests.length === 0 ? (
@@ -63,7 +63,7 @@ export function RequestsTab({ pendingRequests, sentRequests }: RequestsTabProps)
       {/* Sent */}
       <div>
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Send className="h-4 w-4" />
+          <ThemedIcon name="send" className="h-4 w-4" />
           Sent
         </h3>
         {!sentRequests || sentRequests.length === 0 ? (
@@ -106,9 +106,9 @@ function ReceivedRequestCard({
     try {
       await acceptRequest({ friendshipId: requestId });
       posthog.capture("friend_request_accepted");
-      toast.success("Friend request accepted!");
+      toast.success("Friend request accepted.");
     } catch {
-      toast.error("Failed to accept request");
+      toast.error("That didn't accept — try again?");
     }
   };
 
@@ -118,7 +118,7 @@ function ReceivedRequestCard({
       posthog.capture("friend_request_declined");
       toast.success("Request declined");
     } catch {
-      toast.error("Failed to decline request");
+      toast.error("That didn't decline — try again?");
     }
   };
 
@@ -175,7 +175,7 @@ function SentRequestCard({
       await cancelRequest({ friendshipId: requestId });
       toast.success("Request cancelled");
     } catch {
-      toast.error("Failed to cancel request");
+      toast.error("That didn't cancel — try again?");
     }
   };
 

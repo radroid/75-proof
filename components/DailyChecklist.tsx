@@ -19,7 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Dumbbell, Sparkles, Brain, Apple, Camera, Loader2, Lock } from "lucide-react";
+import { Check, Dumbbell, Sparkles, Brain, Apple, Camera, Lock } from "lucide-react";
+import { EarnedLoadingText } from "@/components/earned/loading-text";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { resizeImage } from "@/lib/image-utils";
@@ -84,9 +85,9 @@ export function DailyChecklist({
         userTimezone,
         [field]: value,
       });
-      toast.success(value ? "Marked as complete!" : "Unmarked");
+      toast.success(value ? "Showed up." : "Unmarked.");
     } catch {
-      toast.error("Failed to update");
+      toast.error("That didn't save — try again?");
     }
   };
 
@@ -107,9 +108,9 @@ export function DailyChecklist({
         day_number: dayNumber,
         method: "quick",
       });
-      toast.success("Workout logged!");
+      toast.success("Workout logged.");
     } catch {
-      toast.error("Failed to log workout");
+      toast.error("That didn't log — try again?");
     }
   };
 
@@ -124,7 +125,7 @@ export function DailyChecklist({
       });
       toast.success("Workout cleared");
     } catch {
-      toast.error("Failed to clear workout");
+      toast.error("That didn't clear — try again?");
     }
   };
 
@@ -773,10 +774,10 @@ function WorkoutButton({
         day_number: dayNumber,
         is_edit: !!existingWorkout,
       });
-      toast.success("Workout logged!");
+      toast.success("Workout logged.");
       setShowForm(false);
     } catch {
-      toast.error("Failed to save workout");
+      toast.error("That didn't save — try again?");
     } finally {
       setIsSaving(false);
     }
@@ -921,9 +922,9 @@ function PhotoRow({
         day_number: dayNumber,
         has_thumbnail: !!thumbStorageId,
       });
-      toast.success("Photo uploaded!");
+      toast.success("Photo saved.");
     } catch {
-      toast.error("Failed to upload photo");
+      toast.error("That didn't upload — try again?");
     } finally {
       setIsUploading(false);
     }
@@ -1001,10 +1002,7 @@ function PhotoRow({
             aria-label="Upload progress photo"
           />
           {isUploading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              Uploading…
-            </>
+            <EarnedLoadingText label="uploading" />
           ) : (
             <>
               <Camera className="h-4 w-4" aria-hidden="true" />

@@ -126,6 +126,13 @@ export const updateUser = mutation({
           nudges: v.optional(v.boolean()),
           reactions: v.optional(v.boolean()),
         })),
+        themePersonality: v.optional(v.union(
+          v.literal("arctic"),
+          v.literal("broadsheet"),
+          v.literal("military"),
+          v.literal("zen"),
+          v.literal("earned"),
+        )),
       })
     ),
   },
@@ -196,6 +203,43 @@ export const setCurrentChallenge = mutation({
 
     await ctx.db.patch(user._id, {
       currentChallengeId: args.challengeId,
+    });
+  },
+});
+
+// Multi-device theme sync. Stored under `preferences.themePersonality`
+// so it lives next to the user's other UX settings. Sent from the
+// client whenever the personality flips; localStorage still owns
+// first-paint so this is a "remembered across devices" feature only.
+export const setThemePersonality = mutation({
+  args: {
+    personality: v.union(
+      v.literal("arctic"),
+      v.literal("broadsheet"),
+      v.literal("military"),
+      v.literal("zen"),
+      v.literal("earned"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) throw new Error("User not found");
+
+    // Skip the write if the stored value already matches — keeps the
+    // sync component from echoing a no-op patch back to Convex.
+    if (user.preferences.themePersonality === args.personality) return;
+
+    await ctx.db.patch(user._id, {
+      preferences: {
+        ...user.preferences,
+        themePersonality: args.personality,
+      },
     });
   },
 });

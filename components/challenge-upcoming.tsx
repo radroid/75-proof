@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CalendarClock } from "lucide-react";
+import { ThemedIcon } from "@/components/earned/icons/themed-icon";
 import { PageContainer } from "@/components/layout/page-container";
 import { formatDateShort, type ChallengePhase } from "@/lib/day-utils";
 
@@ -43,7 +43,7 @@ export function ChallengeUpcoming({ startDate, phase, routineLabel }: Props) {
         className="max-w-2xl"
       >
         <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 mb-6">
-          <CalendarClock className="h-6 w-6 text-primary" aria-hidden="true" />
+          <ThemedIcon name="calendar-clock" className="h-6 w-6 text-primary" />
         </div>
         <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-3">
           Upcoming challenge

@@ -19,16 +19,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Calendar,
   Check,
   ChevronDown,
   ChevronRight,
   Filter,
-  Trophy,
-  Play,
-  XCircle,
   X,
 } from "lucide-react";
+import { ThemedIcon } from "@/components/earned/icons/themed-icon";
 import { cn } from "@/lib/utils";
 import { Id } from "@/convex/_generated/dataModel";
 import { useGuest } from "@/components/guest-provider";
@@ -741,13 +738,13 @@ export default function ProgressPage() {
                       <SelectItem key={ch._id} value={ch._id}>
                         <div className="flex items-center gap-2">
                           {ch.status === "active" && (
-                            <Play className="h-3 w-3 text-primary" />
+                            <ThemedIcon name="play" className="h-3 w-3 text-primary" />
                           )}
                           {ch.status === "completed" && (
-                            <Trophy className="h-3 w-3 text-success" />
+                            <ThemedIcon name="trophy" className="h-3 w-3 text-success" />
                           )}
                           {ch.status === "failed" && (
-                            <XCircle className="h-3 w-3 text-destructive" />
+                            <ThemedIcon name="x-circle" className="h-3 w-3 text-destructive" />
                           )}
                           <span>
                             {new Date(ch.startDate).toLocaleDateString("en-US", {
@@ -884,7 +881,7 @@ export default function ProgressPage() {
 
             {filteredDays.length === 0 ? (
               <EmptyState
-                icon={<Calendar className="h-8 w-8" />}
+                icon={<ThemedIcon name="calendar-days" className="h-8 w-8" />}
                 title="No matching days"
                 description={`No ${filter === "complete" ? "complete" : filter === "incomplete" ? "incomplete" : ""} days found.`}
                 action={
@@ -1010,7 +1007,7 @@ export default function ProgressPage() {
                                   )}
                                   {log?.completedAt && (
                                     <p className="text-xs text-muted-foreground mt-3">
-                                      Completed at{" "}
+                                      Showed up at{" "}
                                       {new Date(log.completedAt).toLocaleTimeString(
                                         "en-US",
                                         {
@@ -1082,8 +1079,8 @@ function HabitDayDetail({
           h.blockType === "counter" && typeof entry?.value === "number"
             ? `${entry.value}${h.target ? ` / ${h.target}` : ""}${h.unit ? ` ${h.unit}` : ""}`
             : done
-              ? "Completed"
-              : "Not done";
+              ? "Showed up"
+              : "Skipped";
         return (
           <div
             key={h._id}

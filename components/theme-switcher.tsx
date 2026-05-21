@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import posthog from "posthog-js";
 import { cn } from "@/lib/utils";
+import { ThemedIcon } from "@/components/earned/icons/themed-icon";
 import { useThemePersonality } from "@/components/theme-provider";
 import {
   themeMetadata,
@@ -79,6 +80,25 @@ const themeSignatures: Record<
     badgeFontClass: "font-medium tracking-tight",
     badgeLabel: "12",
     chipRadius: "rounded-full",
+  },
+  earned: {
+    fontFamily: "'Caveat', 'Patrick Hand', cursive",
+    badgeRadius: "rounded-lg",
+    badgeFontClass: "font-bold",
+    badgeLabel: "12",
+    chipRadius: "rounded-full",
+    flourish: (
+      // Faint horizontal rule lines evoking notebook paper
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.18]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(to bottom, transparent 0, transparent 15px, currentColor 15px, currentColor 16px)",
+          backgroundPosition: "0 6px",
+        }}
+      />
+    ),
   },
 };
 
@@ -177,7 +197,16 @@ export function ThemeSwitcher({ className }: ThemeSwitcherProps) {
               role="radio"
               aria-checked={isSelected}
               aria-label={`${meta.name}. ${meta.description}`}
-              onClick={() => setPersonality(key)}
+              onClick={() => {
+                if (key !== personality) {
+                  posthog.capture("theme_switched", {
+                    from: personality,
+                    to: key,
+                    source: "switcher",
+                  });
+                }
+                setPersonality(key);
+              }}
               className={cn(
                 "relative flex flex-col overflow-hidden rounded-xl border-2 text-left",
                 "min-h-[44px] transition-all",
@@ -211,7 +240,7 @@ export function ThemeSwitcher({ className }: ThemeSwitcherProps) {
                   className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm"
                   aria-hidden
                 >
-                  <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />
+                  <ThemedIcon name="check" className="h-3.5 w-3.5 text-primary-foreground" />
                 </motion.div>
               )}
             </motion.button>

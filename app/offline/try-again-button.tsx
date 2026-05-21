@@ -57,15 +57,19 @@ export function TryAgainButton() {
       onClick={onClick}
       disabled={disabled}
       style={{
+        // Earned recipe — matches /not-found + /error.tsx (iter-021)
+        // so all three error/fallback surfaces share one button
+        // language. Sky-blue fill, cream-light label, 1.5px ink
+        // border, 2px ink sticker shadow.
         minHeight: 48,
         minWidth: 44,
         padding: "12px 32px",
-        backgroundColor: disabled ? "#999999" : "#FF6154",
-        color: "#ffffff",
-        border: "none",
-        borderRadius: 0,
+        backgroundColor: disabled ? "rgba(31,31,29,0.25)" : "#0090D8",
+        color: "#F9F3E1",
+        border: "1.5px solid #1F1F1D",
+        boxShadow: "2px 2px 0 #1F1F1D",
         fontSize: 16,
-        fontWeight: 700,
+        fontWeight: 600,
         cursor: disabled ? "not-allowed" : "pointer",
         letterSpacing: "0.01em",
         touchAction: "manipulation",

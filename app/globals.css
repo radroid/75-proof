@@ -408,6 +408,398 @@
 }
 
 /* ==========================================
+   EARNED THEME
+   Notebook paper, hand-drawn moments, gold-star reward.
+   Tokens sourced from design-system/project/colors_and_type.css.
+   ========================================== */
+[data-theme="earned"] {
+  --radius: 0.625rem; /* paper has minimal radii; chips/cards bump to 10px */
+
+  --font-body: var(--font-poppins), 'Poppins', system-ui, -apple-system, sans-serif;
+  --font-heading: var(--font-caveat), 'Caveat', 'Patrick Hand', cursive;
+  --font-code: 'JetBrains Mono', 'Courier New', monospace;
+
+  /* Brand palette — sampled directly from the logos */
+  --earned-cream:        #F4ECD8;
+  --earned-cream-light:  #F9F3E1;
+  --earned-cream-dark:   #E8DEC4;
+  --earned-ink:          #1F1F1D;
+  --earned-ink-soft:     #3A3A36;
+  --earned-star-gold:    #D8A830;
+  --earned-star-gold-lt: #F2C94C;
+  --earned-sky:          #0090D8;
+  --earned-sky-deep:     #0B6FA3;
+  --earned-rose:         #C75F4A;
+  --earned-sage:         #7A8C6B;
+  --earned-rule-line:    rgba(78, 60, 28, 0.18);
+  --earned-margin-line:  rgba(199, 95, 74, 0.45);
+
+  /* Semantic mapping — keeps existing components rendering correctly */
+  --primary: var(--earned-sky);
+  --primary-foreground: var(--earned-cream-light);
+
+  --background: var(--earned-cream);
+  --foreground: var(--earned-ink);
+
+  --card: var(--earned-cream-light);
+  --card-foreground: var(--earned-ink);
+
+  --popover: var(--earned-cream-light);
+  --popover-foreground: var(--earned-ink);
+
+  --secondary: var(--earned-cream-light);
+  --secondary-foreground: var(--earned-ink);
+
+  --muted: var(--earned-cream-dark);
+  --muted-foreground: rgba(31, 31, 29, 0.55);
+
+  --accent: var(--earned-sky);
+  --accent-foreground: var(--earned-cream-light);
+
+  --success: var(--earned-star-gold);
+  --success-foreground: var(--earned-ink);
+  --warning: var(--earned-star-gold);
+  --warning-foreground: var(--earned-ink);
+  --destructive: var(--earned-rose);
+  --destructive-foreground: var(--earned-cream-light);
+
+  --border: rgba(31, 31, 29, 0.88);
+  --input: var(--earned-cream-light);
+  --ring: var(--earned-sky);
+
+  --chart-1: var(--earned-sky);
+  --chart-2: var(--earned-star-gold);
+  --chart-3: var(--earned-sage);
+  --chart-4: var(--earned-rose);
+  --chart-5: var(--earned-ink-soft);
+
+  --sidebar: var(--earned-cream-light);
+  --sidebar-foreground: var(--earned-ink);
+  --sidebar-primary: var(--earned-sky);
+  --sidebar-primary-foreground: var(--earned-cream-light);
+  --sidebar-accent: var(--earned-cream-dark);
+  --sidebar-accent-foreground: var(--earned-ink);
+  --sidebar-border: rgba(31, 31, 29, 0.32);
+  --sidebar-ring: var(--earned-sky);
+
+  /* Paper shadow family — warm, soft, multi-layered. Lifts a card off the page. */
+  --shadow-color: 30 40% 20%;
+  --shadow-2xs: 0 1px 0 rgba(78, 60, 28, 0.08);
+  --shadow-xs: 0 1px 0 rgba(78, 60, 28, 0.10);
+  --shadow-sm: 0 1px 0 rgba(78, 60, 28, 0.12), 0 2px 6px rgba(78, 60, 28, 0.08);
+  --shadow: 0 2px 0 rgba(78, 60, 28, 0.10), 0 6px 18px rgba(78, 60, 28, 0.10);
+  --shadow-md: 0 2px 0 rgba(78, 60, 28, 0.10), 0 6px 18px rgba(78, 60, 28, 0.10);
+  --shadow-lg: 0 4px 0 rgba(78, 60, 28, 0.10), 0 14px 40px rgba(78, 60, 28, 0.14);
+  --shadow-xl: 0 4px 0 rgba(78, 60, 28, 0.10), 0 14px 40px rgba(78, 60, 28, 0.14);
+  --shadow-2xl: 0 6px 0 rgba(78, 60, 28, 0.12), 0 22px 60px rgba(78, 60, 28, 0.18);
+  --shadow-card: 0 1px 0 rgba(78, 60, 28, 0.10);
+  --shadow-card-hover: 0 2px 0 rgba(78, 60, 28, 0.10), 0 6px 18px rgba(78, 60, 28, 0.10);
+
+  /* Ink-sticker shadow — used for chips/badges; "stuck on" feel */
+  --shadow-ink: 2px 2px 0 var(--earned-ink);
+  --shadow-ink-lg: 3px 3px 0 var(--earned-ink);
+
+  --glow-success: 0 0 0 3px rgba(216, 168, 48, 0.25);
+  --inner-glow-success: inset 0 0 20px 0 rgba(216, 168, 48, 0.06);
+
+  /* Paper motion — slight overshoot, like a page settling onto the desk */
+  --duration-fast: 140ms;
+  --duration-normal: 220ms;
+  --duration-slow: 420ms;
+
+  --gradient-primary: linear-gradient(135deg, var(--earned-sky), var(--earned-sky-deep));
+  --gradient-accent: linear-gradient(135deg, var(--earned-star-gold), var(--earned-star-gold-lt));
+
+  /* Mobile bottom nav — paper strip */
+  --nav-bg: rgba(249, 243, 225, 0.92);
+  --nav-shadow: 0 -2px 0 rgba(78, 60, 28, 0.10), 0 -8px 24px rgba(78, 60, 28, 0.08);
+  --nav-indicator: rgba(0, 144, 216, 0.12);
+  --nav-radius: 10px;
+}
+
+/* Earned-only utility classes. Scoped under [data-theme="earned"] so they
+   only style elements when the user has the Earned theme active —
+   prevents leaking the cream paper backdrop into the other themes. */
+[data-theme="earned"] .paper-ruled {
+  background-color: var(--earned-cream);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 31px,
+    var(--earned-rule-line) 31px,
+    var(--earned-rule-line) 32px
+  );
+  background-position: 0 12px;
+}
+
+[data-theme="earned"] .paper-ruled-margin {
+  position: relative;
+}
+[data-theme="earned"] .paper-ruled-margin::before {
+  content: "";
+  position: absolute;
+  left: 36px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--earned-margin-line);
+  pointer-events: none;
+}
+
+/* Earned card treatment — gives shadcn Cards a notebook-page feel
+   without forking the Card component. Targets the data-slot attrs
+   shadcn emits so we stay in sync with upstream updates. Applied
+   globally under [data-theme="earned"] so Settings, Progress, and
+   any future surface using Cards picks up the visual without
+   per-page work. The Earned dashboard inlines its own visuals and
+   doesn't use shadcn Card, so it's unaffected. */
+[data-theme="earned"] [data-slot="card-title"] {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+/* Caveat renders visually smaller than Poppins at the same numeric
+   size; bump the most common section-header size up so handwritten
+   titles still read as the page's first hierarchy. */
+[data-theme="earned"] [data-slot="card-title"].text-lg {
+  font-size: 1.75rem;
+}
+
+[data-theme="earned"] [data-slot="card-description"] {
+  color: rgba(31, 31, 29, 0.65);
+}
+
+[data-theme="earned"] [data-slot="card"] {
+  border-width: 1.5px;
+}
+
+/* Dashed cream-dark separators between rows inside Earned cards —
+   matches the "notebook page" feel from the design-system MeScreen.
+   Scoped to direct children of card-content so it doesn't touch
+   nested layout grids. */
+[data-theme="earned"] [data-slot="card-content"] > * + * {
+  border-top: 1px dashed var(--earned-cream-dark);
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+/* Page header treatment — matches the MeScreen pattern (Caveat 40px
+   handwritten title + Poppins 13px muted subtitle). Targets the
+   data-slot attrs added to PageHeader so this applies to every page
+   without per-route work. The 3xl/font-bold Tailwind utility on the
+   h1 is overridden because Caveat needs different sizing to read as
+   the same hierarchy. */
+[data-theme="earned"] [data-slot="page-title"] {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 2.5rem;
+  letter-spacing: -0.01em;
+  /* 1.05 gives Caveat's descenders (g/y/p) enough room without
+     visibly inflating the header rhythm. Pure `1` clipped them. */
+  line-height: 1.05;
+}
+
+[data-theme="earned"] [data-slot="page-description"] {
+  font-family: var(--font-body);
+  color: rgba(31, 31, 29, 0.55);
+  font-size: 0.8125rem;
+  margin-top: 0.25rem;
+}
+
+/* Sticker-shadow surround on the Theme switcher card — the most
+   "discoverable" surface on the page (it's how users find Earned in
+   the first place). The 3px-offset hard ink shadow gives the card a
+   "stuck-on" feel matching the PaperChip + Earned brand pattern. */
+[data-theme="earned"] [data-earned-card="theme"] {
+  box-shadow: 3px 3px 0 var(--earned-ink);
+}
+
+/* Handwritten value treatment — apply Caveat to "the protagonist
+   number" per the design-system rule ("handwritten where the number
+   is the protagonist"). Use the data-earned-value attribute on
+   elements whose copy *is* the data (day counter, mode label,
+   streak total, etc.). Sub-labels and helper copy stay Poppins. */
+[data-theme="earned"] [data-earned-value] {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+/* Metric tile treatment — apply the cream-paper + sticker-shadow
+   look to headline tiles on /dashboard/progress (and any future
+   surface that opts in via data-earned-tile="metric"). The numbers
+   inside already use var(--font-heading) which resolves to Caveat
+   under Earned, so this rule just dresses the container to match. */
+[data-theme="earned"] [data-earned-tile="metric"] {
+  background-color: var(--earned-cream-light);
+  border-width: 1.5px;
+  border-color: var(--border);
+  box-shadow: 2px 2px 0 var(--earned-ink);
+}
+
+/* Identity card treatment — the hero card at the top of /progress.
+   Uses the same paper-tile recipe as metric tiles, but rounded-2xl
+   stays at 16px (matches Tailwind's rounded-2xl) and the headline
+   inside is already Caveat via var(--font-heading). The card now
+   reads as a handwritten note on cream paper. */
+[data-theme="earned"] [data-earned-tile="identity"] {
+  background-color: var(--earned-cream-light);
+  border-width: 1.5px;
+  border-color: var(--border);
+  box-shadow: 2px 2px 0 var(--earned-ink);
+}
+
+/* Friend progress card — sticker-shadow cream chip per the Phase 2
+   friends restyle brief ("friend cards as sticker-shadow cream
+   chips"). Same recipe as identity/metric tiles. Sits inside the
+   friends-progress section of /dashboard/progress. */
+[data-theme="earned"] [data-earned-tile="friend"],
+[data-theme="earned"] [data-earned-tile="pulse"],
+[data-theme="earned"] [data-earned-tile="board"] {
+  background-color: var(--earned-cream-light);
+  border-width: 1.5px;
+  border-color: var(--border);
+  box-shadow: 2px 2px 0 var(--earned-ink);
+}
+
+/* Section heading swap — uppercase-tracking labels read awkwardly
+   in Caveat at small sizes, so we keep Poppins but lift the colour
+   from muted to full ink and tighten letter-spacing (from 0.3em →
+   0.18em) so the caption reads as a deliberate notebook section
+   header. Targets section h2 elements opted in via
+   data-earned-section-heading. */
+[data-theme="earned"] [data-earned-section-heading] {
+  color: var(--earned-ink);
+  letter-spacing: 0.18em;
+  font-weight: 600;
+}
+
+/* Focus-visible ring under Earned — shadcn's default `ring-ring/50`
+   utility renders the sky token at 50% alpha, which on cream-light
+   (≈ #F9F3E1) drops below WCAG non-text 3:1. Replace it with a hard
+   2px sky outline so focus is unambiguous across every interactive
+   surface on the page. `outline` is universally supported, renders
+   outside the element, and bypasses Tailwind's ring opacity
+   composition entirely. Scoped under [data-theme="earned"] only. */
+[data-theme="earned"] *:focus-visible {
+  outline: 2px solid var(--earned-sky);
+  outline-offset: 2px;
+}
+
+/* Notebook-style text input — cream-light surface with a hand-trembled
+   ink border. The 1.5px ink border replaces the default 1px so the
+   field reads as drawn-onto-paper, and the sky-blue focus ring matches
+   the Earned interactive accent. Targets inputs opted in via
+   data-earned-input. The shadcn Input class for `border-input` is
+   superseded here without leaking to non-Earned themes. */
+[data-theme="earned"] [data-earned-input] {
+  background-color: var(--earned-cream-light);
+  border-width: 1.5px;
+  border-color: var(--earned-ink);
+  caret-color: var(--earned-sky);
+}
+
+[data-theme="earned"] [data-earned-input]::placeholder {
+  color: rgba(31, 31, 29, 0.45);
+}
+
+/* Notebook-style composer chrome — the rounded-pill form that wraps
+   the coach textarea + attach + send button. Cream-light paper
+   surface so the textarea inside reads as written on the page; ink
+   border + sticker shadow gives it the "stuck to the page" feel
+   shared with PaperChip + iter-008's theme card. The textarea inside
+   stays bg-transparent and inherits the cream-light surface.
+   Targets the form opted in via data-earned-composer.
+
+   We also explicitly kill `backdrop-filter` here. The composer
+   carries Tailwind `backdrop-blur` + `supports-[backdrop-filter]:
+   bg-background/80` for the iMessage-style glass look on other
+   themes; on cream paper that translucent blur reads as glass-iOS
+   chrome rather than a paper sticker. Setting backdrop-filter:none
+   makes the cream-light surface opaque and lets the sticker shadow
+   carry the lift. */
+[data-theme="earned"] [data-earned-composer] {
+  background-color: var(--earned-cream-light);
+  border-width: 1.5px;
+  border-color: var(--earned-ink);
+  box-shadow: 2px 2px 0 var(--earned-ink);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* The composer's inner textarea opts in to data-earned-input, but the
+   surrounding form already provides the cream-light surface — so the
+   inner element should NOT repeat the bg or border (which would
+   double-stack visually). Override the iter-018 input recipe for the
+   composer-nested case. */
+[data-theme="earned"] [data-earned-composer] [data-earned-input] {
+  background-color: transparent;
+  border: 0;
+}
+
+/* 3-up grid shadow density — when a grid of [data-earned-tile] cards
+   grows to 3+ columns, the stacked sticker shadows can read as
+   chaotic. Future surfaces opting into the recipe should add
+   data-earned-grid="cards" to the grid container, after which this
+   rule offsets every-other tile's shadow direction so the page reads
+   as cards tossed onto the desk rather than a regular pattern.
+   Currently no surface uses this; FriendsList stays 2-up where the
+   uniform shadow direction reads fine. Documented here so iter-019+
+   can flip the attribute on without a new CSS migration. */
+[data-theme="earned"] [data-earned-grid="cards"]
+  > [data-earned-tile]:nth-child(even) {
+  box-shadow: -2px 2px 0 var(--earned-ink);
+}
+
+/* Coach chat bubble treatment — user turns read as sticky-note chips
+   on the paper page (cream-light + 1.5px ink border + 2px sticker
+   shadow), assistant turns read as ink written directly on the page
+   (transparent, no border, no shadow — Poppins body stays for
+   legibility per design-system § coach row). The default shadcn
+   bg-primary / bg-muted is overridden under Earned so non-Earned
+   themes keep the iMessage look. */
+[data-theme="earned"] [data-earned-bubble="user"] {
+  background-color: var(--earned-cream-light);
+  color: var(--earned-ink);
+  border: 1.5px solid var(--earned-ink);
+  box-shadow: 2px 2px 0 var(--earned-ink);
+}
+
+[data-theme="earned"] [data-earned-bubble="assistant"] {
+  background-color: transparent;
+  color: var(--earned-ink);
+  /* Slight negative margin pulls the left edge into the rule line so
+     the text reads as written in the notebook margin rather than
+     floating in a balloon. */
+  padding-left: 0.5rem;
+}
+
+/* Recents sheet — handwritten title + dashed cream-dark row
+   separators. Re-themes the cmdk Command list so each thread row
+   reads as a torn page in the notebook. Scoped tightly so non-
+   Earned themes keep the shadcn Command palette. */
+[data-theme="earned"] [data-earned-recents-title] {
+  font-family: var(--font-heading);
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  color: var(--earned-ink);
+}
+
+[data-theme="earned"] [data-earned-recents-row] {
+  border-bottom: 1px dashed var(--earned-cream-dark);
+}
+
+[data-theme="earned"] [data-earned-recents-row]:last-child {
+  border-bottom: 0;
+}
+
+/* ==========================================
    GLOBAL LAYOUT TOKENS
    Shared across themes. Bottom nav height is the pill
    nav (66px) + its bottom offset (1.25rem = 20px). Components

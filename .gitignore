@@ -49,8 +49,17 @@ next-env.d.ts
 
 # local agent/tooling artifacts
 .agents/
-.claude/
+# Ignore everything in .claude/ EXCEPT the project-scoped skills directory.
+# Personal settings (.claude/settings.local.json, agents/, etc.) stay ignored;
+# .claude/skills/ is committed so the team auto-loads the Earned design skill.
+.claude/*
+!.claude/skills/
 .vscode/
 convex/_generated/ai/
 skills-lock.json
 .env.local
+
+# Playwright + Chrome DevTools MCP scratch (visual verification runs)
+.playwright-mcp/
+.smoke-test-*.png
+earned-dashboard-*.png
