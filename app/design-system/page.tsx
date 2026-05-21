@@ -63,6 +63,7 @@ const ICON_NAMES = [
   "check",
   "x-circle",
   "trending-up",
+  "sparkles",
 ] as const;
 
 type IconName = (typeof ICON_NAMES)[number];
