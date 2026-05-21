@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/layout/page-container";
 import { HeroSkeleton, ChecklistSkeleton } from "@/components/ui/skeleton-enhanced";
 import { MotionItem } from "@/components/ui/motion";
-import { Rocket } from "lucide-react";
+import { ThemedIcon } from "@/components/earned/icons/themed-icon";
 import { ChallengeUpcoming } from "@/components/challenge-upcoming";
 import {
   describeChallengePhase,
@@ -261,12 +261,12 @@ function NoActiveChallenge() {
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
               className="mx-auto w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6"
             >
-              <Rocket className="h-10 w-10 text-primary" />
+              <ThemedIcon name="rocket" className="h-10 w-10 text-primary" />
             </motion.div>
             <h2 className="text-2xl font-bold">Ready to start?</h2>
             <p className="mt-3 text-muted-foreground max-w-md mx-auto">
               Pick a routine and show up for it every day. Track your habits and
-              build the streak.
+              earn the star.
             </p>
             <Button
               onClick={() => setShowModal(true)}
