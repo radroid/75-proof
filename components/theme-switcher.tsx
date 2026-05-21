@@ -240,7 +240,11 @@ export function ThemeSwitcher({ className }: ThemeSwitcherProps) {
                   className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm"
                   aria-hidden
                 >
-                  <ThemedIcon name="check" className="h-3.5 w-3.5 text-primary-foreground" />
+                  <ThemedIcon
+                    name="check"
+                    className="h-3.5 w-3.5 text-primary-foreground"
+                    strokeWidth={3}
+                  />
                 </motion.div>
               )}
             </motion.button>
