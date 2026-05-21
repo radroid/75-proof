@@ -18,6 +18,7 @@ import { GuestSignupBanner } from "@/components/guest-signup-banner";
 import { useGuest } from "@/components/guest-provider";
 import { InstallPromptGate } from "@/components/pwa/install-prompt-gate";
 import { HapticsPermissionPrompt } from "@/components/haptics-permission-prompt";
+import { ThemedIcon } from "@/components/earned/icons/themed-icon";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -69,7 +70,7 @@ const guestSidebarNavItems = [
   {
     label: "Today",
     href: "/dashboard",
-    icon: <LayoutDashboard className="h-5 w-5 flex-shrink-0" />,
+    icon: <ThemedIcon name="layout-dashboard" className="h-5 w-5 flex-shrink-0" />,
   },
   {
     label: "Progress",
@@ -313,7 +314,7 @@ export default function DashboardLayout({
         {
           label: "Today",
           href: "/dashboard",
-          icon: <LayoutDashboard className="h-5 w-5 flex-shrink-0" />,
+          icon: <ThemedIcon name="layout-dashboard" className="h-5 w-5 flex-shrink-0" />,
         },
         {
           label: "Progress",
