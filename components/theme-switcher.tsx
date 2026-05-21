@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
 import posthog from "posthog-js";
 import { cn } from "@/lib/utils";
+import { ThemedIcon } from "@/components/earned/icons/themed-icon";
 import { useThemePersonality } from "@/components/theme-provider";
 import {
   themeMetadata,
@@ -240,7 +240,7 @@ export function ThemeSwitcher({ className }: ThemeSwitcherProps) {
                   className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm"
                   aria-hidden
                 >
-                  <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />
+                  <ThemedIcon name="check" className="h-3.5 w-3.5 text-primary-foreground" />
                 </motion.div>
               )}
             </motion.button>

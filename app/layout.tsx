@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     default: "earned",
     template: "%s | earned",
   },
-  description: "Show up. Every day. Build the streak.",
+  description: "Show up. Every day. Earn the star.",
   authors: [{ name: "Create+ Club" }],
   creator: "Create+ Club",
   openGraph: {
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     url: "https://75.createplus.club",
     siteName: "earned",
     title: "earned",
-    description: "Show up. Every day. Build the streak.",
+    description: "Show up. Every day. Earn the star.",
     images: [
       {
         url: "/opengraph-image",
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "earned",
-    description: "Show up. Every day. Build the streak.",
+    description: "Show up. Every day. Earn the star.",
     images: ["/opengraph-image"],
     creator: "@createplusclub",
   },
@@ -123,7 +123,7 @@ export default function RootLayout({
                 {
                   "@type": "SoftwareApplication",
                   name: "earned",
-                  description: "Show up. Every day. Build the streak.",
+                  description: "Show up. Every day. Earn the star.",
                   url: "https://75.createplus.club",
                   applicationCategory: "LifestyleApplication",
                   operatingSystem: "Web",

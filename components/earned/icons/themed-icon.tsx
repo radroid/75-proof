@@ -26,6 +26,7 @@ import {
   History,
   MessageSquareText,
   LayoutDashboard,
+  Check,
   type LucideIcon,
 } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
@@ -52,6 +53,7 @@ import { CrossMarkEarned } from "./cross-mark";
 import { HistoryEarned } from "./history";
 import { NoteEarned } from "./note";
 import { LayoutDashboardEarned } from "./layout-dashboard";
+import { CheckEarned } from "./check";
 
 // Named lookup of icon variants. Each entry pairs the Lucide
 // fallback (used on every non-Earned theme) with the hand-drawn
@@ -83,7 +85,8 @@ type IconName =
   | "send"
   | "history"
   | "note"
-  | "layout-dashboard";
+  | "layout-dashboard"
+  | "check";
 
 const variants: Record<
   IconName,
@@ -148,6 +151,11 @@ const variants: Record<
   // the page so the nav row reads as a notebook tab marker rather
   // than a system icon.
   "layout-dashboard": { lucide: LayoutDashboard, earned: LayoutDashboardEarned },
+  // Selected-state tick inside the theme switcher's gold disc. The
+  // Earned variant is a single hand-drawn check stroke with a slight
+  // rotation, so the confirmation reads as drawn-by-hand rather than
+  // Lucide's geometric ✓.
+  check: { lucide: Check, earned: CheckEarned },
 };
 
 // Theme-aware icon. Renders the hand-drawn variant under Earned;
