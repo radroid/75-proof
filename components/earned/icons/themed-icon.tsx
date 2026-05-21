@@ -28,6 +28,7 @@ import {
   LayoutDashboard,
   Check,
   XCircle,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
@@ -56,6 +57,7 @@ import { NoteEarned } from "./note";
 import { LayoutDashboardEarned } from "./layout-dashboard";
 import { CheckEarned } from "./check";
 import { XCircleEarned } from "./x-circle";
+import { TrendingUpEarned } from "./trending-up";
 
 // Named lookup of icon variants. Each entry pairs the Lucide
 // fallback (used on every non-Earned theme) with the hand-drawn
@@ -97,7 +99,8 @@ type IconName =
   | "note"
   | "layout-dashboard"
   | "check"
-  | "x-circle";
+  | "x-circle"
+  | "trending-up";
 
 const variants: Record<
   IconName,
@@ -174,6 +177,11 @@ const variants: Record<
   // reads as a more emphatic version of the missed-day mark on the
   // calendar grid.
   "x-circle": { lucide: XCircle, earned: XCircleEarned },
+  // Desktop sidebar "Progress" tab glyph + ProgressNavIcon wrapper (the
+  // pending-friend-request badge). Lucide's TrendingUp is an upward
+  // zigzag with an arrowhead; the Earned variant is the same shape
+  // sketched by hand, so the nav row reads as a pen mark on the page.
+  "trending-up": { lucide: TrendingUp, earned: TrendingUpEarned },
 };
 
 // Theme-aware icon. Renders the hand-drawn variant under Earned;
