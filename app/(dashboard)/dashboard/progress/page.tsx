@@ -23,7 +23,6 @@ import {
   ChevronDown,
   ChevronRight,
   Filter,
-  XCircle,
   X,
 } from "lucide-react";
 import { ThemedIcon } from "@/components/earned/icons/themed-icon";
@@ -745,7 +744,7 @@ export default function ProgressPage() {
                             <ThemedIcon name="trophy" className="h-3 w-3 text-success" />
                           )}
                           {ch.status === "failed" && (
-                            <XCircle className="h-3 w-3 text-destructive" />
+                            <ThemedIcon name="x-circle" className="h-3 w-3 text-destructive" />
                           )}
                           <span>
                             {new Date(ch.startDate).toLocaleDateString("en-US", {

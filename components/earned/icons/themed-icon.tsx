@@ -27,6 +27,7 @@ import {
   MessageSquareText,
   LayoutDashboard,
   Check,
+  XCircle,
   type LucideIcon,
 } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
@@ -54,6 +55,7 @@ import { HistoryEarned } from "./history";
 import { NoteEarned } from "./note";
 import { LayoutDashboardEarned } from "./layout-dashboard";
 import { CheckEarned } from "./check";
+import { XCircleEarned } from "./x-circle";
 
 // Named lookup of icon variants. Each entry pairs the Lucide
 // fallback (used on every non-Earned theme) with the hand-drawn
@@ -94,7 +96,8 @@ type IconName =
   | "history"
   | "note"
   | "layout-dashboard"
-  | "check";
+  | "check"
+  | "x-circle";
 
 const variants: Record<
   IconName,
@@ -164,6 +167,13 @@ const variants: Record<
   // rotation, so the confirmation reads as drawn-by-hand rather than
   // Lucide's geometric ✓.
   check: { lucide: Check, earned: CheckEarned },
+  // Failed-challenge status badge (challenge-picker dropdown row in
+  // /dashboard/progress). Lucide's XCircle is a filled ring with an
+  // X; the Earned variant is a wobbly open ring wrapping the same
+  // crossing strokes used by CrossMarkEarned, so the failed glyph
+  // reads as a more emphatic version of the missed-day mark on the
+  // calendar grid.
+  "x-circle": { lucide: XCircle, earned: XCircleEarned },
 };
 
 // Theme-aware icon. Renders the hand-drawn variant under Earned;
