@@ -196,12 +196,22 @@ const variants: Record<
 // Theme-aware icon. Renders the hand-drawn variant under Earned;
 // falls through to the Lucide default everywhere else so arctic /
 // broadsheet / military / zen keep their visual language.
+//
+// `strokeWidth` is forwarded to the Lucide branch only — the Earned
+// variants own their own stroke weight via the inline SVG (tuned per
+// glyph for the notebook vocabulary), so passing strokeWidth there
+// would defeat the design. Use this when a call site needs a heavier
+// or lighter Lucide weight than the default 2 (e.g. the theme
+// switcher's selected-state badge wants a bold 3 inside the gold
+// disc).
 export function ThemedIcon({
   name,
   className,
+  strokeWidth,
 }: {
   name: IconName;
   className?: string;
+  strokeWidth?: number;
 }) {
   const { personality } = useThemePersonality();
   const v = variants[name];
@@ -209,5 +219,5 @@ export function ThemedIcon({
     return <v.earned className={className} />;
   }
   const Lucide = v.lucide;
-  return <Lucide className={className} />;
+  return <Lucide className={className} strokeWidth={strokeWidth} />;
 }
