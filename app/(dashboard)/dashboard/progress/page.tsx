@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Calendar,
   Check,
   ChevronDown,
   ChevronRight,
@@ -883,7 +882,7 @@ export default function ProgressPage() {
 
             {filteredDays.length === 0 ? (
               <EmptyState
-                icon={<Calendar className="h-8 w-8" />}
+                icon={<ThemedIcon name="calendar-days" className="h-8 w-8" />}
                 title="No matching days"
                 description={`No ${filter === "complete" ? "complete" : filter === "incomplete" ? "incomplete" : ""} days found.`}
                 action={
