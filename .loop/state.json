@@ -1,5 +1,5 @@
 {
-  "iter": 38,
+  "iter": 39,
   "phase": "earned-transition",
   "branch": "ux-refresh-simplified-challenge-driven",
   "pr_mode": true,
@@ -7,5 +7,5 @@
   "merge_rule": "All PRs target ux-refresh-simplified-challenge-driven as base (never main) until Phase 9 rollout. Use gh pr merge --squash --delete-branch after CodeRabbit clears.",
   "review_trigger": "Comment `@coderabbitai review` on every PR after open (CodeRabbit auto-skips non-main bases otherwise).",
   "build_check": "npx next build (must pass before commit). Dev server is always-on at :3001 — do not start.",
-  "last_pushed_iter": 38
+  "last_pushed_iter": 39
 }

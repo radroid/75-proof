@@ -24,7 +24,6 @@ import {
   TrendingUp,
   Settings,
   LogIn,
-  Sparkles,
 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -80,7 +79,7 @@ const guestSidebarNavItems = [
   {
     label: "Coach",
     href: "/dashboard/coach",
-    icon: <Sparkles className="h-5 w-5 flex-shrink-0" />,
+    icon: <ThemedIcon name="sparkles" className="h-5 w-5 flex-shrink-0" />,
   },
 ];
 
@@ -277,7 +276,7 @@ export default function DashboardLayout({
   // user can already reach Coach from the desktop sidebar / Path-pick
   // tile during onboarding, and (b) a settings entry-point is the only
   // way for a guest to reset their data and re-onboard from the app
-  // shell. The Sparkles import stays in scope for the desktop sidebar.
+  // shell. Sparkles is now rendered via ThemedIcon in the desktop sidebar.
   const guestMobileItems = [
     { label: "Today", href: "/dashboard", icon: LayoutDashboard },
     { label: "Progress", href: "/dashboard/progress", icon: TrendingUp },
@@ -324,7 +323,7 @@ export default function DashboardLayout({
         {
           label: "Coach",
           href: "/dashboard/coach",
-          icon: <Sparkles className="h-5 w-5 flex-shrink-0" />,
+          icon: <ThemedIcon name="sparkles" className="h-5 w-5 flex-shrink-0" />,
         },
       ];
 

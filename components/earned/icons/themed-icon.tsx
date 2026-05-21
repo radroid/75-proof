@@ -29,6 +29,7 @@ import {
   Check,
   XCircle,
   TrendingUp,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { useThemePersonality } from "@/components/theme-provider";
@@ -58,6 +59,7 @@ import { LayoutDashboardEarned } from "./layout-dashboard";
 import { CheckEarned } from "./check";
 import { XCircleEarned } from "./x-circle";
 import { TrendingUpEarned } from "./trending-up";
+import { SparklesEarned } from "./sparkles";
 
 // Named lookup of icon variants. Each entry pairs the Lucide
 // fallback (used on every non-Earned theme) with the hand-drawn
@@ -100,7 +102,8 @@ type IconName =
   | "layout-dashboard"
   | "check"
   | "x-circle"
-  | "trending-up";
+  | "trending-up"
+  | "sparkles";
 
 const variants: Record<
   IconName,
@@ -182,6 +185,12 @@ const variants: Record<
   // zigzag with an arrowhead; the Earned variant is the same shape
   // sketched by hand, so the nav row reads as a pen mark on the page.
   "trending-up": { lucide: TrendingUp, earned: TrendingUpEarned },
+  // Desktop sidebar "Coach" tab glyph. Lucide's Sparkles is a big
+  // 4-pointed star with two smaller satellites — the "magic / AI"
+  // flag in their iconography. The Earned variant is three pen-tap
+  // twinkles in different sizes so the row reads as quick marks
+  // on the page (not a flashy system glyph).
+  sparkles: { lucide: Sparkles, earned: SparklesEarned },
 };
 
 // Theme-aware icon. Renders the hand-drawn variant under Earned;
