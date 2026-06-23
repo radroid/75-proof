@@ -69,14 +69,28 @@ export function parseHHmm(hhmm: string): number | null {
   return h * 60 + min;
 }
 
-/** Current wall-clock "HH:mm" in a timezone (DST-safe). */
+/**
+ * Current wall-clock "HH:mm" in a timezone (DST-safe). Falls back to UTC when
+ * the tz string is invalid — `preferences.timezone` is a free-form client
+ * value, and a single malformed row must not throw and abort a cron that scans
+ * all users in one transaction (see findDueBlockReminders).
+ */
 export function getLocalHHmm(tz: string, now: Date): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: tz,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(now);
+  try {
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: tz,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(now);
+  } catch {
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "UTC",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(now);
+  }
 }
 
 /** Current minutes-from-midnight in a timezone (DST-safe). */

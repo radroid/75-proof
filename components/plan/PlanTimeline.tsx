@@ -44,8 +44,14 @@ export function PlanTimeline({
   const starts = blocks.map((b) => b.startMin);
   const ends = blocks.map((b) => b.startMin + b.durationMin);
   const anchor = workEndMin ?? nowMin;
+  // Don't let a pre-work "now" drag the window start back before the evening
+  // (opening Plan at 2 AM shouldn't render a huge empty pre-dawn expanse). Only
+  // fold nowMin into the lower bound once we've actually reached the work-end
+  // anchor; the NOW line already self-hides when out of range.
+  const relevantNow = nowMin >= anchor ? nowMin : Infinity;
 
-  let winStart = Math.floor(Math.min(anchor, nowMin, ...starts) / HOUR) * HOUR;
+  let winStart =
+    Math.floor(Math.min(anchor, relevantNow, ...starts) / HOUR) * HOUR;
   let winEnd = Math.ceil(Math.max(windDownMin, nowMin, ...ends) / HOUR) * HOUR;
   if (winEnd - winStart < 180) winEnd = winStart + 180; // keep a usable height
   winStart = Math.max(0, winStart);
@@ -212,6 +218,50 @@ function CanvasBlock({
     }
   }
 
+  // Keyboard equivalents for the pointer drags (WCAG 2.1.1 Keyboard). Arrow keys
+  // nudge by 5 min, Page keys by a larger step; values stay snapped + clamped to
+  // the same window bounds the pointer drag enforces.
+  function handleMoveKey(e: React.KeyboardEvent) {
+    const step =
+      e.key === "ArrowUp"
+        ? -5
+        : e.key === "ArrowDown"
+          ? 5
+          : e.key === "PageUp"
+            ? -30
+            : e.key === "PageDown"
+              ? 30
+              : 0;
+    if (step === 0) return;
+    e.preventDefault();
+    const ns = Math.max(
+      winStartMin,
+      Math.min(snapTo5(block.startMin + step), winEndMin - block.durationMin),
+    );
+    if (ns !== block.startMin) onMove(block.id, ns);
+  }
+
+  function handleResizeKey(e: React.KeyboardEvent) {
+    // Slider semantics: ArrowUp/Right = longer, ArrowDown/Left = shorter.
+    const step =
+      e.key === "ArrowUp" || e.key === "ArrowRight"
+        ? 5
+        : e.key === "ArrowDown" || e.key === "ArrowLeft"
+          ? -5
+          : e.key === "PageUp"
+            ? 15
+            : e.key === "PageDown"
+              ? -15
+              : 0;
+    if (step === 0) return;
+    e.preventDefault();
+    const nd = Math.max(
+      MIN_BLOCK_MIN,
+      Math.min(snapTo5(block.durationMin + step), winEndMin - block.startMin),
+    );
+    if (nd !== block.durationMin) onResize(block.id, block.startMin, nd);
+  }
+
   return (
     <div
       ref={outerRef}
@@ -305,11 +355,13 @@ function CanvasBlock({
             >
               <X className="h-3.5 w-3.5" aria-hidden />
             </button>
-            {/* Move handle */}
+            {/* Move handle — pointer-drag or arrow keys to re-time */}
             <button
               type="button"
-              aria-label={`Drag to move ${name}`}
+              aria-label={`Move ${name}. Use up and down arrow keys to change the time.`}
+              aria-keyshortcuts="ArrowUp ArrowDown PageUp PageDown"
               onPointerDown={(e) => beginDrag("move", e)}
+              onKeyDown={handleMoveKey}
               className="cursor-grab touch-none rounded-md p-1 text-muted-foreground/70 hover:bg-muted/50 hover:text-foreground active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <GripVertical className="h-4 w-4" aria-hidden />
@@ -317,15 +369,21 @@ function CanvasBlock({
           </div>
         </div>
 
-        {/* Resize handle (bottom edge) */}
+        {/* Resize handle (bottom edge) — pointer-drag or arrow keys to resize */}
         <div
-          role="separator"
-          aria-label={`Drag to resize ${name}`}
+          role="slider"
+          tabIndex={0}
+          aria-label={`Length of ${name}. Use up and down arrow keys to resize.`}
+          aria-valuemin={MIN_BLOCK_MIN}
+          aria-valuemax={winEndMin - block.startMin}
+          aria-valuenow={block.durationMin}
+          aria-valuetext={formatDuration(block.durationMin)}
           onPointerDown={(e) => {
             e.stopPropagation();
             beginDrag("resize", e);
           }}
-          className="absolute inset-x-0 bottom-0 h-3 cursor-ns-resize touch-none"
+          onKeyDown={handleResizeKey}
+          className="absolute inset-x-0 bottom-0 h-3 cursor-ns-resize touch-none rounded-b-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span className="mx-auto mt-1.5 block h-1 w-8 rounded-full bg-muted-foreground/25" />
         </div>

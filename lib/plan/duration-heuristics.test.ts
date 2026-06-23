@@ -64,6 +64,17 @@ describe("inferPlacement", () => {
     expect(inferPlacement(h({ name: "Workout" }))).toBe("timeline");
     expect(inferPlacement(h({ name: "Read" }))).toBe("timeline");
   });
+  it("keeps named activities on the timeline despite abstinence/diet substrings", () => {
+    expect(inferPlacement(h({ name: "No-equipment workout" }))).toBe("timeline");
+    expect(inferPlacement(h({ name: "Zero to one reading" }))).toBe("timeline");
+    expect(inferPlacement(h({ name: "Sugar-free baking practice" }))).toBe(
+      "timeline",
+    );
+  });
+  it("does not match activity words inside other words", () => {
+    // "read" inside "bread" must not pull an abstinence habit to the timeline.
+    expect(inferPlacement(h({ name: "No bread" }))).toBe("anytime");
+  });
 });
 
 describe("resolvePlacement", () => {

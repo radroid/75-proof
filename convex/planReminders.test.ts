@@ -4,7 +4,12 @@ import { describe, expect, test } from "vitest";
 import { internal } from "./_generated/api";
 import schema from "./schema";
 import type { Id } from "./_generated/dataModel";
-import { getLocalHHmm, parseHHmm, getTodayInTimezone } from "./lib/dayCalculation";
+import {
+  getLocalHHmm,
+  parseHHmm,
+  getTodayInTimezone,
+  computeDayNumber,
+} from "./lib/dayCalculation";
 
 const modules = import.meta.glob("./**/*.ts");
 const TZ = "UTC";
@@ -60,6 +65,7 @@ async function seedUser(
       visibility: "private",
       daysTotal: 75,
     });
+    await ctx.db.patch(userId, { currentChallengeId: challengeId });
     const habitId = await ctx.db.insert("habitDefinitions", {
       challengeId,
       userId,
@@ -178,6 +184,35 @@ describe("planReminders", () => {
       startMin: dueStartMin(),
       reminderEnabled: true,
       reminderSentAt: 1,
+    });
+
+    const due = await t.query(internal.planReminders.findDueBlockReminders, {});
+    expect(due).toHaveLength(0);
+  });
+
+  test("skips a block whose habit is already completed today", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, challengeId, habitId } = await seedUser(t, {
+      withSchedule: true,
+    });
+    await insertBlock(t, {
+      userId,
+      challengeId,
+      habitId,
+      startMin: dueStartMin(),
+      reminderEnabled: true,
+    });
+    await t.run(async (ctx) => {
+      const ch = await ctx.db.get(challengeId);
+      const dayNumber = computeDayNumber(ch!.startDate, getTodayInTimezone(TZ));
+      await ctx.db.insert("habitEntries", {
+        habitDefinitionId: habitId,
+        challengeId,
+        userId,
+        dayNumber,
+        date: getTodayInTimezone(TZ),
+        completed: true,
+      });
     });
 
     const due = await t.query(internal.planReminders.findDueBlockReminders, {});

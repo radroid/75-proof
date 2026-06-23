@@ -6,7 +6,7 @@
  * All times are minutes from local midnight.
  */
 
-import { ceilTo5 } from "./time";
+import { ceilTo5, MINUTES_PER_DAY } from "./time";
 
 export interface ArrangeHabit {
   id: string; // habitDefinitionId
@@ -78,7 +78,7 @@ function place(
   input: ArrangeInput,
   buffer: number,
   gap: number,
-): ArrangedBlock[] {
+): { placed: ArrangedBlock[]; dropped: number } {
   const base =
     input.workEndMin != null
       ? Math.max(input.nowMin, input.workEndMin)
@@ -87,15 +87,24 @@ function place(
 
   const occupied: FixedInterval[] = [...(input.fixed ?? [])];
   const placed: ArrangedBlock[] = [];
+  let dropped = 0;
 
   for (const h of input.habits) {
     const dur = Math.max(5, Math.round(h.durationMin));
     const start = nextFreeStart(cursor, dur, occupied, gap);
+    // A block that would cross local midnight can't be scheduled today: the
+    // reminder cron's wall-clock minute resets to 0 at 00:00 so it could never
+    // fire, and the clock label would wrap (e.g. 1460 -> "12:20 AM"). Drop it
+    // and let overflow surface instead of persisting an unreachable block.
+    if (start + dur > MINUTES_PER_DAY) {
+      dropped++;
+      continue;
+    }
     placed.push({ habitId: h.id, startMin: start, durationMin: dur });
     occupied.push({ startMin: start, durationMin: dur });
     cursor = start + dur + gap;
   }
-  return placed;
+  return { placed, dropped };
 }
 
 function endsAfter(blocks: ArrangedBlock[], windDownMin: number): boolean {
@@ -106,15 +115,15 @@ export function autoArrange(input: ArrangeInput): ArrangeResult {
   const buffer = input.bufferAfterWorkMin ?? 15;
   const gap = input.interBlockGapMin ?? 10;
 
-  let blocks = place(input, buffer, gap);
-  let overflow = endsAfter(blocks, input.windDownMin);
+  let { placed, dropped } = place(input, buffer, gap);
+  let overflow = dropped > 0 || endsAfter(placed, input.windDownMin);
 
   // Too tight with the comfortable spacing — try compressed (no buffer, no gap).
   if (overflow) {
     const compressed = place(input, 0, 0);
-    blocks = compressed;
-    overflow = endsAfter(compressed, input.windDownMin);
+    placed = compressed.placed;
+    overflow = compressed.dropped > 0 || endsAfter(placed, input.windDownMin);
   }
 
-  return { blocks, overflow };
+  return { blocks: placed, overflow };
 }

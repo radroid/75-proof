@@ -74,6 +74,25 @@ describe("autoArrange", () => {
     expect(res.overflow).toBe(true);
   });
 
+  it("drops blocks that would cross midnight instead of placing past 1440", () => {
+    const res = autoArrange({
+      ...base,
+      workEndMin: 23 * 60 + 30, // 23:30 = 1410
+      nowMin: 23 * 60 + 30,
+      windDownMin: 23 * 60 + 55, // 1435
+      habits: [
+        { id: "a", durationMin: 30 },
+        { id: "b", durationMin: 30 },
+      ],
+    });
+    // No placed block may run past local midnight (1440) — a past-midnight
+    // block's reminder could never fire and its clock label would wrap.
+    for (const b of res.blocks) {
+      expect(b.startMin + b.durationMin).toBeLessThanOrEqual(1440);
+    }
+    expect(res.overflow).toBe(true);
+  });
+
   it("returns nothing for no habits", () => {
     const res = autoArrange({ ...base, habits: [] });
     expect(res.blocks).toEqual([]);

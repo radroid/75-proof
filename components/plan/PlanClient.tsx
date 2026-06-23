@@ -114,6 +114,7 @@ function PlanBoard({ user, challenge }: { user: any; challenge: any }) {
   const [forceBar, setForceBar] = useState(false);
   const [overflow, setOverflow] = useState(false);
   const [nowMin, setNowMin] = useState<number | null>(null);
+  const [confirmRearrange, setConfirmRearrange] = useState(false);
 
   // Live "now" marker, refreshed each minute (client-only to avoid SSR drift).
   useEffect(() => {
@@ -122,14 +123,42 @@ function PlanBoard({ user, challenge }: { user: any; challenge: any }) {
     return () => clearInterval(id);
   }, [tz]);
 
+  // Map habit definitions -> PlanHabit with today's completion folded in.
+  const planHabits: PlanHabit[] = (habitDefs ?? []).map((h: any) => ({
+    id: h._id,
+    name: h.name,
+    blockType: h.blockType,
+    target: h.target,
+    unit: h.unit,
+    isHard: h.isHard,
+    category: h.category,
+    icon: h.icon,
+    sortOrder: h.sortOrder,
+    estimatedMinutes: h.estimatedMinutes,
+    defaultPlacement: h.defaultPlacement,
+    completed: entryMap.get(h._id)?.completed ?? false,
+  }));
+  const habitsById = new Map(planHabits.map((h) => [h.id, h]));
+  const timelineHabits = planHabits
+    .filter((h) => resolvePlacement(h) === "timeline")
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const anytimeHabits = planHabits.filter(
+    (h) => resolvePlacement(h) === "anytime",
+  );
+
   // Guest in-page reminders. Local/guest users get no background push (see
   // planReminders.ts / DECISIONS #6); while the Plan page is open we schedule a
-  // best-effort Notification at each reminder-enabled block's start time. A
-  // stable signature of block ids/times/flags drives re-scheduling so identity
-  // churn on each render doesn't thrash the timers.
+  // best-effort Notification at each reminder-enabled block's start time. The
+  // signature includes each block's completion state, so marking a habit done
+  // re-runs the effect and clears its already-armed timer (no reminder for a
+  // habit that's already done); it also stops identity churn from thrashing the
+  // timers on every render.
   const reminderSig = blocks
     .filter((b) => b.kind === "habit" && b.reminderEnabled)
-    .map((b) => `${b.id}:${b.startMin}`)
+    .map((b) => {
+      const done = b.habitId ? habitsById.get(b.habitId)?.completed : false;
+      return `${b.id}:${b.startMin}:${done ? 1 : 0}`;
+    })
     .join("|");
   useEffect(() => {
     if (!isGuest) return;
@@ -165,29 +194,6 @@ function PlanBoard({ user, challenge }: { user: any; challenge: any }) {
     // habitsById/blocks are captured intentionally; reminderSig gates re-runs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGuest, reminderSig, tz]);
-
-  // Map habit definitions -> PlanHabit with today's completion folded in.
-  const planHabits: PlanHabit[] = (habitDefs ?? []).map((h: any) => ({
-    id: h._id,
-    name: h.name,
-    blockType: h.blockType,
-    target: h.target,
-    unit: h.unit,
-    isHard: h.isHard,
-    category: h.category,
-    icon: h.icon,
-    sortOrder: h.sortOrder,
-    estimatedMinutes: h.estimatedMinutes,
-    defaultPlacement: h.defaultPlacement,
-    completed: entryMap.get(h._id)?.completed ?? false,
-  }));
-  const habitsById = new Map(planHabits.map((h) => [h.id, h]));
-  const timelineHabits = planHabits
-    .filter((h) => resolvePlacement(h) === "timeline")
-    .sort((a, b) => a.sortOrder - b.sortOrder);
-  const anytimeHabits = planHabits.filter(
-    (h) => resolvePlacement(h) === "anytime",
-  );
 
   // Seed today's plan once a saved schedule exists.
   useEffect(() => {
@@ -333,14 +339,38 @@ function PlanBoard({ user, challenge }: { user: any; challenge: any }) {
                     block.
                   </p>
                 )}
-                <div className="mt-5 flex justify-center">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void runAutoArrange()}
-                  >
-                    Re-arrange
-                  </Button>
+                <div className="mt-5 flex items-center justify-center gap-2">
+                  {confirmRearrange ? (
+                    <>
+                      <span className="text-[12px] text-muted-foreground">
+                        Replace your arranged blocks?
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setConfirmRearrange(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setConfirmRearrange(false);
+                          void runAutoArrange();
+                        }}
+                      >
+                        Replace
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setConfirmRearrange(true)}
+                    >
+                      Re-arrange
+                    </Button>
+                  )}
                 </div>
               </>
             )}

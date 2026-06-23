@@ -54,15 +54,26 @@ function clampDuration(min: number): number {
   return Math.max(5, Math.min(240, Math.round(min)));
 }
 
-// Abstinence / "avoid X" style habits — no meaningful time block.
-const ABSTINENCE = /\bno\b|\bavoid\b|\bquit\b|\bzero\b|alcohol|cheat|sugar|smok|vap/i;
+// A strong "this is a timed activity" signal — a named, time-bounded thing.
+// Checked FIRST so a real activity ("No-equipment workout", "Sugar-free baking
+// practice", "Zero to one reading") isn't misrouted to the anytime tray by an
+// incidental abstinence/diet substring. Word-ish boundaries avoid matching
+// inside other words (e.g. "read" inside "bread"/"already").
+const TIMELINE_SIGNAL =
+  /workout|exercise|\brun|\bgym|\blift|cardio|yoga|\bwalk|train|meditat|breath|mindful|journal|\bwrit|reflect|\bread|stretch|shower|\bstudy|practice/i;
+// Abstinence / "avoid X" style habits — no meaningful time block. Anchored to
+// the phrase start (or an explicit "no <thing>") so a trailing/incidental word
+// can't pull a real activity off the timeline.
+const ABSTINENCE =
+  /^(no|avoid|quit|zero|cut)\b|\bno (alcohol|sugar|soda|junk|caffeine|phone)\b|alcohol|cheat meal|\bsmok|\bvap/i;
 // "Follow a diet" style adherence habits — also ambient, not a time block.
 const DIET_ADHERENCE = /\bdiet\b|clean eating|meal prep|whole ?foods/i;
 
 /**
  * Where a habit lands by default. "anytime" for binary lifestyle/abstinence
  * habits that have no meaningful time block (diet adherence, no alcohol);
- * "timeline" for everything with a real duration.
+ * "timeline" for everything with a real duration. A named activity always wins
+ * over an abstinence/diet guess so it keeps its time block + reminders.
  */
 export function inferPlacement(habit: HabitLike): Placement {
   // Counters with a real numeric target are doable in a sitting -> timeline.
@@ -70,6 +81,7 @@ export function inferPlacement(habit: HabitLike): Placement {
     return "timeline";
   }
   const name = habit.name.toLowerCase();
+  if (TIMELINE_SIGNAL.test(name)) return "timeline";
   if (ABSTINENCE.test(name)) return "anytime";
   if (DIET_ADHERENCE.test(name)) return "anytime";
   return "timeline";

@@ -6,6 +6,7 @@ import {
   getTodayInTimezone,
   getLocalHHmm,
   parseHHmm,
+  computeDayNumber,
 } from "./lib/dayCalculation";
 
 /**
@@ -17,11 +18,17 @@ import {
  * an in-page reminder while the app is open. This server path is signed-in only.
  */
 
-// Must match the cron interval in crons.ts.
-const BLOCK_WINDOW_MINUTES = 5;
+// A block is "due" if its start time is at most LOOKAHEAD minutes ahead of now
+// or up to GRACE minutes in the past. The cron fires every 5 minutes (crons.ts);
+// the GRACE tail is intentionally LARGER than the interval so that two adjacent
+// firings overlap — if one tick is delayed or skipped (cron jitter/backpressure),
+// the next still catches blocks whose minute would otherwise fall in a gap.
+// reminderSentAt + blockReminderDeliveries dedupe the overlap to a single send.
+const LOOKAHEAD_MIN = 5;
+const GRACE_MIN = 10;
 
-function isInWindow(targetMin: number, nowMin: number): boolean {
-  return targetMin >= nowMin && targetMin < nowMin + BLOCK_WINDOW_MINUTES;
+function isDue(targetMin: number, nowMin: number): boolean {
+  return targetMin <= nowMin + LOOKAHEAD_MIN && targetMin > nowMin - GRACE_MIN;
 }
 
 /** 12h clock label for the notification body, e.g. 870 -> "2:30 PM". */
@@ -64,6 +71,15 @@ export const findDueBlockReminders = internalQuery({
       if (nowMin === null) continue;
       const localDate = getTodayInTimezone(tz);
 
+      // Today's day number for the active challenge — used to skip habits the
+      // user already completed (don't nag for done work; mirrors reminders.ts).
+      const challenge = user.currentChallengeId
+        ? await ctx.db.get(user.currentChallengeId)
+        : null;
+      const dayNumber = challenge
+        ? computeDayNumber(challenge.startDate, localDate)
+        : null;
+
       const blocks = await ctx.db
         .query("planBlocks")
         .withIndex("by_user_date", (q) =>
@@ -74,11 +90,20 @@ export const findDueBlockReminders = internalQuery({
       for (const b of blocks) {
         if (b.kind !== "habit") continue;
         if (!b.reminderEnabled || b.reminderSentAt) continue;
-        if (!isInWindow(b.startMin, nowMin)) continue;
+        if (!isDue(b.startMin, nowMin)) continue;
 
-        const habit = b.habitDefinitionId
-          ? await ctx.db.get(b.habitDefinitionId)
-          : null;
+        const habitId = b.habitDefinitionId;
+        if (habitId && dayNumber !== null) {
+          const entry = await ctx.db
+            .query("habitEntries")
+            .withIndex("by_habit_day", (q) =>
+              q.eq("habitDefinitionId", habitId).eq("dayNumber", dayNumber),
+            )
+            .first();
+          if (entry?.completed) continue; // already done — no reminder
+        }
+
+        const habit = habitId ? await ctx.db.get(habitId) : null;
         const name = habit?.name ?? b.title ?? "Your habit";
         due.push({
           userId: user._id,

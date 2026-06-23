@@ -37,7 +37,10 @@ export function WorkHoursBar({
   onSave,
 }: Props) {
   const [open, setOpen] = useState(startOpen);
-  const [noWork, setNoWork] = useState(workStart === null);
+  // First-run (no saved schedule) must NOT preselect "I'm off today" — that
+  // would hide the Start/End inputs in the primary "set my hours" flow. Only an
+  // existing schedule whose stored start is explicitly null is a real day off.
+  const [noWork, setNoWork] = useState(hasSchedule ? workStart === null : false);
   const [start, setStart] = useState(workStart ?? "09:00");
   const [end, setEnd] = useState(workEnd ?? "17:30");
   const [wind, setWind] = useState(windDownAt);
@@ -45,11 +48,11 @@ export function WorkHoursBar({
 
   // Re-seed the editor whenever the underlying values change (e.g. plan loads).
   useEffect(() => {
-    setNoWork(workStart === null);
+    setNoWork(hasSchedule ? workStart === null : false);
     setStart(workStart ?? "09:00");
     setEnd(workEnd ?? "17:30");
     setWind(windDownAt);
-  }, [workStart, workEnd, windDownAt]);
+  }, [workStart, workEnd, windDownAt, hasSchedule]);
 
   const summary =
     workStart && workEnd
