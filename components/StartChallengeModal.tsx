@@ -26,7 +26,7 @@ import {
 interface StartChallengeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Routine catalog slug to label this dialog with. Defaults to 75 HARD. */
+  /** Routine catalog slug to label this dialog with. Defaults to DEFAULT_TEMPLATE_SLUG. */
   templateSlug?: string;
 }
 

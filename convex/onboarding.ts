@@ -123,13 +123,8 @@ export const completeOnboarding = mutation({
       },
     });
 
-    // Create activity feed entry — keep the iconic "75 HARD" wording when
-    // the user picked the canonical 75-day program; otherwise describe the
-    // length they chose.
-    const startMessage =
-      daysTotal === 75
-        ? "Started the 75 HARD challenge!"
-        : `Started a ${daysTotal}-day challenge!`;
+    // Create activity feed entry describing the length the user picked.
+    const startMessage = `Started a ${daysTotal}-day challenge!`;
     await ctx.db.insert("activityFeed", {
       userId: user._id,
       type: "challenge_started",

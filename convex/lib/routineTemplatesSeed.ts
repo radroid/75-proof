@@ -66,11 +66,13 @@ const YOGA_HABITS: StandardHabit[] = [
 
 export const ROUTINE_TEMPLATE_SEEDS: RoutineTemplateSeed[] = [
   {
+    // Slug retained as-is for back-compat with existing user data; title
+    // and description neutralized as part of the rebrand.
     slug: "original-75-hard",
-    title: "Original 75 HARD",
-    summary: "The classic mental-toughness program, exactly as designed.",
+    title: "75-Day Strict Challenge",
+    summary: "A strict 75-day daily challenge — miss one and you restart.",
     description:
-      "Andy Frisella's 75 HARD: two 45-minute workouts (one outdoor), follow a diet, no alcohol, drink a gallon of water, read 10 pages, and take a daily progress photo. Miss any one and you start over from Day 1.",
+      "Show up every day for 75 days. Two 45-minute workouts (one outdoor), follow a diet, drink a gallon of water, read 10 pages, and take a daily progress photo. Miss any one and you start over from Day 1.",
     category: "discipline",
     daysTotal: 75,
     lockedDuration: true,
@@ -78,11 +80,7 @@ export const ROUTINE_TEMPLATE_SEEDS: RoutineTemplateSeed[] = [
     strictMode: true,
     difficulty: "advanced",
     recommendedGoals: ["mental-toughness", "discipline", "fitness", "weight-loss"],
-    source: {
-      kind: "official",
-      attribution: "Andy Frisella",
-      sourceUrl: "https://andyfrisella.com/pages/75hard-info",
-    },
+    source: { kind: "community" },
     habits: STANDARD_HABITS,
     heroIcon: "shield",
     version: 1,
@@ -92,7 +90,7 @@ export const ROUTINE_TEMPLATE_SEEDS: RoutineTemplateSeed[] = [
     title: "30-Day Yoga Reset",
     summary: "A gentler month of yoga, walking, and stillness.",
     description:
-      "Thirty days of daily yoga, a 45-minute walk, a healthy diet, and 15 minutes of meditation. Strict like 75 HARD — miss any one and you restart — but lower-impact and shorter.",
+      "Thirty days of daily yoga, a 45-minute walk, a healthy diet, and 15 minutes of meditation. Strict — miss any one and you restart — but lower-impact and shorter.",
     category: "wellness",
     daysTotal: 30,
     lockedDuration: true,

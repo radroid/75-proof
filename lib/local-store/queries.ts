@@ -167,7 +167,7 @@ export function getPreviousOnboardingState(
 
   // The Convex API for `previousOnboarding` exposes only "original" / "added",
   // but `LocalUserOnboarding.setupTier` also allows "customized" (the
-  // user picked the original 75-hard set then edited it). Map "customized"
+  // user picked a strict template then edited it). Map "customized"
   // back to "added" — both surfaces treat anything non-original the same
   // way — and warn loudly on anything truly unexpected so we don't
   // silently mask a schema drift.

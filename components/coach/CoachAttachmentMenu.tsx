@@ -81,7 +81,7 @@ export function CoachAttachmentMenu({
     if (!activeChallenge) return;
     onPick({
       slug: `challenge:${activeChallenge._id}`,
-      title: `My current 75 Proof challenge (day ${activeChallenge.currentDay})`,
+      title: `My current challenge (day ${activeChallenge.currentDay})`,
       category: "fitness",
       duration: `${activeChallenge.daysTotal} days`,
     });

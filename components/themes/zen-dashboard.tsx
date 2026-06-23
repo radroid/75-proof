@@ -175,9 +175,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
           <p className="text-[11px] sm:text-xs tracking-[0.25em] sm:tracking-[0.3em] uppercase text-muted-foreground">
             {isHabitTracker
               ? "Habit Tracker"
-              : daysTotal === 75
-                ? "Seventy-Five Hard"
-                : `${daysTotal}-Day Challenge`}
+              : `${daysTotal}-Day Challenge`}
           </p>
           <p className="text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">
             Day {displayDay}
@@ -226,9 +224,7 @@ export function ZenDashboard({ user, challenge }: ThemedDashboardProps) {
               <span className="text-[11px] tracking-[0.25em] md:tracking-[0.3em] uppercase mt-2 text-muted-foreground">
                 {isHabitTracker
                   ? "habit tracker"
-                  : daysTotal === 75
-                    ? "of seventy-five"
-                    : `of ${daysTotal}`}
+                  : `of ${daysTotal}`}
               </span>
             </div>
           </div>

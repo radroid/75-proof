@@ -155,7 +155,7 @@ export function CoachPrivacySettings() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `75proof-coach-context-${new Date().toISOString().split("T")[0]}.json`;
+      a.download = `earned-coach-context-${new Date().toISOString().split("T")[0]}.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();

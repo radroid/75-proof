@@ -87,10 +87,8 @@ export function ChallengeCompletedDialog({
             You did it.
           </DialogTitle>
           <DialogDescription className="text-center">
-            {daysTotal === 75
-              ? "You finished the 75 HARD challenge — every habit, every day."
-              : `You finished your ${daysTotal}-day challenge — every habit, every day.`}{" "}
-            What&apos;s next?
+            You finished your {daysTotal}-day challenge — every habit, every
+            day. What&apos;s next?
           </DialogDescription>
         </DialogHeader>
 

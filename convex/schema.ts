@@ -182,7 +182,8 @@ export default defineSchema({
     dayNumber: v.number(),
     date: v.string(), // ISO date
 
-    // 75 HARD Requirements
+    // Daily habit fields (legacy schema — kept for back-compat with the
+    // pre-`habitDefinitions` system).
     workout1: v.optional(
       v.object({
         type: v.union(

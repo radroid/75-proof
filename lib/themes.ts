@@ -70,7 +70,7 @@ export const themeOrder: ThemePersonality[] = [
 const OLD_THEME_NAMES = ["warm-bento", "brutalist", "swiss-poster", "analog"];
 
 // Local storage keys
-export const PERSONALITY_STORAGE_KEY = "75hard-personality";
+export const PERSONALITY_STORAGE_KEY = "earned-personality";
 
 // Default theme configuration
 export const defaultThemeConfig: ThemeConfig = {

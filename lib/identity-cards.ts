@@ -18,7 +18,7 @@ export interface IdentityCardInput {
   currentDay: number;
   /** Total days in the challenge, or null for habit-tracker mode. */
   daysTotal: number | null;
-  /** Routine display label, e.g. "75 HARD" or "30-Day Yoga". */
+  /** Routine display label, e.g. "75-Day Strict Challenge" or "30-Day Yoga". */
   routineLabel: string;
   /** Social-intensity category — used to bias which copy buckets are eligible. */
   category: SocialCategory;

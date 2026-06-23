@@ -872,7 +872,7 @@ export default function SettingsPage() {
                     </div>
                   ) : requiresInstall ? (
                     <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-                      Add 75 Proof to your home screen to receive reminders on
+                      Add earned to your home screen to receive reminders on
                       iOS. Tap the share icon in Safari, then{" "}
                       <span className="font-medium">Add to Home Screen</span>.
                     </div>

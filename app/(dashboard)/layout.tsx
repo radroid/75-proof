@@ -110,7 +110,7 @@ function SidebarHeader() {
           href="/dashboard"
           className="flex items-center justify-center"
         >
-          <Image src="/logo.svg" alt="75 Proof" width={28} height={28} className="flex-shrink-0" />
+          <Image src="/logo.svg" alt="earned" width={28} height={28} className="flex-shrink-0" />
         </Link>
       </div>
     );
@@ -122,9 +122,9 @@ function SidebarHeader() {
         href="/dashboard"
         className="font-normal flex items-center space-x-2 text-sm py-1 relative z-20"
       >
-        <Image src="/logo.svg" alt="75 Proof" width={28} height={28} className="flex-shrink-0" />
+        <Image src="/logo.svg" alt="earned" width={28} height={28} className="flex-shrink-0" />
         <span className="font-bold text-foreground whitespace-pre text-base">
-          75 Proof
+          earned
         </span>
       </Link>
     </div>

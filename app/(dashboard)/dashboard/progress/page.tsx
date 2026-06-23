@@ -416,12 +416,12 @@ export default function ProgressPage() {
       }
       return { done, total: active.length };
     }
-    // Legacy 75-Hard path: derive done/total from the `dailyLogs` row for
+    // Legacy dailyLogs path: derive done/total from the `dailyLogs` row for
     // the current day. The seven canonical hard requirements plus an
-    // optional progress photo (Counted in `total` only when the user has
-    // actually uploaded one — older 75 HARD instructions were ambiguous on
-    // whether the photo gates completion). This keeps the snapshot honest
-    // for the cohort still on the legacy schema.
+    // optional progress photo (counted in `total` only when the user has
+    // actually uploaded one — older dailyLogs instructions were ambiguous
+    // on whether the photo gates completion). This keeps the snapshot
+    // honest for the cohort still on the legacy schema.
     const todayLog = (logs ?? []).find((l) => l.dayNumber === currentDay) as
       | LegacyDayLog
       | undefined;
@@ -1116,9 +1116,9 @@ function HabitDayDetail({
 }
 
 /**
- * Legacy 75-Hard `dailyLogs` rendering, preserved so old completed challenges
- * still display the original task breakdown. New system rendering goes
- * through HabitDayDetail above.
+ * Legacy `dailyLogs` rendering (pre-`habitDefinitions` schema), preserved so
+ * old completed challenges still display the original task breakdown. New
+ * system rendering goes through HabitDayDetail above.
  */
 function LegacyDayDetail({ log }: { log: LegacyDayLog }) {
   if (log?.backfilled) {

@@ -73,11 +73,14 @@ const YOGA_HABITS: StandardHabit[] = [
 
 export const ROUTINE_TEMPLATES: ReadonlyArray<RoutineTemplate> = [
   {
+    // Slug retained as-is for back-compat with existing user data; the
+    // user-visible title and description have been neutralized as part of
+    // the rebrand.
     slug: "original-75-hard",
-    title: "Original 75 HARD",
-    summary: "The classic mental-toughness program, exactly as designed.",
+    title: "75-Day Strict Challenge",
+    summary: "A strict 75-day daily challenge — miss one and you restart.",
     description:
-      "Andy Frisella's 75 HARD: two 45-minute workouts (one outdoor), follow a diet, no alcohol, drink a gallon of water, read 10 pages, and take a daily progress photo. Miss any one and you start over from Day 1.",
+      "Show up every day for 75 days. Two 45-minute workouts (one outdoor), follow a diet, drink a gallon of water, read 10 pages, and take a daily progress photo. Miss any one and you start over from Day 1.",
     category: "discipline",
     daysTotal: 75,
     lockedDuration: true,
@@ -85,11 +88,7 @@ export const ROUTINE_TEMPLATES: ReadonlyArray<RoutineTemplate> = [
     strictMode: true,
     difficulty: "advanced",
     recommendedGoals: ["mental-toughness", "discipline", "fitness", "weight-loss"],
-    source: {
-      kind: "official",
-      attribution: "Andy Frisella",
-      sourceUrl: "https://andyfrisella.com/pages/75hard-info",
-    },
+    source: { kind: "community" },
     habits: STANDARD_HABITS,
     heroIcon: "shield",
     version: 1,
@@ -99,7 +98,7 @@ export const ROUTINE_TEMPLATES: ReadonlyArray<RoutineTemplate> = [
     title: "30-Day Yoga Reset",
     summary: "A gentler month of yoga, walking, and stillness.",
     description:
-      "Thirty days of daily yoga, a 45-minute walk, a healthy diet, and 15 minutes of meditation. Strict like 75 HARD — miss any one and you restart — but lower-impact and shorter.",
+      "Thirty days of daily yoga, a 45-minute walk, a healthy diet, and 15 minutes of meditation. Strict — miss any one and you restart — but lower-impact and shorter.",
     category: "wellness",
     daysTotal: 30,
     lockedDuration: true,
@@ -114,15 +113,15 @@ export const ROUTINE_TEMPLATES: ReadonlyArray<RoutineTemplate> = [
   },
   {
     // Open-ended option for users who want to design their own routine
-    // from a familiar starting point. The 75 HARD habits seed the list,
-    // but `lockedDuration: false` reveals the duration step and
+    // from a familiar starting point. The standard habit set seeds the
+    // list, but `lockedDuration: false` reveals the duration step and
     // `strictMode: false` unlocks habit toggling/adding/removing in
     // OnboardingHabitConfig. setupTier resolves to "added".
     slug: "custom",
     title: "Build your own",
     summary: "Pick the habits, set the duration, decide what counts as hard.",
     description:
-      "Start from the 75 HARD habit list, then toggle anything on or off, swap targets, add your own habits, and pick how many days you want to commit to.",
+      "Start from the standard habit set, then toggle anything on or off, swap targets, add your own habits, and pick how many days you want to commit to.",
     category: "custom",
     daysTotal: 75,
     lockedDuration: false,

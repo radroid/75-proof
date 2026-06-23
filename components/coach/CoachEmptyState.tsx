@@ -15,7 +15,7 @@ const SUGGESTIONS: Suggestion[] = [
     icon: Dumbbell,
     label: "Pick a fitness challenge",
     prompt:
-      "I want a fitness challenge that builds mental toughness. What should I try?",
+      "I want a daily fitness challenge I can stick to. What should I try?",
     accent: "from-orange-500/15 to-rose-500/5",
   },
   {
