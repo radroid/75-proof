@@ -14,7 +14,12 @@ import {
   computeDayNumber,
   formatDateShort,
 } from "@/lib/day-utils";
-import { hhmmToMin, nowMinutesInTz, formatDuration } from "@/lib/plan/time";
+import {
+  hhmmToMin,
+  nowMinutesInTz,
+  formatDuration,
+  formatClock,
+} from "@/lib/plan/time";
 import { autoArrange } from "@/lib/plan/auto-arrange";
 import {
   resolveDuration,
@@ -76,6 +81,7 @@ export function PlanClient() {
 // existing themed dashboards likewise accept these as `any`. We only read a
 // small, shared slice of fields.
 function PlanBoard({ user, challenge }: { user: any; challenge: any }) {
+  const { isGuest } = useGuest();
   const tz: string = user.preferences?.timezone || getUserTimezone();
   const today = getTodayInTimezone(tz);
   const dayNumber = computeDayNumber(challenge.startDate, today);
@@ -115,6 +121,50 @@ function PlanBoard({ user, challenge }: { user: any; challenge: any }) {
     const id = setInterval(() => setNowMin(nowMinutesInTz(tz)), 60_000);
     return () => clearInterval(id);
   }, [tz]);
+
+  // Guest in-page reminders. Local/guest users get no background push (see
+  // planReminders.ts / DECISIONS #6); while the Plan page is open we schedule a
+  // best-effort Notification at each reminder-enabled block's start time. A
+  // stable signature of block ids/times/flags drives re-scheduling so identity
+  // churn on each render doesn't thrash the timers.
+  const reminderSig = blocks
+    .filter((b) => b.kind === "habit" && b.reminderEnabled)
+    .map((b) => `${b.id}:${b.startMin}`)
+    .join("|");
+  useEffect(() => {
+    if (!isGuest) return;
+    if (typeof window === "undefined" || typeof Notification === "undefined") {
+      return;
+    }
+    if (Notification.permission !== "granted") return;
+    const nowM = nowMinutesInTz(tz);
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (const b of blocks) {
+      if (b.kind !== "habit" || !b.reminderEnabled) continue;
+      const habit = b.habitId ? habitsById.get(b.habitId) : undefined;
+      if (habit?.completed) continue;
+      const delayMin = b.startMin - nowM;
+      if (delayMin <= 0 || delayMin > 720) continue; // skip past / >12h out
+      const label = habit?.name ?? b.title ?? "Your habit";
+      const id = setTimeout(
+        () => {
+          try {
+            new Notification(label, {
+              body: `Scheduled for ${formatClock(b.startMin)}`,
+              tag: `plan-block-${b.id}`,
+            });
+          } catch {
+            // Notification can throw on some browsers; reminder is best-effort.
+          }
+        },
+        delayMin * 60_000,
+      );
+      timers.push(id);
+    }
+    return () => timers.forEach((t) => clearTimeout(t));
+    // habitsById/blocks are captured intentionally; reminderSig gates re-runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGuest, reminderSig, tz]);
 
   // Map habit definitions -> PlanHabit with today's completion folded in.
   const planHabits: PlanHabit[] = (habitDefs ?? []).map((h: any) => ({

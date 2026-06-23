@@ -248,6 +248,37 @@ export function buildReactionPayload(
 }
 
 /**
+ * After-work Plan: a scheduled habit block is due now. `title` is the habit
+ * name, `body` a short "Scheduled for 6:30 PM" line. Deep-links into the Plan
+ * page. Tag is per-habit-per-day so distinct blocks don't coalesce.
+ */
+export function buildBlockReminderPayload(
+  title: string,
+  body: string,
+  platform: Platform
+): PushPayload {
+  const tag = `75proof-plan-${todayTagSuffix()}-${title}`.slice(0, 80);
+  const data = { url: "/dashboard/plan", kind: "plan-block" };
+  if (platform === "ios") {
+    return { title, body, icon: "/icon-192.png", tag, data };
+  }
+  return {
+    title,
+    body,
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    vibrate: [200, 100, 200],
+    tag,
+    data,
+    requireInteraction: false,
+    actions: [
+      { action: "open", title: "Open plan" },
+      { action: "dismiss", title: "Later" },
+    ],
+  };
+}
+
+/**
  * Generic fan-out. Every push-sending action in this file routes through
  * this one helper so dead-endpoint pruning, per-platform payload
  * construction, and VAPID config checks live in exactly one place.
@@ -355,6 +386,27 @@ export const sendReminderPush = internalAction({
   ): Promise<{ sent: number; failed: number; pruned: number }> => {
     return await fanOutPush(ctx, args.userId, (platform) =>
       buildReminderPayload(args.slot, platform)
+    );
+  },
+});
+
+/**
+ * Send a per-block plan reminder push. Title/body are precomputed by the
+ * dispatcher (it already loaded the habit name + time), so this is a thin
+ * fan-out. No-ops silently if the user has no subscriptions / VAPID is unset.
+ */
+export const sendBlockReminderPush = internalAction({
+  args: {
+    userId: v.id("users"),
+    title: v.string(),
+    body: v.string(),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ sent: number; failed: number; pruned: number }> => {
+    return await fanOutPush(ctx, args.userId, (platform) =>
+      buildBlockReminderPayload(args.title, args.body, platform)
     );
   },
 });

@@ -32,6 +32,7 @@ import type * as lib_standardHabits from "../lib/standardHabits.js";
 import type * as nudges from "../nudges.js";
 import type * as onboarding from "../onboarding.js";
 import type * as personalize from "../personalize.js";
+import type * as planReminders from "../planReminders.js";
 import type * as popularRoutines from "../popularRoutines.js";
 import type * as pushActions from "../pushActions.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
@@ -72,6 +73,7 @@ declare const fullApi: ApiFromModules<{
   nudges: typeof nudges;
   onboarding: typeof onboarding;
   personalize: typeof personalize;
+  planReminders: typeof planReminders;
   popularRoutines: typeof popularRoutines;
   pushActions: typeof pushActions;
   pushSubscriptions: typeof pushSubscriptions;

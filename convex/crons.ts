@@ -23,6 +23,17 @@ crons.interval(
   internal.reminders.dispatchDueReminders
 );
 
+// Every 5 minutes, fire reminders for after-work Plan blocks whose start time
+// is in the current window. Tighter cadence than the daily reminders so a
+// "6:30 Workout" lands close to its time. Per-block `reminderSentAt` +
+// `blockReminderDeliveries` dedupe each block to a single send. 5 minutes
+// matches BLOCK_WINDOW_MINUTES in planReminders.ts.
+crons.interval(
+  "send due block reminders",
+  { minutes: 5 },
+  internal.planReminders.dispatchDueBlockReminders,
+);
+
 // Daily TTL purge for coach memory + threads (C-1, C-2). Users opt in
 // to memory and can opt out of TTL per-account; the default retention
 // is 90 days. The mutation is bounded by `batchSize` so each firing
