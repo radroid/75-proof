@@ -48,7 +48,7 @@ export interface CompleteOnboardingArgs {
   identityStatement?: string | null;
 }
 
-function genId(table: string): string {
+export function genId(table: string): string {
   return `local_${table}_${Date.now().toString(36)}_${Math.random()
     .toString(36)
     .slice(2, 8)}`;

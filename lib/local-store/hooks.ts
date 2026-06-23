@@ -77,6 +77,18 @@ export function useLocalLifetimeStats() {
   return q.getLifetimeStats(db);
 }
 
+export function useLocalDayPlan(date: string | undefined) {
+  const db = useLocalDB();
+  if (!date) return null;
+  return q.getDayPlan(db, date);
+}
+
+export function useLocalPlanBlocks(date: string | undefined) {
+  const db = useLocalDB();
+  if (!date) return [];
+  return q.getPlanBlocks(db, date);
+}
+
 /**
  * Local-mode counterpart of `api.onboarding.getPreviousOnboardingState`.
  * Returns null until first onboarding has completed; afterwards returns the
