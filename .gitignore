@@ -51,6 +51,10 @@ next-env.d.ts
 .agents/
 .claude/
 .vscode/
+.superpowers/
 convex/_generated/ai/
 skills-lock.json
 .env.local
+
+.timelapse/
+.timelapse-worktrees/
