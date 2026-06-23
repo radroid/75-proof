@@ -57,6 +57,34 @@ export function getDateForDay(startDate: string, dayNumber: number): string {
   return addDays(startDate, dayNumber - 1);
 }
 
+// ===== Time-of-day helpers (for the after-work Plan timeline) =====
+
+/** Parse "HH:mm" (24h) into minutes from midnight. Returns null on malformed input. */
+export function parseHHmm(hhmm: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return h * 60 + min;
+}
+
+/** Current wall-clock "HH:mm" in a timezone (DST-safe). */
+export function getLocalHHmm(tz: string, now: Date): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: tz,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(now);
+}
+
+/** Current minutes-from-midnight in a timezone (DST-safe). */
+export function nowMinutesInTz(tz: string, now: Date): number {
+  const parsed = parseHHmm(getLocalHHmm(tz, now));
+  return parsed ?? 0;
+}
+
 /** Get the list of editable day numbers for a given today. Pass null for habit-tracker mode (no upper bound). */
 export function getEditableDays(
   todayDayNumber: number,
