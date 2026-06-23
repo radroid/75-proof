@@ -101,6 +101,8 @@ function PlanBoard({ user, challenge }: { user: any; challenge: any }) {
     replaceBlocks,
     removeBlock,
     setBlockReminder,
+    moveBlock,
+    resizeBlock,
   } = useDayPlan({ date: today });
 
   const [forceBar, setForceBar] = useState(false);
@@ -264,9 +266,13 @@ function PlanBoard({ user, challenge }: { user: any; challenge: any }) {
                   blocks={blocks}
                   habitsById={habitsById}
                   nowMin={nowMin ?? 0}
+                  workEndMin={header.workEnd ? hhmmToMin(header.workEnd) : null}
+                  windDownMin={windDownMin}
                   onToggleDone={toggleHabitDone}
                   onRemoveBlock={(id) => void removeBlock(id)}
                   onToggleReminder={(id, en) => void setBlockReminder(id, en)}
+                  onMove={(id, start) => void moveBlock(id, start)}
+                  onResize={(id, start, dur) => void resizeBlock(id, start, dur)}
                 />
                 {overflow && (
                   <p
