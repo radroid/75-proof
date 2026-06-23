@@ -27,12 +27,21 @@ export interface LocalNotificationPrefs {
   permissionGrantedAt?: string;
 }
 
+export interface LocalWorkSchedule {
+  defaultStart: string; // "HH:mm"
+  defaultEnd: string; // "HH:mm"
+  windDownAt: string; // "HH:mm"
+  workdays: number[]; // 0=Sun … 6=Sat
+}
+
 export interface LocalUserPreferences {
   timezone: string;
   reminderTime?: string;
   waterUnit: "oz" | "ml";
   sharing?: LocalSharingPrefs;
   notifications?: LocalNotificationPrefs;
+  /** After-work Plan: the user's saved "usual" schedule. */
+  workSchedule?: LocalWorkSchedule;
 }
 
 export interface LocalUserOnboarding {
@@ -92,6 +101,9 @@ export interface LocalHabitDefinition {
   sortOrder: number;
   category?: string;
   icon?: string;
+  /** After-work Plan: editable block length + timeline/anytime placement. */
+  estimatedMinutes?: number;
+  defaultPlacement?: "timeline" | "anytime";
 }
 
 export interface LocalHabitEntry {
@@ -104,6 +116,33 @@ export interface LocalHabitEntry {
   date: string;
   completed: boolean;
   value?: number;
+}
+
+export interface LocalDayPlan {
+  _id: string;
+  _creationTime: number;
+  userId: string;
+  challengeId: string;
+  date: string; // YYYY-MM-DD
+  workStart: string | null; // "HH:mm" | null
+  workEnd: string | null;
+  windDownAt: string; // "HH:mm"
+  arrangedAt?: number;
+}
+
+export interface LocalPlanBlock {
+  _id: string;
+  _creationTime: number;
+  userId: string;
+  dayPlanId: string;
+  date: string;
+  habitDefinitionId?: string;
+  kind: "habit" | "break" | "custom" | "busy";
+  title?: string;
+  startMin: number;
+  durationMin: number;
+  reminderEnabled: boolean;
+  reminderSentAt?: number;
 }
 
 export interface LocalActivityFeedItem {
@@ -129,6 +168,8 @@ export interface LocalDB {
   habitDefinitions: LocalHabitDefinition[];
   habitEntries: LocalHabitEntry[];
   activityFeed: LocalActivityFeedItem[];
+  dayPlans: LocalDayPlan[];
+  planBlocks: LocalPlanBlock[];
   /** Monotonic counter for ID generation. */
   nextId: number;
 }
@@ -141,6 +182,8 @@ export function emptyDB(): LocalDB {
     habitDefinitions: [],
     habitEntries: [],
     activityFeed: [],
+    dayPlans: [],
+    planBlocks: [],
     nextId: 1,
   };
 }

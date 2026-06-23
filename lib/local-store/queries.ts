@@ -1,4 +1,11 @@
-import type { LocalDB, LocalChallenge, LocalHabitDefinition, LocalHabitEntry } from "./db";
+import type {
+  LocalDB,
+  LocalChallenge,
+  LocalHabitDefinition,
+  LocalHabitEntry,
+  LocalDayPlan,
+  LocalPlanBlock,
+} from "./db";
 
 export function getActiveChallenge(db: LocalDB): LocalChallenge | null {
   if (!db.user?.currentChallengeId) return null;
@@ -189,6 +196,22 @@ export function getPreviousOnboardingState(
     templateSlug: latest?.templateSlug ?? user.onboarding.templateSlug ?? null,
     identityStatement: user.identityStatement ?? null,
   };
+}
+
+// ===== After-work Plan selectors =====
+
+export function getDayPlan(db: LocalDB, date: string): LocalDayPlan | null {
+  if (!db.user) return null;
+  const userId = db.user._id;
+  return db.dayPlans.find((p) => p.userId === userId && p.date === date) ?? null;
+}
+
+export function getPlanBlocks(db: LocalDB, date: string): LocalPlanBlock[] {
+  if (!db.user) return [];
+  const userId = db.user._id;
+  return db.planBlocks
+    .filter((b) => b.userId === userId && b.date === date)
+    .sort((a, b) => a.startMin - b.startMin);
 }
 
 export interface LifetimeStats {

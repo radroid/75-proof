@@ -31,6 +31,15 @@ export default defineSchema({
         nudges: v.optional(v.boolean()),
         reactions: v.optional(v.boolean()),
       })),
+      // After-work Plan: the user's saved "usual" work schedule used to
+      // pre-fill each day's plan. Optional — absent means the Plan page
+      // prompts the user to set hours on first run.
+      workSchedule: v.optional(v.object({
+        defaultStart: v.string(), // "HH:mm" local
+        defaultEnd: v.string(), // "HH:mm" local
+        windDownAt: v.string(), // "HH:mm" — end of the usable evening window
+        workdays: v.array(v.number()), // 0=Sun … 6=Sat
+      })),
     }),
     onboardingComplete: v.optional(v.boolean()),
     hasSeenTutorial: v.optional(v.boolean()),
@@ -324,6 +333,13 @@ export default defineSchema({
     sortOrder: v.number(),
     category: v.optional(v.string()),
     icon: v.optional(v.string()),
+    // After-work Plan: editable estimated block length (minutes) and whether
+    // the habit lands on the timeline or in the "anytime" tray. Both optional
+    // — heuristics fill the gap when absent (no migration needed).
+    estimatedMinutes: v.optional(v.number()),
+    defaultPlacement: v.optional(
+      v.union(v.literal("timeline"), v.literal("anytime")),
+    ),
   })
     .index("by_challenge", ["challengeId"])
     .index("by_user", ["userId"]),
@@ -480,4 +496,53 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_provider", ["userId", "provider"]),
+
+  // ===== After-work Plan timeline =====
+  // One row per user per day: the work window + wind-down bound.
+  dayPlans: defineTable({
+    userId: v.id("users"),
+    challengeId: v.id("challenges"),
+    date: v.string(), // YYYY-MM-DD in user's timezone
+    workStart: v.union(v.string(), v.null()), // "HH:mm" | null (day off / unset)
+    workEnd: v.union(v.string(), v.null()),
+    windDownAt: v.string(), // "HH:mm"
+    arrangedAt: v.optional(v.number()),
+  })
+    .index("by_user_date", ["userId", "date"])
+    .index("by_user", ["userId"]),
+
+  // One row per scheduled block. A separate table (not an embedded array) so a
+  // drag/resize patches a single row and each block has a stable id used for
+  // reminder dedupe.
+  planBlocks: defineTable({
+    userId: v.id("users"),
+    dayPlanId: v.id("dayPlans"),
+    date: v.string(), // denormalized for cheap by-day + cron scans
+    habitDefinitionId: v.optional(v.id("habitDefinitions")),
+    kind: v.union(
+      v.literal("habit"),
+      v.literal("break"),
+      v.literal("custom"),
+      v.literal("busy"),
+    ),
+    title: v.optional(v.string()), // for break/custom/busy; habit blocks read the habit name
+    startMin: v.number(), // minutes from local midnight
+    durationMin: v.number(),
+    reminderEnabled: v.boolean(),
+    reminderSentAt: v.optional(v.number()), // ms epoch once a push has been sent
+    source: v.optional(v.string()), // reserved for future calendar sync ("google" etc.)
+  })
+    .index("by_dayPlan", ["dayPlanId"])
+    .index("by_user_date", ["userId", "date"])
+    .index("by_date", ["date"]),
+
+  // Dedupe log for per-block push reminders (mirrors notificationDeliveries).
+  blockReminderDeliveries: defineTable({
+    userId: v.id("users"),
+    blockId: v.id("planBlocks"),
+    localDate: v.string(), // YYYY-MM-DD in user's timezone
+    sentAt: v.number(),
+  })
+    .index("by_block", ["blockId"])
+    .index("by_user_date", ["userId", "localDate"]),
 });

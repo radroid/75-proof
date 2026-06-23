@@ -55,7 +55,7 @@ function ProgressMobileIcon(props: IconProps) {
 // without opening the desktop sidebar — it's becoming the central
 // interaction point (see BACKLOG C-3). Settings stays one tap away
 // because there's no other persistent settings affordance on mobile.
-const defaultNavItems: NavItem[] = [
+export const defaultNavItems: NavItem[] = [
   {
     label: "Today",
     href: "/dashboard",

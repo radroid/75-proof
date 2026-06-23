@@ -13,7 +13,7 @@ import {
   SidebarProvider,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
+import { MobileBottomNav, defaultNavItems } from "@/components/ui/mobile-bottom-nav";
 import { GuestSignupBanner } from "@/components/guest-signup-banner";
 import { useGuest } from "@/components/guest-provider";
 import { InstallPromptGate } from "@/components/pwa/install-prompt-gate";
@@ -24,6 +24,7 @@ import {
   Settings,
   LogIn,
   Sparkles,
+  CalendarClock,
 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useFeatureFlagEnabled } from "posthog-js/react";
 
 // Progress now hosts the friends, requests, and activity surfaces (research
 // §4 Phase 3). The pending-request count rides on the Progress slot so
@@ -257,6 +259,9 @@ export default function DashboardLayout({
   const { isGuest, promptSignup, isLocalOptedIn, isResolved } = useGuest();
   const router = useRouter();
   const pathname = usePathname();
+  const planFlag = useFeatureFlagEnabled("after-work-plan");
+  // Dev/preview always shows Plan; prod gates on the dark-launch flag.
+  const showPlan = process.env.NODE_ENV !== "production" || planFlag === true;
 
   // Anonymous visitor with no local data → bounce off the dashboard so
   // they don't see an empty themed dashboard. We wait for `isResolved`
@@ -277,12 +282,23 @@ export default function DashboardLayout({
   // tile during onboarding, and (b) a settings entry-point is the only
   // way for a guest to reset their data and re-onboard from the app
   // shell. The Sparkles import stays in scope for the desktop sidebar.
+  const planMobileItem = {
+    label: "Plan",
+    href: "/dashboard/plan",
+    icon: CalendarClock,
+  };
   const guestMobileItems = [
     { label: "Today", href: "/dashboard", icon: LayoutDashboard },
+    ...(showPlan ? [planMobileItem] : []),
     { label: "Progress", href: "/dashboard/progress", icon: TrendingUp },
     { label: "Settings", href: "/dashboard/settings", icon: Settings },
     { label: "Sign Up", href: "#", icon: LogIn, action: promptSignup },
   ];
+  // Signed-in mobile nav: inject Plan after Today when enabled, else use the
+  // component's own default 4-item set.
+  const signedInMobileItems = showPlan
+    ? [defaultNavItems[0], planMobileItem, ...defaultNavItems.slice(1)]
+    : undefined;
 
   if (!isLoaded || !isResolved) {
     return (
@@ -307,25 +323,45 @@ export default function DashboardLayout({
   // §4 Phase 3 — Progress is now the friends surface). Guests don't have
   // friends, so they get the badgeless Progress slot and no Convex
   // subscription fires.
+  const planSidebarItem = {
+    label: "Plan",
+    href: "/dashboard/plan",
+    icon: <CalendarClock className="h-5 w-5 flex-shrink-0" />,
+  };
+  const signedInSidebar = [
+    {
+      label: "Today",
+      href: "/dashboard",
+      icon: <LayoutDashboard className="h-5 w-5 flex-shrink-0" />,
+    },
+    {
+      label: "Progress",
+      href: "/dashboard/progress",
+      icon: <ProgressNavIcon />,
+    },
+    {
+      label: "Coach",
+      href: "/dashboard/coach",
+      icon: <Sparkles className="h-5 w-5 flex-shrink-0" />,
+    },
+  ];
+  const guestSidebarWithPlan = showPlan
+    ? [
+        guestSidebarNavItems[0],
+        planSidebarItem,
+        ...guestSidebarNavItems.slice(1),
+        {
+          label: "Settings",
+          href: "/dashboard/settings",
+          icon: <Settings className="h-5 w-5 flex-shrink-0" />,
+        },
+      ]
+    : guestNavItems;
   const navItems = isGuest
-    ? guestNavItems
-    : [
-        {
-          label: "Today",
-          href: "/dashboard",
-          icon: <LayoutDashboard className="h-5 w-5 flex-shrink-0" />,
-        },
-        {
-          label: "Progress",
-          href: "/dashboard/progress",
-          icon: <ProgressNavIcon />,
-        },
-        {
-          label: "Coach",
-          href: "/dashboard/coach",
-          icon: <Sparkles className="h-5 w-5 flex-shrink-0" />,
-        },
-      ];
+    ? guestSidebarWithPlan
+    : showPlan
+      ? [signedInSidebar[0], planSidebarItem, ...signedInSidebar.slice(1)]
+      : signedInSidebar;
 
   return (
     <SidebarProvider>
@@ -360,7 +396,7 @@ export default function DashboardLayout({
           </div>
         </main>
 
-        <MobileBottomNav items={isGuest ? guestMobileItems : undefined} />
+        <MobileBottomNav items={isGuest ? guestMobileItems : signedInMobileItems} />
 
         {isGuest && <GuestSignupBanner />}
 

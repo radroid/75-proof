@@ -52,7 +52,10 @@ class LocalStore {
     // changed snapshot identity. If we kept the field-init `emptyDB()` the
     // notify() below would not trigger re-renders for subscribers reading
     // `hydrationComplete` via `useLocalDB()` — Object.is would short-circuit.
-    this.cache = parsed ?? emptyDB();
+    // Merge over `emptyDB()` defaults so docs persisted before a new top-level
+    // table existed (e.g. dayPlans/planBlocks) backfill that key instead of
+    // surfacing `undefined` to selectors.
+    this.cache = parsed ? { ...emptyDB(), ...parsed } : emptyDB();
     this.hydrationComplete = true;
     this.notify();
     window.addEventListener("storage", (ev) => {
@@ -65,7 +68,7 @@ class LocalStore {
       try {
         const parsed = JSON.parse(ev.newValue) as LocalDB;
         if (parsed && parsed.version === 1) {
-          this.cache = parsed;
+          this.cache = { ...emptyDB(), ...parsed };
           this.notify();
         }
       } catch {
