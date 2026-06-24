@@ -262,6 +262,9 @@ export function EarnedStarReward({
   // Keep the latest callback without making it an effect dependency.
   const onChangeRef = React.useRef(onArrangementChange);
   onChangeRef.current = onArrangementChange;
+  // Which pointer currently owns a drag, so a second finger (multi-touch) can't
+  // attach a duplicate move/end pair and fight over the same star's position.
+  const activePointerRef = React.useRef<number | null>(null);
 
   // On mount (and when the day or star count changes) load the user's saved
   // arrangement, else lay out the default top row. Measuring happens after the
@@ -291,6 +294,8 @@ export function EarnedStarReward({
     const layer = layerRef.current;
     const cur = positionsRef.current;
     if (!layer || !cur) return;
+    // Already dragging with another pointer — ignore the second finger.
+    if (activePointerRef.current !== null) return;
     e.preventDefault();
     const rect = layer.getBoundingClientRect();
     const startCX = e.clientX;
@@ -298,6 +303,7 @@ export function EarnedStarReward({
     const origLeft = cur[i].x * rect.width;
     const origTop = cur[i].y;
     const node = e.currentTarget as HTMLElement;
+    activePointerRef.current = e.pointerId;
     try {
       node.setPointerCapture(e.pointerId);
     } catch {}
@@ -314,11 +320,12 @@ export function EarnedStarReward({
       try {
         node.releasePointerCapture(e.pointerId);
       } catch {}
+      activePointerRef.current = null;
       setDragging(null);
-      setPositions((prev) => {
-        if (prev) saveStarPositions(storageKey, prev);
-        return prev;
-      });
+      // Read the latest positions from the ref (kept in sync each render) rather
+      // than abusing a setState updater for a side effect.
+      const latest = positionsRef.current;
+      if (latest) saveStarPositions(storageKey, latest);
       onChangeRef.current?.(true);
     };
     node.addEventListener("pointermove", move);

@@ -39,7 +39,9 @@ export function loadStarPositions(key: string, expectedCount: number): StarPos[]
   if (
     Array.isArray(saved) &&
     saved.length === expectedCount &&
-    saved.every((p) => p && typeof p.x === "number" && typeof p.y === "number")
+    // Number.isFinite (not typeof === "number") so tampered NaN/Infinity, which
+    // would render as invalid CSS, are rejected and fall back to the default row.
+    saved.every((p) => p && Number.isFinite(p.x) && Number.isFinite(p.y))
   ) {
     return saved;
   }

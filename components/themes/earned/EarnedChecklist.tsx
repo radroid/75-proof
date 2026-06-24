@@ -271,7 +271,9 @@ export function EarnedChecklist({
                     fontSize: 18,
                     fontWeight: 600,
                     // Pencil-grey, not blue — blue is reserved for completion marks.
-                    color: "rgba(58,52,38,0.55)",
+                    // 0.78 alpha keeps the warm pencil hue while clearing WCAG AA
+                    // (~5.6:1 on cream; 0.55 was ~3.0:1).
+                    color: "rgba(58,52,38,0.78)",
                     paddingLeft: 2,
                     marginTop: 2,
                   }}

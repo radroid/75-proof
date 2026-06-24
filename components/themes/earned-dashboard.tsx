@@ -395,7 +395,7 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
               // The gold stars at the top of the page are the reward; the footer
               // is just a quiet sign-off, demoted so it doesn't compete with them.
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, paddingTop: 6 }}>
-                <div style={{ fontFamily: HAND, fontWeight: 600, fontSize: 20, color: "rgba(31,31,29,0.55)" }}>
+                <div style={{ fontFamily: HAND, fontWeight: 600, fontSize: 20, color: "rgba(31,31,29,0.66)" }}>
                   Day {displayDay} — earned.
                 </div>
                 {starsCustom && (
