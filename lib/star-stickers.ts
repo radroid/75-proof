@@ -56,3 +56,23 @@ export function saveStarPositions(key: string, positions: StarPos[]): void {
     // Storage full / unavailable — positions just won't persist, no-op.
   }
 }
+
+/** Forget the user's saved arrangement for a day so the stars fall back to the
+ *  default row (used by the "reset to row" control). */
+export function clearStarPositions(key: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const all = readStore();
+    if (key in all) {
+      delete all[key];
+      window.localStorage.setItem(KEY, JSON.stringify(all));
+    }
+  } catch {
+    // no-op
+  }
+}
+
+/** Whether the user has a saved (custom) star arrangement for this day. */
+export function hasStarArrangement(key: string): boolean {
+  return Array.isArray(readStore()[key]);
+}

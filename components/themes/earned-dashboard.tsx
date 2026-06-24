@@ -14,6 +14,7 @@ import {
   HAND,
 } from "@/components/themes/earned/EarnedPaper";
 import { EarnedChecklist } from "@/components/themes/earned/EarnedChecklist";
+import { clearStarPositions } from "@/lib/star-stickers";
 import { SwipeableDayView } from "@/components/swipeable-day-view";
 import { ChallengeFailedDialog } from "@/components/ChallengeFailedDialog";
 import { ReconciliationDialog } from "@/components/ReconciliationDialog";
@@ -128,6 +129,10 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
   );
 
   const [selectedDayNumber, setSelectedDayNumber] = useState<number | null>(null);
+  // Star reward: whether the user has a custom placement (controls the "reset to
+  // row" button), and a nonce that re-mounts the overlay to replay the row.
+  const [starsCustom, setStarsCustom] = useState(false);
+  const [starResetNonce, setStarResetNonce] = useState(0);
   const displayDay = selectedDayNumber ?? todayDayNumber;
   const dateStr = getDateForDay(challenge.startDate, displayDay);
   const isEditable = isGuest
@@ -259,11 +264,12 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
               re-animates when you land on a different completed day. */}
           {allDone && (
             <EarnedStarReward
-              key={displayDay}
+              key={`${displayDay}-${starResetNonce}`}
               count={totalDone}
               milestone={isMilestoneDay(displayDay, daysTotal)}
               storageKey={`${challenge._id}:${displayDay}`}
               ariaLabel={`Day ${displayDay} earned — ${totalDone} ${totalDone === 1 ? "star" : "stars"}`}
+              onArrangementChange={setStarsCustom}
             />
           )}
 
@@ -375,10 +381,41 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
             {allDone ? (
               // The gold stars at the top of the page are the reward; the footer
               // is just a quiet sign-off, demoted so it doesn't compete with them.
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, paddingTop: 6 }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, paddingTop: 6 }}>
                 <div style={{ fontFamily: HAND, fontWeight: 600, fontSize: 20, color: "rgba(31,31,29,0.55)" }}>
                   Day {displayDay} — earned.
                 </div>
+                {starsCustom && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearStarPositions(`${challenge._id}:${displayDay}`);
+                      setStarsCustom(false);
+                      setStarResetNonce((nonce) => nonce + 1);
+                    }}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      background: EC.creamLight,
+                      border: `1.5px solid ${EC.ink}`,
+                      borderRadius: 999,
+                      padding: "5px 12px",
+                      cursor: "pointer",
+                      fontFamily: HAND,
+                      fontSize: 17,
+                      fontWeight: 600,
+                      color: EC.skyDeep,
+                      lineHeight: 1,
+                      boxShadow: `1.5px 1.5px 0 ${EC.ink}`,
+                      filter: "url(#earned-rough-soft)",
+                      touchAction: "manipulation",
+                    }}
+                  >
+                    <span aria-hidden style={{ fontSize: 16 }}>↺</span>
+                    reset stars to a row
+                  </button>
+                )}
               </div>
             ) : (
               <div

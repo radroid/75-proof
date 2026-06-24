@@ -235,6 +235,7 @@ export function EarnedStarReward({
   milestone = false,
   storageKey,
   ariaLabel,
+  onArrangementChange,
 }: {
   /** One star per completed task. */
   count: number;
@@ -243,6 +244,9 @@ export function EarnedStarReward({
   /** Stable per-challenge-day key for saving the user's star placement. */
   storageKey: string;
   ariaLabel?: string;
+  /** Notified when the arrangement becomes custom (dragged/loaded) or default,
+   *  so the host can show/hide a "reset to row" control. */
+  onArrangementChange?: (hasCustom: boolean) => void;
 }) {
   const n = Math.max(0, Math.floor(count));
   // Stars shrink a touch as the count grows so the default row never overflows.
@@ -255,6 +259,9 @@ export function EarnedStarReward({
   // synchronously (setState updaters don't run inline).
   const positionsRef = React.useRef<StarPos[] | null>(null);
   positionsRef.current = positions;
+  // Keep the latest callback without making it an effect dependency.
+  const onChangeRef = React.useRef(onArrangementChange);
+  onChangeRef.current = onArrangementChange;
 
   // On mount (and when the day or star count changes) load the user's saved
   // arrangement, else lay out the default top row. Measuring happens after the
@@ -268,10 +275,12 @@ export function EarnedStarReward({
     const saved = loadStarPositions(storageKey, n);
     if (saved) {
       setPositions(saved);
+      onChangeRef.current?.(true);
       return;
     }
     const width = layerRef.current?.clientWidth ?? 360;
     setPositions(defaultStarRow(n, size, width, milestone));
+    onChangeRef.current?.(false);
   }, [storageKey, n, size, milestone]);
 
   if (n === 0) return null;
@@ -308,6 +317,7 @@ export function EarnedStarReward({
         if (prev) saveStarPositions(storageKey, prev);
         return prev;
       });
+      onChangeRef.current?.(true);
     };
     node.addEventListener("pointermove", move);
     node.addEventListener("pointerup", end);
