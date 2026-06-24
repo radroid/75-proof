@@ -18,18 +18,46 @@ interface ThemeSwitcherProps {
 // Theme-specific visual signatures for mini previews.
 // Keeps previews scoped/inline — does NOT touch global theme CSS vars or
 // the real dashboard components.
-const themeSignatures: Record<
-  ThemePersonality,
-  {
-    fontFamily?: string;
-    badgeRadius: string; // tailwind class for badge rounding
-    badgeFontClass: string;
-    badgeLabel: string;
-    chipRadius: string;
-    /** Render subtle background flourish (grid, rule, etc.) */
-    flourish?: React.ReactNode;
-  }
-> = {
+type ThemeSignature = {
+  fontFamily?: string;
+  badgeRadius: string; // tailwind class for badge rounding
+  badgeFontClass: string;
+  badgeLabel: string;
+  chipRadius: string;
+  /** Render subtle background flourish (grid, rule, etc.) */
+  flourish?: React.ReactNode;
+};
+
+// Default preview look for any theme that hasn't defined a custom signature.
+// Keeps theme addition lightweight — a new theme renders a sensible preview
+// card without requiring a bespoke signature here.
+const DEFAULT_SIGNATURE: ThemeSignature = {
+  fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+  badgeRadius: "rounded-lg",
+  badgeFontClass: "font-semibold tracking-tight",
+  badgeLabel: "12",
+  chipRadius: "rounded-md",
+};
+
+const themeSignatures: Partial<Record<ThemePersonality, ThemeSignature>> = {
+  earned: {
+    fontFamily: "'Caveat', ui-serif, cursive",
+    badgeRadius: "rounded-md",
+    badgeFontClass: "font-bold",
+    badgeLabel: "12",
+    chipRadius: "rounded-sm",
+    flourish: (
+      // Ruled notebook lines evoking cream paper
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.10]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(to bottom, transparent 0, transparent 13px, currentColor 13px, currentColor 14px)",
+        }}
+      />
+    ),
+  },
   arctic: {
     fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
     badgeRadius: "rounded-lg",
@@ -84,7 +112,7 @@ const themeSignatures: Record<
 
 export function ThemePreviewArt({ personality }: { personality: ThemePersonality }) {
   const meta = themeMetadata[personality];
-  const sig = themeSignatures[personality];
+  const sig = themeSignatures[personality] ?? DEFAULT_SIGNATURE;
 
   return (
     <div

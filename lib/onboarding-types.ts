@@ -1,4 +1,5 @@
 import type { ThemePersonality } from "./themes";
+import { defaultThemeConfig } from "./themes";
 import { DEFAULT_TEMPLATE_SLUG, getTemplateBySlug } from "./routine-templates";
 
 export interface OnboardingHabit {
@@ -80,7 +81,7 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   goals: [],
   displayName: "",
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  theme: "arctic",
+  theme: defaultThemeConfig.personality,
   setupTier: "original",
   habits: defaultHabits(),
   startDate: new Date().toISOString().split("T")[0],

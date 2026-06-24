@@ -30,6 +30,7 @@ import { DashboardTour } from "@/components/DashboardTour";
 import { useFeatureFlagEnabled } from "posthog-js/react";
 
 // Themed dashboard components
+import { EarnedDashboard } from "@/components/themes/earned-dashboard";
 import { ArcticDashboard } from "@/components/themes/arctic-dashboard";
 import { BroadsheetDashboard } from "@/components/themes/broadsheet-dashboard";
 import { MilitaryDashboard } from "@/components/themes/military-dashboard";
@@ -38,15 +39,26 @@ import { ZenDashboard } from "@/components/themes/zen-dashboard";
 import type { ThemePersonality } from "@/lib/themes";
 import type { Doc } from "@/convex/_generated/dataModel";
 
-const dashboardComponents: Record<
-  ThemePersonality,
-  React.ComponentType<{ user: Doc<"users">; challenge: Doc<"challenges"> }>
+// Per-theme dashboard layouts. This is a Partial map on purpose: a theme that
+// hasn't shipped a bespoke layout falls back to EarnedDashboard, which is fully
+// token-driven and therefore renders correctly under any theme's CSS variables.
+// Adding a new theme does NOT require a new dashboard component.
+const dashboardComponents: Partial<
+  Record<
+    ThemePersonality,
+    React.ComponentType<{ user: Doc<"users">; challenge: Doc<"challenges"> }>
+  >
 > = {
+  earned: EarnedDashboard,
   arctic: ArcticDashboard,
   broadsheet: BroadsheetDashboard,
   military: MilitaryDashboard,
   zen: ZenDashboard,
 };
+
+function dashboardForTheme(personality: ThemePersonality) {
+  return dashboardComponents[personality] ?? EarnedDashboard;
+}
 
 export default function DashboardPage() {
   const { isGuest, demoUser, demoChallenge } = useGuest();
@@ -74,7 +86,7 @@ export default function DashboardPage() {
         </div>
       );
     }
-    const ThemedDashboard = dashboardComponents[personality];
+    const ThemedDashboard = dashboardForTheme(personality);
     // Upcast the local-store objects to Convex `Doc` shapes — fields used
     // by the dashboards overlap, and every Convex query inside the
     // dashboards is `"skip"` for guests, so the branded `Id<...>` is
@@ -232,7 +244,7 @@ function ActiveChallenge({
     );
   }
 
-  const ThemedDashboard = dashboardComponents[personality];
+  const ThemedDashboard = dashboardForTheme(personality);
 
   return <ThemedDashboard user={user} challenge={challenge} />;
 }

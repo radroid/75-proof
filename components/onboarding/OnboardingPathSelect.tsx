@@ -35,7 +35,8 @@ const PATH_OPTIONS: PathOption[] = [
     blurb: "Pick from curated programs — strict daily challenges and lighter habit builds.",
     bestFor: "Best when you want a proven plan",
     Icon: LibraryBig,
-    accent: "text-sky-600 dark:text-sky-400",
+    // Theme-aware categorical accent (sky in earned) — see docs/theming.md.
+    accent: "text-chart-1",
   },
   {
     id: "ai",
@@ -43,7 +44,7 @@ const PATH_OPTIONS: PathOption[] = [
     blurb: "Tell the coach your goals and constraints — it drafts a routine you can refine.",
     bestFor: "Best when nothing off-the-shelf fits",
     Icon: Sparkles,
-    accent: "text-violet-600 dark:text-violet-400",
+    accent: "text-chart-2",
     guestDisabled: true,
   },
   {
@@ -52,7 +53,7 @@ const PATH_OPTIONS: PathOption[] = [
     blurb: "Add your own habits, set targets, and pick a duration — full control.",
     bestFor: "Best when you already know what you want",
     Icon: Sliders,
-    accent: "text-emerald-600 dark:text-emerald-400",
+    accent: "text-chart-3",
   },
 ];
 

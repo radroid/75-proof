@@ -1,9 +1,25 @@
-// Theme types — 4 visual themes
-export type ThemePersonality = "arctic" | "broadsheet" | "military" | "zen";
-
-export interface ThemeConfig {
-  personality: ThemePersonality;
-}
+// =============================================================================
+// THEME REGISTRY — single source of truth
+// =============================================================================
+// To ADD A NEW THEME you touch as few places as possible:
+//
+//   1. Add ONE object to THEME_DEFINITIONS below (this gives you the union type,
+//      the metadata, the switcher order, AND — if it's first — the default).
+//   2. Add a matching `[data-theme="<key>"]` block to app/globals.css mapping the
+//      same CSS variables the other themes define (Tailwind needs static CSS, so
+//      this block is the one unavoidable duplicate — copy an existing theme block
+//      as a template).
+//
+// Optional (each has a sensible fallback so the theme works without them):
+//   3. A preview "signature" in components/theme-switcher.tsx (else a default
+//      preview is rendered).
+//   4. A themed dashboard in components/themes/<key>-dashboard.tsx, registered in
+//      app/(dashboard)/dashboard/page.tsx (else the token-driven EarnedDashboard
+//      is used — it already adapts to any theme's tokens).
+//
+// The FIRST entry in THEME_DEFINITIONS is the app-wide default theme.
+// See docs/theming.md for the full walkthrough.
+// =============================================================================
 
 export interface ThemeMetadata {
   name: string;
@@ -16,8 +32,27 @@ export interface ThemeMetadata {
   };
 }
 
-export const themeMetadata: Record<ThemePersonality, ThemeMetadata> = {
-  arctic: {
+interface ThemeDefinition extends ThemeMetadata {
+  /** Stable key — must match the `[data-theme="<key>"]` selector in globals.css. */
+  key: string;
+}
+
+// Ordered list — index 0 is the default theme, and this is also the order
+// themes appear in the switcher / onboarding picker.
+const THEME_DEFINITIONS = [
+  {
+    key: "earned",
+    name: "Earned",
+    description: "Cream paper notebook, ink and sky, a gold star for showing up",
+    preview: {
+      bg: "#f4ecd8",
+      fg: "#1f1f1d",
+      accent: "#0085d4",
+      card: "#f9f3e1",
+    },
+  },
+  {
+    key: "arctic",
     name: "Arctic",
     description: "Minimal white, electric blue accents, clean and modern",
     preview: {
@@ -27,7 +62,8 @@ export const themeMetadata: Record<ThemePersonality, ThemeMetadata> = {
       card: "#f8fafc",
     },
   },
-  broadsheet: {
+  {
+    key: "broadsheet",
     name: "Broadsheet",
     description: "Newspaper journal, serif typography, cream newsprint",
     preview: {
@@ -37,7 +73,8 @@ export const themeMetadata: Record<ThemePersonality, ThemeMetadata> = {
       card: "#f5f0e8",
     },
   },
-  military: {
+  {
+    key: "military",
     name: "Military Ops",
     description: "Tactical dark, olive and khaki, stencil type, grid overlay",
     preview: {
@@ -47,7 +84,8 @@ export const themeMetadata: Record<ThemePersonality, ThemeMetadata> = {
       card: "#1e2518",
     },
   },
-  zen: {
+  {
+    key: "zen",
     name: "Zen Garden",
     description: "Japanese minimalism, warm stone, moss and clay, organic",
     preview: {
@@ -57,24 +95,36 @@ export const themeMetadata: Record<ThemePersonality, ThemeMetadata> = {
       card: "#f7f3ee",
     },
   },
-};
+] as const satisfies readonly ThemeDefinition[];
 
-export const themeOrder: ThemePersonality[] = [
-  "arctic",
-  "broadsheet",
-  "military",
-  "zen",
-];
+// Theme keys — union type derived from the registry (no manual maintenance).
+export type ThemePersonality = (typeof THEME_DEFINITIONS)[number]["key"];
 
-// Old theme names for migration
+export interface ThemeConfig {
+  personality: ThemePersonality;
+}
+
+// Metadata map + ordered key list, both derived from THEME_DEFINITIONS.
+export const themeMetadata = Object.fromEntries(
+  THEME_DEFINITIONS.map((t) => [
+    t.key,
+    { name: t.name, description: t.description, preview: t.preview },
+  ]),
+) as Record<ThemePersonality, ThemeMetadata>;
+
+export const themeOrder = THEME_DEFINITIONS.map(
+  (t) => t.key,
+) as ThemePersonality[];
+
+// Old theme names for migration (renamed/removed personalities → default).
 const OLD_THEME_NAMES = ["warm-bento", "brutalist", "swiss-poster", "analog"];
 
 // Local storage keys
 export const PERSONALITY_STORAGE_KEY = "earned-personality";
 
-// Default theme configuration
+// Default theme = the first entry in THEME_DEFINITIONS.
 export const defaultThemeConfig: ThemeConfig = {
-  personality: "arctic",
+  personality: THEME_DEFINITIONS[0].key,
 };
 
 export function getStoredPersonality(): ThemePersonality {
