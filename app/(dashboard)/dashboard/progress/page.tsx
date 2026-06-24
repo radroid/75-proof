@@ -58,7 +58,6 @@ import {
 import { resolveSocialCategory } from "@/lib/routine-category";
 import { IdentityCard } from "@/components/progress/identity-card";
 import { HeadlineMetrics } from "@/components/progress/headline-metrics";
-import { TodaySnapshot } from "@/components/progress/today-snapshot";
 import { CalendarGrid } from "@/components/progress/calendar-grid";
 import { HabitHeatmap } from "@/components/progress/habit-heatmap";
 import { PerHabitList } from "@/components/progress/per-habit-list";
@@ -382,65 +381,6 @@ export default function ProgressPage() {
       : null;
   }, [habitStats]);
 
-  // Today snapshot: count active hard habits done today via the completion
-  // map's source-of-truth derivation. We also count *all* active habits done
-  // for the "X of N" display so it reflects the user's full routine, not
-  // just the gating subset.
-  const todayStats = useMemo(() => {
-    if (currentDay < 1) return { done: 0, total: 0 };
-    // While Convex queries are still in-flight (`undefined` from `useQuery`)
-    // we must not flash the legacy "0 of 7 done" — the new-system user would
-    // see a misleading legacy snapshot before their habit data hydrates.
-    // Treat any undefined as "loading" and render a neutral 0/0 until both
-    // queries resolve (`null` or an array).
-    if (activeHabitDefs === undefined || activeHabitEntries === undefined) {
-      return { done: 0, total: 0 };
-    }
-    // New-system path: per-habit entries.
-    if (activeHabitDefs.length > 0) {
-      const todayEntries = activeHabitEntries.filter(
-        (e) => e.dayNumber === currentDay,
-      );
-      const entriesByHabit = new Map(
-        todayEntries.map((e) => [e.habitDefinitionId, e]),
-      );
-      const active = activeHabitDefs.filter((h) => h.isActive);
-      let done = 0;
-      for (const h of active) {
-        const e = entriesByHabit.get(h._id);
-        if (h.blockType === "counter") {
-          if (e?.completed || (e?.value ?? 0) >= (h.target ?? Infinity)) done += 1;
-        } else if (e?.completed) {
-          done += 1;
-        }
-      }
-      return { done, total: active.length };
-    }
-    // Legacy dailyLogs path: derive done/total from the `dailyLogs` row for
-    // the current day. The seven canonical hard requirements plus an
-    // optional progress photo (counted in `total` only when the user has
-    // actually uploaded one — older dailyLogs instructions were ambiguous
-    // on whether the photo gates completion). This keeps the snapshot
-    // honest for the cohort still on the legacy schema.
-    const todayLog = (logs ?? []).find((l) => l.dayNumber === currentDay) as
-      | LegacyDayLog
-      | undefined;
-    if (!todayLog) return { done: 0, total: 7 };
-    const reqs: boolean[] = [
-      !!todayLog.workout1 && todayLog.workout1.durationMinutes >= 45,
-      !!todayLog.workout2 && todayLog.workout2.durationMinutes >= 45,
-      !!todayLog.outdoorWorkoutCompleted,
-      todayLog.waterIntakeOz >= 128,
-      todayLog.readingMinutes >= 20,
-      !!todayLog.dietFollowed,
-      !!todayLog.noAlcohol,
-    ];
-    return {
-      done: reqs.filter(Boolean).length,
-      total: reqs.length,
-    };
-  }, [activeHabitDefs, activeHabitEntries, currentDay, logs]);
-
   const routineLabel = useMemo(() => {
     const slug = challenge?.templateSlug;
     if (slug && isKnownTemplate(slug)) return getTemplateBySlug(slug).title;
@@ -486,10 +426,6 @@ export default function ProgressPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, challenge, isActiveHabitTracker, isGuest]);
 
-  const handleLogTap = useCallback(() => {
-    posthog.capture("progress_to_log_tap");
-  }, []);
-
   const handleRibbonImpression = useCallback(() => {
     posthog.capture("progress_friends_ribbon_view");
   }, []);
@@ -518,7 +454,7 @@ export default function ProgressPage() {
   // `IncomingNudges` banner is hoisted *above* the tabs so a fresh nudge
   // surfaces no matter which tab is selected.
   const friendsTabSections = !isGuest ? (
-    <div className="space-y-8 md:space-y-12">
+    <div className="space-y-6 md:space-y-8">
       <FriendsSection friendProgress={friendProgress} />
       <ActivitySection friendsFeed={friendsFeed} friends={friends} />
       <RequestsSection
@@ -604,7 +540,7 @@ export default function ProgressPage() {
 
   return (
     <PageContainer>
-      <div className="mb-8 md:mb-12">
+      <div className="mb-5 md:mb-8">
         <h1
           className="text-3xl md:text-5xl font-bold tracking-tight"
           style={{ fontFamily: "var(--font-heading)" }}
@@ -639,15 +575,14 @@ export default function ProgressPage() {
         <TabsContent value="progress" className="mt-6 md:mt-8">
       <section
         aria-labelledby="this-week-heading"
-        className="space-y-8 md:space-y-12"
+        className="space-y-6 md:space-y-8"
       >
-        <h2
-          id="this-week-heading"
-          className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-2"
-        >
-          This Week
+        {/* Accessible section name only — the visible "This Week" eyebrow was an
+            orphan once it scoped the whole tab (calendar/history aren't weekly). */}
+        <h2 id="this-week-heading" className="sr-only">
+          Your progress
         </h2>
-        <div className="space-y-8 md:space-y-12">
+        <div className="space-y-6 md:space-y-8">
           {/* Identity card — hero */}
           <IdentityCard
             userStatement={userView?.identityStatement ?? null}
@@ -662,15 +597,8 @@ export default function ProgressPage() {
             }}
           />
 
-          {/* Today snapshot — read-only with Log → */}
-          <TodaySnapshot
-            habitsCompleted={todayStats.done}
-            habitsTotal={todayStats.total}
-            isDayComplete={!!activeCompletionMap[currentDay]}
-            onLogTap={handleLogTap}
-          />
-
-          {/* Headline metrics — 30-day rate + streak chip */}
+          {/* Headline metrics — 30-day rate + streak chip.
+              (Today's "X of N done" lives on the dashboard; not repeated here.) */}
           <HeadlineMetrics
             rate={rolling30.rate}
             consideredDays={rolling30.consideredDays}
@@ -685,8 +613,8 @@ export default function ProgressPage() {
 
           {/* Calendar / consistency */}
           <div>
-            <div className="h-px bg-border mb-8 md:mb-12" />
-            <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 md:mb-6">
+            <div className="h-px bg-border mb-6 md:mb-8" />
+            <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-3 md:mb-4">
               {useHeatmap
                 ? "Consistency"
                 : isActiveHabitTracker
@@ -710,8 +638,8 @@ export default function ProgressPage() {
           {/* Per-habit list — replaces legacy Workouts/Water/Reading tiles */}
           {habitStats.length > 0 && (
             <div>
-              <div className="h-px bg-border mb-8 md:mb-12" />
-              <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 md:mb-6">
+              <div className="h-px bg-border mb-6 md:mb-8" />
+              <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-3 md:mb-4">
                 Habits — last {Math.min(rolling30.consideredDays, ROLLING_WINDOW)} days
               </p>
               <PerHabitList stats={habitStats} />
@@ -720,8 +648,8 @@ export default function ProgressPage() {
 
           {/* Day-by-Day History — kept polymorphic for legacy + new system */}
           <div>
-            <div className="h-px bg-border mb-8 md:mb-12" />
-            <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-4 md:mb-8">
+            <div className="h-px bg-border mb-6 md:mb-8" />
+            <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-3 md:mb-5">
               Day-by-Day History
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mb-6">

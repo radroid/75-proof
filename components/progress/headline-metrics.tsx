@@ -42,7 +42,7 @@ export function HeadlineMetrics({
         <div className="flex items-center gap-2 mb-2 min-w-0">
           <TrendingUp className="h-4 w-4 text-primary shrink-0" />
           <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground truncate">
-            Completion rate
+            Completion
           </span>
         </div>
         <p
