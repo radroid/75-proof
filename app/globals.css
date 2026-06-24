@@ -625,6 +625,37 @@ html {
   100% { transform: scale(1); }
 }
 
+/* Earned theme: full-completion reward stars at the top of the page — one per
+   task. Normal days use the quiet "draw-on" pair (the star's gold outline inks
+   itself, then the fill floods in), staggered left→right so the row reads as
+   one continuous hand drawing; the last star gets a small finishing beat.
+   Milestone days swap in the louder "Pop + ink burst" so the burst stays rare
+   and special. */
+@keyframes earnStarDraw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes earnStarFill {
+  from { fill-opacity: 0; }
+  to { fill-opacity: 1; }
+}
+@keyframes earnStarBeat {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+@keyframes earnStarPop {
+  0%   { transform: scale(0) rotate(calc(var(--r, 0deg) - 16deg)); opacity: 0; }
+  55%  { transform: scale(1.26) rotate(calc(var(--r, 0deg) + 6deg)); opacity: 1; }
+  78%  { transform: scale(0.92) rotate(var(--r, 0deg)); }
+  100% { transform: scale(1) rotate(var(--r, 0deg)); }
+}
+@keyframes earnStarBurst {
+  0%   { transform: scale(0.35); opacity: 0; }
+  28%  { opacity: 0.85; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
 @keyframes fade-up {
   0% { opacity: 0; transform: translateY(10px); }
   100% { opacity: 1; transform: translateY(0); }

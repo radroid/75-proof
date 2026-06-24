@@ -10,6 +10,7 @@
  * earned palette on purpose — they only render inside the earned theme.
  */
 import * as React from "react";
+import { loadStarPositions, saveStarPositions, type StarPos } from "@/lib/star-stickers";
 
 export const HAND = "'Caveat', 'Patrick Hand', cursive";
 export const SANS = "'Poppins', system-ui, -apple-system, sans-serif";
@@ -59,7 +60,7 @@ export function EarnedPaperDefs() {
   );
 }
 
-const STAR_PATH =
+export const STAR_PATH =
   "M 79.64 54.53 C 79.30 54.97 78.30 56.16 77.84 56.94 C 77.39 57.72 77.07 57.84 76.91 59.23 C 76.75 60.62 76.81 64.21 76.87 65.28 C 76.93 66.35 77.18 65.34 77.24 65.65 C 77.30 65.97 76.41 63.64 77.21 67.17 C 78.01 70.70 81.19 83.17 82.04 86.81 C 82.90 90.45 82.34 88.36 82.34 89.01 C 82.34 89.66 82.25 90.32 82.07 90.69 C 81.88 91.06 81.71 91.14 81.23 91.24 C 80.75 91.34 81.62 92.24 79.2 91.29 C 76.78 90.34 70.22 87.29 66.7 85.56 C 63.18 83.83 59.91 81.80 58.07 80.93 C 56.23 80.06 56.64 80.43 55.66 80.33 C 54.68 80.23 52.80 80.26 52.19 80.32 C 51.58 80.38 52.48 80.54 52.02 80.69 C 51.56 80.84 50.34 80.88 49.42 81.24 C 48.50 81.60 49.05 81.32 46.5 82.84 C 43.95 84.36 36.88 88.60 34.12 90.36 C 31.36 92.12 31.20 92.63 29.93 93.38 C 28.66 94.13 27.35 94.77 26.47 94.87 C 25.59 94.97 25.04 94.34 24.67 94 C 24.30 93.66 24.32 93.58 24.26 92.84 C 24.20 92.10 24.05 92.33 24.31 89.56 C 24.57 86.79 25.37 79.36 25.83 76.2 C 26.29 73.04 26.87 72.33 27.07 70.62 C 27.27 68.91 27.27 67.17 27.06 65.93 C 26.85 64.69 26.34 63.96 25.83 63.19 C 25.32 62.42 24.32 61.74 24.02 61.33 C 23.71 60.92 24.75 61.53 24 60.73 C 23.25 59.93 20.41 57.30 19.49 56.53 C 18.57 55.76 18.85 56.43 18.5 56.13 C 18.15 55.84 19.43 56.52 17.37 54.76 C 15.31 53.00 8.25 47.39 6.13 45.58 C 4.00 43.77 4.97 44.45 4.62 43.92 C 4.27 43.39 4.00 42.84 4 42.38 C 4.00 41.92 4.29 41.46 4.59 41.14 C 4.89 40.82 3.74 41.01 5.81 40.45 C 7.88 39.89 13.36 38.50 16.99 37.8 C 20.62 37.10 25.05 36.78 27.58 36.27 C 30.11 35.76 31.22 35.20 32.19 34.74 C 33.16 34.28 33.10 33.69 33.39 33.49 C 33.68 33.29 33.67 33.67 33.92 33.52 C 34.17 33.37 34.68 32.91 34.89 32.6 C 35.10 32.29 35.06 31.80 35.16 31.66 C 35.25 31.52 35.20 32.14 35.46 31.74 C 35.72 31.34 36.48 29.80 36.69 29.24 C 36.89 28.68 36.59 28.64 36.69 28.4 C 36.79 28.16 36.71 29.21 37.31 27.79 C 37.91 26.37 39.70 21.29 40.3 19.88 C 40.90 18.47 40.82 19.55 40.93 19.31 C 41.04 19.07 40.59 19.28 40.94 18.42 C 41.29 17.57 42.51 15.39 43.01 14.18 C 43.51 12.97 43.33 12.62 43.96 11.16 C 44.59 9.70 46.17 6.43 46.82 5.42 C 47.47 4.41 47.54 5.09 47.83 5.09 C 48.12 5.09 48.19 5.10 48.55 5.41 C 48.91 5.72 49.61 6.38 49.96 6.93 C 50.31 7.48 49.84 7.27 50.65 8.73 C 51.46 10.19 53.46 13.10 54.83 15.68 C 56.20 18.26 57.73 22.13 58.85 24.2 C 59.97 26.27 60.59 26.98 61.54 28.09 C 62.49 29.20 63.84 30.34 64.53 30.84 C 65.22 31.34 65.30 30.90 65.7 31.1 C 66.10 31.30 66.26 31.79 66.92 32.04 C 67.58 32.29 66.99 32.38 69.67 32.62 C 72.35 32.86 80.77 33.27 82.98 33.47 C 85.19 33.67 81.58 33.73 82.92 33.83 C 84.27 33.93 89.69 33.99 91.05 34.09 C 92.41 34.19 90.63 34.35 91.09 34.42 C 91.55 34.49 93.06 34.33 93.83 34.51 C 94.60 34.69 95.36 35.15 95.72 35.48 C 96.08 35.80 96.22 35.85 96 36.46 C 95.78 37.07 95.74 37.54 94.43 39.16 C 93.12 40.77 90.58 43.62 88.15 46.15 C 85.73 48.68 81.30 52.93 79.88 54.33 C 78.46 55.73 79.98 54.09 79.64 54.53 Z";
 
 /** Canonical gold star, optionally filled or outlined. */
@@ -93,6 +94,265 @@ export function EarnedStar({
         strokeLinecap="round"
       />
     </svg>
+  );
+}
+
+// Slight per-star tilt + vertical drift so the earned row looks hand-placed,
+// not stamped — no two stars sit at the same angle or baseline.
+const STAR_TILTS = [-10, -3, 6, 11, -7, 3, -5, 8] as const;
+const STAR_VDRIFT = [0, -3, 2, -2, 3, -1, 1, -4] as const;
+
+/** 3-spoke ink burst behind a milestone star (the "Pop" reward only). */
+function StarBurst({ size }: { size: number }) {
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      width={size * 2}
+      height={size * 2}
+      style={{
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        transform: "translate(-50%,-50%)",
+        overflow: "visible",
+        pointerEvents: "none",
+      }}
+      aria-hidden
+    >
+      <line x1="50" y1="26" x2="50" y2="6" stroke={EC.ink} strokeWidth="3" strokeLinecap="round" />
+      <line x1="71" y1="60" x2="88" y2="71" stroke={EC.ink} strokeWidth="3" strokeLinecap="round" />
+      <line x1="29" y1="60" x2="12" y2="71" stroke={EC.ink} strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** One "draw-on" star: the gold outline strokes itself, then the fill floods
+ *  in — matching the ink tick's hand-drawn vocabulary. `beat` adds a small
+ *  finishing pulse, used on the last star of the row. */
+function StarDrawOn({
+  size,
+  tilt,
+  delay,
+  beat,
+}: {
+  size: number;
+  tilt: number;
+  delay: number;
+  beat?: boolean;
+}) {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        animation: beat ? `earnStarBeat 320ms ease-out ${delay + 0.5}s both` : undefined,
+      }}
+    >
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+        style={{ display: "block", overflow: "visible", transform: `rotate(${tilt}deg)` }}
+        aria-hidden
+      >
+        <path
+          d={STAR_PATH}
+          fill={EC.gold}
+          fillOpacity={0}
+          stroke="none"
+          style={{ animation: `earnStarFill 0.3s ease ${delay + 0.34}s both` }}
+        />
+        <path
+          d={STAR_PATH}
+          fill="none"
+          stroke={EC.gold}
+          strokeWidth={4}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          pathLength={1}
+          style={{ strokeDasharray: 1, animation: `earnStarDraw 0.5s cubic-bezier(0.3,0.7,0.4,1) ${delay}s both` }}
+        />
+      </svg>
+    </span>
+  );
+}
+
+/** One "Pop" star: scales in with an over/undershoot and a 3-spoke ink burst.
+ *  Reserved for milestone days so the louder beat stays special. */
+function StarPop({ size, tilt, delay }: { size: number; tilt: number; delay: number }) {
+  return (
+    <span
+      style={
+        {
+          position: "relative",
+          display: "inline-block",
+          ["--r"]: `${tilt}deg`,
+          animation: `earnStarPop 0.55s cubic-bezier(0.34,1.3,0.4,1) ${delay}s both`,
+        } as React.CSSProperties
+      }
+    >
+      <span
+        style={{ position: "absolute", inset: 0, animation: `earnStarBurst 0.5s ease-out ${delay + 0.08}s both` }}
+      >
+        <StarBurst size={size} />
+      </span>
+      <EarnedStar size={size} filled />
+    </span>
+  );
+}
+
+/** The initial neat row of stars across the top of the page, before the user
+ *  drags them anywhere. Hand-placed feel via per-star tilt + slight vertical
+ *  drift; nudged down so the milestone ink burst clears the page's top edge.
+ *  `width` is the overlay's pixel width; x is stored as a 0..1 fraction of it. */
+function defaultStarRow(n: number, size: number, width: number, milestone: boolean): StarPos[] {
+  const padTop = milestone ? Math.round(size * 0.85) : Math.round(size * 0.45);
+  const stepPx = Math.round(size * 0.9); // gentle overlap, left → right
+  const startPx = 22; // small left inset, clear of the red margin
+  return Array.from({ length: n }, (_, i) => {
+    const xpx = startPx + i * stepPx;
+    const vdrift = STAR_VDRIFT[i % STAR_VDRIFT.length];
+    return {
+      x: clamp(xpx / width, 0, Math.max(0, 1 - size / width)),
+      y: padTop + vdrift,
+    };
+  });
+}
+
+/**
+ * The full-completion reward: one gold star per completed task, stuck onto the
+ * notebook page when every task for the day is done.
+ *
+ * The stars are an OVERLAY (absolutely positioned over the page, no reflow) so
+ * earning them never shoves the rest of the page around. Each star is
+ * draggable; where the user leaves them is saved per challenge-day, so the next
+ * visit replays the same sticking animation with the stars landing in their
+ * chosen spots. `milestone` swaps the quiet draw-on for the louder Pop + ink
+ * burst (reserved for special days). The host must be `position: relative`, and
+ * re-mounting (e.g. `key={dayNumber}`) replays the animation.
+ */
+export function EarnedStarReward({
+  count,
+  milestone = false,
+  storageKey,
+  ariaLabel,
+}: {
+  /** One star per completed task. */
+  count: number;
+  /** Use the louder Pop+burst instead of the quiet draw-on. */
+  milestone?: boolean;
+  /** Stable per-challenge-day key for saving the user's star placement. */
+  storageKey: string;
+  ariaLabel?: string;
+}) {
+  const n = Math.max(0, Math.floor(count));
+  // Stars shrink a touch as the count grows so the default row never overflows.
+  const size = n <= 6 ? 32 : n <= 9 ? 28 : 24;
+
+  const layerRef = React.useRef<HTMLDivElement>(null);
+  const [positions, setPositions] = React.useState<StarPos[] | null>(null);
+  const [dragging, setDragging] = React.useState<number | null>(null);
+  // Mirror positions into a ref so a drag can read the star's live start point
+  // synchronously (setState updaters don't run inline).
+  const positionsRef = React.useRef<StarPos[] | null>(null);
+  positionsRef.current = positions;
+
+  // On mount (and when the day or star count changes) load the user's saved
+  // arrangement, else lay out the default top row. Measuring happens after the
+  // layer is in the DOM, so the stars — and their draw-on / pop animation —
+  // appear a frame later.
+  React.useEffect(() => {
+    if (n === 0) {
+      setPositions(null);
+      return;
+    }
+    const saved = loadStarPositions(storageKey, n);
+    if (saved) {
+      setPositions(saved);
+      return;
+    }
+    const width = layerRef.current?.clientWidth ?? 360;
+    setPositions(defaultStarRow(n, size, width, milestone));
+  }, [storageKey, n, size, milestone]);
+
+  if (n === 0) return null;
+
+  const beginDrag = (e: React.PointerEvent, i: number) => {
+    const layer = layerRef.current;
+    const cur = positionsRef.current;
+    if (!layer || !cur) return;
+    e.preventDefault();
+    const rect = layer.getBoundingClientRect();
+    const startCX = e.clientX;
+    const startCY = e.clientY;
+    const origLeft = cur[i].x * rect.width;
+    const origTop = cur[i].y;
+    const node = e.currentTarget as HTMLElement;
+    try {
+      node.setPointerCapture(e.pointerId);
+    } catch {}
+    setDragging(i);
+    const move = (ev: PointerEvent) => {
+      const nx = clamp((origLeft + (ev.clientX - startCX)) / rect.width, 0, Math.max(0, 1 - size / rect.width));
+      const ny = clamp(origTop + (ev.clientY - startCY), 0, Math.max(0, rect.height - size));
+      setPositions((prev) => (prev ? prev.map((q, idx) => (idx === i ? { x: nx, y: ny } : q)) : prev));
+    };
+    const end = () => {
+      node.removeEventListener("pointermove", move);
+      node.removeEventListener("pointerup", end);
+      node.removeEventListener("pointercancel", end);
+      try {
+        node.releasePointerCapture(e.pointerId);
+      } catch {}
+      setDragging(null);
+      setPositions((prev) => {
+        if (prev) saveStarPositions(storageKey, prev);
+        return prev;
+      });
+    };
+    node.addEventListener("pointermove", move);
+    node.addEventListener("pointerup", end);
+    node.addEventListener("pointercancel", end);
+  };
+
+  return (
+    <div
+      ref={layerRef}
+      role="img"
+      aria-label={ariaLabel ?? `${n} ${n === 1 ? "star" : "stars"} earned`}
+      // Overlay: floats over the page, lets every click pass through except on
+      // the stars themselves (which opt back in below).
+      style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 4 }}
+    >
+      {positions?.map((pos, i) => {
+        const tilt = STAR_TILTS[i % STAR_TILTS.length];
+        const isDrag = dragging === i;
+        return (
+          <span
+            key={i}
+            onPointerDown={(e) => beginDrag(e, i)}
+            style={{
+              position: "absolute",
+              left: `${pos.x * 100}%`,
+              top: pos.y,
+              pointerEvents: "auto",
+              touchAction: "none",
+              cursor: isDrag ? "grabbing" : "grab",
+              zIndex: isDrag ? 10 : 1,
+              filter: isDrag ? "drop-shadow(2px 5px 3px rgba(31,31,29,0.32))" : undefined,
+              transition: isDrag ? "none" : "filter 120ms ease",
+              userSelect: "none",
+              WebkitUserSelect: "none",
+            }}
+          >
+            {milestone ? (
+              <StarPop size={size} tilt={tilt} delay={i * 0.1} />
+            ) : (
+              <StarDrawOn size={size} tilt={tilt} delay={i * 0.1} beat={i === n - 1} />
+            )}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 

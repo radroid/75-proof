@@ -9,6 +9,7 @@ import {
   EarnedChip,
   EarnedPrompt,
   EarnedStar,
+  EarnedStarReward,
   EC,
   HAND,
 } from "@/components/themes/earned/EarnedPaper";
@@ -97,6 +98,14 @@ function DayArrow({
       </svg>
     </button>
   );
+}
+
+/** Milestone days earn the louder "Pop + ink burst" reward instead of the
+ *  quiet draw-on. Kept rare so the burst stays special: every 25th day (25,
+ *  50, 75 …) and the final day of the challenge. */
+function isMilestoneDay(day: number, daysTotal: number | null): boolean {
+  if (daysTotal != null && day === daysTotal) return true;
+  return day > 0 && day % 25 === 0;
 }
 
 function handwrittenDate(dateStr: string): string {
@@ -243,6 +252,21 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
         style={{ borderRadius: 14, overflow: "hidden", minHeight: "72vh" }}
       >
         <div className="relative" style={{ padding: "26px 18px 40px 34px" }}>
+          {/* Earned reward — one draggable gold star per task, overlaid on the
+              page (no reflow) the moment the whole day is done. Quiet draw-on
+              most days, louder Pop+burst on milestones. The user can drag each
+              star anywhere; placements are saved per day. Keyed on the day so it
+              re-animates when you land on a different completed day. */}
+          {allDone && (
+            <EarnedStarReward
+              key={displayDay}
+              count={totalDone}
+              milestone={isMilestoneDay(displayDay, daysTotal)}
+              storageKey={`${challenge._id}:${displayDay}`}
+              ariaLabel={`Day ${displayDay} earned — ${totalDone} ${totalDone === 1 ? "star" : "stars"}`}
+            />
+          )}
+
           {/* Header — handwritten weekday + big day number, day-stepper folded in */}
           <EarnedPageHeader
             date={weekdayLabel}
@@ -349,9 +373,10 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
           {/* Earned footer */}
           <div style={{ marginTop: 22 }}>
             {allDone ? (
+              // The gold stars at the top of the page are the reward; the footer
+              // is just a quiet sign-off, demoted so it doesn't compete with them.
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, paddingTop: 6 }}>
-                <EarnedStar size={60} />
-                <div style={{ fontFamily: HAND, fontWeight: 700, fontSize: 27, color: EC.ink }}>
+                <div style={{ fontFamily: HAND, fontWeight: 600, fontSize: 20, color: "rgba(31,31,29,0.55)" }}>
                   Day {displayDay} — earned.
                 </div>
               </div>
