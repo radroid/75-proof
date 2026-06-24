@@ -50,7 +50,7 @@ export default function OfflinePage() {
         style={{
           fontSize: 16,
           color: "var(--foreground)",
-          opacity: 0.6,
+          opacity: 0.72,
           margin: "0 0 32px",
           maxWidth: 320,
           lineHeight: 1.5,

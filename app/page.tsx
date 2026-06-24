@@ -226,7 +226,7 @@ function PrimaryButton({
       className="earned-btn-primary w-full sm:w-auto px-7 py-4 min-h-[52px] text-base font-semibold rounded-[10px] transition-transform"
       style={{
         fontFamily: SANS,
-        backgroundColor: C.sky,
+        backgroundColor: C.skyDeep,
         color: C.creamLight,
         border: `2px solid ${C.ink}`,
         boxShadow: "3px 3px 0 " + C.ink,
@@ -308,7 +308,7 @@ function HowItWorks() {
               <span
                 className="inline-flex items-center justify-center w-10 h-10 rounded-[8px] mb-4"
                 style={{
-                  backgroundColor: C.sky,
+                  backgroundColor: C.skyDeep,
                   color: C.creamLight,
                   fontFamily: SANS,
                   fontWeight: 800,
@@ -367,6 +367,20 @@ function LandingPage() {
           outline: 3px solid #0085D4;
           outline-offset: 3px;
         }
+        /* Gold CTAs that sit on the dark ink band: cream hard-shadow so the
+           sticker lift stays visible against #1F1F1D. */
+        .earned-btn-onink:hover {
+          transform: translate(-1px, -1px);
+          box-shadow: 4px 4px 0 #F9F3E1;
+        }
+        .earned-btn-onink:active {
+          transform: translate(1px, 1px);
+          box-shadow: 1px 1px 0 #F9F3E1;
+        }
+        .earned-btn-onink:focus-visible {
+          outline: 3px solid #F9F3E1;
+          outline-offset: 3px;
+        }
       `,
         }}
       />
@@ -381,7 +395,7 @@ function LandingPage() {
               className="earned-btn-primary text-[14px] font-semibold px-5 py-3 min-h-[44px] rounded-[10px] transition-transform"
               style={{
                 fontFamily: SANS,
-                backgroundColor: C.sky,
+                backgroundColor: C.skyDeep,
                 color: C.creamLight,
                 border: `2px solid ${C.ink}`,
                 boxShadow: "3px 3px 0 " + C.ink,
@@ -417,7 +431,7 @@ function LandingPage() {
                 className="earned-btn-primary text-[14px] font-semibold px-5 py-3 min-h-[44px] rounded-[10px] transition-transform"
                 style={{
                   fontFamily: SANS,
-                  backgroundColor: C.sky,
+                  backgroundColor: C.skyDeep,
                   color: C.creamLight,
                   border: `2px solid ${C.ink}`,
                   boxShadow: "3px 3px 0 " + C.ink,
@@ -467,7 +481,7 @@ function LandingPage() {
               </div>
               <p
                 className="text-[13px] mt-4"
-                style={{ fontFamily: SANS, fontWeight: 400, color: "rgba(31,31,29,0.45)" }}
+                style={{ fontFamily: SANS, fontWeight: 400, color: "rgba(31,31,29,0.62)" }}
               >
                 Track on this device: your data stays here. No account, no cloud.
               </p>
@@ -518,7 +532,7 @@ function LandingPage() {
             <div className="flex justify-center">
               <SignUpButton mode="modal">
                 <button
-                  className="earned-btn-primary px-8 py-4 min-h-[52px] text-base font-semibold rounded-[10px] transition-transform"
+                  className="earned-btn-onink px-8 py-4 min-h-[52px] text-base font-semibold rounded-[10px] transition-transform"
                   style={{
                     fontFamily: SANS,
                     backgroundColor: C.gold,
@@ -536,7 +550,7 @@ function LandingPage() {
             <div className="flex justify-center">
               <button
                 onClick={() => router.push("/dashboard")}
-                className="earned-btn-primary px-8 py-4 min-h-[52px] text-base font-semibold rounded-[10px] transition-transform"
+                className="earned-btn-onink px-8 py-4 min-h-[52px] text-base font-semibold rounded-[10px] transition-transform"
                 style={{
                   fontFamily: SANS,
                   backgroundColor: C.gold,
@@ -555,7 +569,7 @@ function LandingPage() {
       <footer className="pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] px-4 sm:px-6 text-center border-t" style={{ borderColor: "rgba(31,31,29,0.1)" }}>
         <span
           className="text-[13px]"
-          style={{ fontFamily: SANS, fontWeight: 500, color: "rgba(31,31,29,0.4)" }}
+          style={{ fontFamily: SANS, fontWeight: 500, color: "rgba(31,31,29,0.55)" }}
         >
           earned · made for people who show up · © 2026
         </span>
@@ -578,7 +592,7 @@ export default function Home() {
     <>
       <AuthLoading>
         <div
-          className="flex min-h-dvh items-center justify-center"
+          className="fixed inset-0 z-50 flex min-h-dvh items-center justify-center"
           style={{ backgroundColor: C.cream }}
         >
           <div

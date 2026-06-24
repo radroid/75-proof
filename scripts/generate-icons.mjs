@@ -1,6 +1,6 @@
 // Generate the earned PWA/app icons from the canonical star.
 // Sky-blue full-bleed tile + centered gold star. Run from project root:
-//   node .brand-scratch/gen-icons.mjs
+//   node scripts/generate-icons.mjs
 import sharp from "sharp";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";

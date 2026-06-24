@@ -44,7 +44,9 @@ const PATH_OPTIONS: PathOption[] = [
     blurb: "Tell the coach your goals and constraints — it drafts a routine you can refine.",
     bestFor: "Best when nothing off-the-shelf fits",
     Icon: Sparkles,
-    accent: "text-chart-2",
+    // ink-soft (not gold) — gold is reserved for the star reward, and gold
+    // on the cream tile is nearly invisible. See docs/theming.md.
+    accent: "text-chart-5",
     guestDisabled: true,
   },
   {

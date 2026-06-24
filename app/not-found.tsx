@@ -35,7 +35,7 @@ export default function NotFound() {
           fontWeight: 700,
           letterSpacing: "0.2em",
           color: "var(--foreground)",
-          opacity: 0.5,
+          opacity: 0.7,
           margin: "0 0 8px",
           textTransform: "uppercase",
         }}
@@ -59,7 +59,7 @@ export default function NotFound() {
         style={{
           fontSize: 16,
           color: "var(--foreground)",
-          opacity: 0.6,
+          opacity: 0.72,
           margin: "0 0 32px",
           maxWidth: 320,
           lineHeight: 1.5,

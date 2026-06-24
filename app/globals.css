@@ -114,8 +114,11 @@
   --font-heading: 'Caveat', 'Poppins', system-ui, cursive;
   --font-code: 'JetBrains Mono', 'Courier New', monospace;
 
-  /* Sky is the interactive accent; gold is reserved for the star reward */
-  --primary: #0085d4;
+  /* Sky is the interactive accent; gold is reserved for the star reward.
+     Text-bearing sky fills use the deeper sky (#006ba8) so the cream label
+     clears WCAG AA 4.5:1 — the brighter #0085d4 is kept for decorative
+     accents (ring, charts, nav indicator). */
+  --primary: #006ba8;
   --primary-foreground: #f9f3e1;
 
   --background: #f4ecd8;
@@ -133,22 +136,22 @@
   --muted: #e8dec4;
   --muted-foreground: #5a564d;
 
-  --accent: #0085d4;
+  --accent: #006ba8;
   --accent-foreground: #f9f3e1;
 
   /* "Showed up" checks read sky; the gold star reward is rendered separately */
-  --success: #0085d4;
+  --success: #006ba8;
   --success-foreground: #f9f3e1;
   --warning: #b8791f;
   --warning-foreground: #f9f3e1;
-  --destructive: #c75f4a;
+  --destructive: #b5402b;
   --destructive-foreground: #f9f3e1;
 
   /* Notebook dividers: visible ink, but not the design's full 0.88 "sticker"
      border — that strength is reserved for deliberate bordered elements
      (buttons, key cards), not the global token `*` applies everywhere. */
   --border: rgba(31, 31, 29, 0.28);
-  --input: rgba(31, 31, 29, 0.45);
+  --input: rgba(31, 31, 29, 0.55);
   --ring: #0085d4;
 
   --chart-1: #0085d4;
@@ -159,7 +162,7 @@
 
   --sidebar: #f9f3e1;
   --sidebar-foreground: #1f1f1d;
-  --sidebar-primary: #0085d4;
+  --sidebar-primary: #006ba8;
   --sidebar-primary-foreground: #f9f3e1;
   --sidebar-accent: #e8dec4;
   --sidebar-accent-foreground: #1f1f1d;
@@ -186,7 +189,7 @@
   --duration-normal: 220ms;
   --duration-slow: 420ms;
 
-  --gradient-primary: linear-gradient(135deg, #0085d4, #006ba8);
+  --gradient-primary: linear-gradient(135deg, #006ba8, #00557f);
   --gradient-accent: linear-gradient(135deg, #0085d4, #2aa3e6);
 
   /* Mobile bottom nav — paper strip */

@@ -308,10 +308,10 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
 
       {/* Star divider */}
       <div className="flex items-center gap-3 mb-6 md:mb-8" aria-hidden="true">
-        <div className="h-px flex-1" style={{ background: "rgba(31,31,29,0.16)" }} />
+        <div className="h-px flex-1 bg-border" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/star.svg" alt="" width={22} height={22} style={{ opacity: allDone ? 1 : 0.35 }} />
-        <div className="h-px flex-1" style={{ background: "rgba(31,31,29,0.16)" }} />
+        <div className="h-px flex-1 bg-border" />
       </div>
 
       {/* Day navigator */}
