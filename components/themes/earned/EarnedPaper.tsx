@@ -144,7 +144,7 @@ function StarDrawOn({
     <span
       style={{
         display: "inline-block",
-        animation: beat ? `earnStarBeat 320ms ease-out ${delay + 0.5}s both` : undefined,
+        animation: beat ? `earn-star-beat 320ms ease-out ${delay + 0.5}s both` : undefined,
       }}
     >
       <svg
@@ -159,7 +159,7 @@ function StarDrawOn({
           fill={EC.gold}
           fillOpacity={0}
           stroke="none"
-          style={{ animation: `earnStarFill 0.3s ease ${delay + 0.34}s both` }}
+          style={{ animation: `earn-star-fill 0.3s ease ${delay + 0.34}s both` }}
         />
         <path
           d={STAR_PATH}
@@ -169,7 +169,7 @@ function StarDrawOn({
           strokeLinejoin="round"
           strokeLinecap="round"
           pathLength={1}
-          style={{ strokeDasharray: 1, animation: `earnStarDraw 0.5s cubic-bezier(0.3,0.7,0.4,1) ${delay}s both` }}
+          style={{ strokeDasharray: 1, animation: `earn-star-draw 0.5s cubic-bezier(0.3,0.7,0.4,1) ${delay}s both` }}
         />
       </svg>
     </span>
@@ -186,12 +186,12 @@ function StarPop({ size, tilt, delay }: { size: number; tilt: number; delay: num
           position: "relative",
           display: "inline-block",
           ["--r"]: `${tilt}deg`,
-          animation: `earnStarPop 0.55s cubic-bezier(0.34,1.3,0.4,1) ${delay}s both`,
+          animation: `earn-star-pop 0.55s cubic-bezier(0.34,1.3,0.4,1) ${delay}s both`,
         } as React.CSSProperties
       }
     >
       <span
-        style={{ position: "absolute", inset: 0, animation: `earnStarBurst 0.5s ease-out ${delay + 0.08}s both` }}
+        style={{ position: "absolute", inset: 0, animation: `earn-star-burst 0.5s ease-out ${delay + 0.08}s both` }}
       >
         <StarBurst size={size} />
       </span>
@@ -255,13 +255,13 @@ export function EarnedStarReward({
   const layerRef = React.useRef<HTMLDivElement>(null);
   const [positions, setPositions] = React.useState<StarPos[] | null>(null);
   const [dragging, setDragging] = React.useState<number | null>(null);
-  // Mirror positions into a ref so a drag can read the star's live start point
-  // synchronously (setState updaters don't run inline).
-  const positionsRef = React.useRef<StarPos[] | null>(null);
-  positionsRef.current = positions;
-  // Keep the latest callback without making it an effect dependency.
+  // Keep the latest onArrangementChange in a ref WITHOUT writing during render
+  // (assigning ref.current in the body trips react-hooks/refs). The initial
+  // useRef value covers the first mount; an effect keeps it current after.
   const onChangeRef = React.useRef(onArrangementChange);
-  onChangeRef.current = onArrangementChange;
+  React.useEffect(() => {
+    onChangeRef.current = onArrangementChange;
+  });
   // Which pointer currently owns a drag, so a second finger (multi-touch) can't
   // attach a duplicate move/end pair and fight over the same star's position.
   const activePointerRef = React.useRef<number | null>(null);
@@ -292,7 +292,9 @@ export function EarnedStarReward({
 
   const beginDrag = (e: React.PointerEvent, i: number) => {
     const layer = layerRef.current;
-    const cur = positionsRef.current;
+    // This handler closes over the current render's `positions`, so reading it
+    // directly gives the star's live start point — no mirror ref needed.
+    const cur = positions;
     if (!layer || !cur) return;
     // Already dragging with another pointer — ignore the second finger.
     if (activePointerRef.current !== null) return;
@@ -303,6 +305,9 @@ export function EarnedStarReward({
     const origLeft = cur[i].x * rect.width;
     const origTop = cur[i].y;
     const node = e.currentTarget as HTMLElement;
+    // Track the live array locally so `end` can persist the final positions
+    // without a render-time ref or an impure setState updater.
+    let latest = cur;
     activePointerRef.current = e.pointerId;
     try {
       node.setPointerCapture(e.pointerId);
@@ -311,7 +316,8 @@ export function EarnedStarReward({
     const move = (ev: PointerEvent) => {
       const nx = clamp((origLeft + (ev.clientX - startCX)) / rect.width, 0, Math.max(0, 1 - size / rect.width));
       const ny = clamp(origTop + (ev.clientY - startCY), 0, Math.max(0, rect.height - size));
-      setPositions((prev) => (prev ? prev.map((q, idx) => (idx === i ? { x: nx, y: ny } : q)) : prev));
+      latest = latest.map((q, idx) => (idx === i ? { x: nx, y: ny } : q));
+      setPositions(latest);
     };
     const end = () => {
       node.removeEventListener("pointermove", move);
@@ -322,10 +328,7 @@ export function EarnedStarReward({
       } catch {}
       activePointerRef.current = null;
       setDragging(null);
-      // Read the latest positions from the ref (kept in sync each render) rather
-      // than abusing a setState updater for a side effect.
-      const latest = positionsRef.current;
-      if (latest) saveStarPositions(storageKey, latest);
+      saveStarPositions(storageKey, latest);
       onChangeRef.current?.(true);
     };
     node.addEventListener("pointermove", move);
@@ -531,7 +534,7 @@ export function EarnedCheckbox({
         overflow: "visible",
         filter: "url(#earned-rough-soft)",
         transformOrigin: "center",
-        animation: tick.animate ? "earnBoxPress 220ms ease-out both" : undefined,
+        animation: tick.animate ? "earn-box-press 220ms ease-out both" : undefined,
       }}
     >
       <path
@@ -556,7 +559,7 @@ export function EarnedCheckbox({
             strokeLinejoin="round"
             style={
               tick.animate
-                ? { strokeDasharray: 1, animation: `earnDrawCheck ${tick.dMs}ms cubic-bezier(0.3,0.7,0.5,1) both` }
+                ? { strokeDasharray: 1, animation: `earn-draw-check ${tick.dMs}ms cubic-bezier(0.3,0.7,0.5,1) both` }
                 : undefined
             }
           />
@@ -571,7 +574,7 @@ export function EarnedCheckbox({
             strokeLinejoin="round"
             style={
               tick.animate
-                ? { strokeDasharray: 1, animation: `earnDrawCheck ${tick.uMs}ms cubic-bezier(0.4,0,0.6,1) ${tick.dMs}ms both` }
+                ? { strokeDasharray: 1, animation: `earn-draw-check ${tick.uMs}ms cubic-bezier(0.4,0,0.6,1) ${tick.dMs}ms both` }
                 : undefined
             }
           />

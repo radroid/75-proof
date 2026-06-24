@@ -147,7 +147,11 @@ export function EarnedChecklist({
           dayNumber,
         });
       } else {
-        markDayCompleteConvex({ challengeId, dayNumber }).catch(() => {});
+        markDayCompleteConvex({ challengeId, dayNumber }).catch(() => {
+          // Fire-and-forget by design (matches DynamicDailyChecklist): the
+          // backend dedups, and the day's completion is re-derived from the
+          // saved habit entries on next load, so a transient failure self-heals.
+        });
       }
     }
     prevAllDoneRef.current = { key, value: allDone };
@@ -195,7 +199,9 @@ export function EarnedChecklist({
           state={completed ? "checked" : "empty"}
           isEditable={false}
           right={
-            isEditable && !completed ? (
+            // Keep the steppers after completion too, so an overshoot or an
+            // accidental tap can still be corrected (don't hide the control).
+            isEditable ? (
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <StepButton
                   sign="−"
