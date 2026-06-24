@@ -63,3 +63,7 @@ skills-lock.json
 .brand-scratch/
 .playwright-mcp/
 /earned-landing-*.png
+
+# dev-only earned preview route (visual iteration; never shipped)
+/app/earned-preview/
+/iter/
