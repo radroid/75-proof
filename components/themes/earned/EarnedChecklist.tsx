@@ -147,10 +147,12 @@ export function EarnedChecklist({
           dayNumber,
         });
       } else {
-        markDayCompleteConvex({ challengeId, dayNumber }).catch(() => {
-          // Fire-and-forget by design (matches DynamicDailyChecklist): the
-          // backend dedups, and the day's completion is re-derived from the
-          // saved habit entries on next load, so a transient failure self-heals.
+        // Surface the failure rather than swallowing it. The completion itself
+        // is safe — it's re-derived from the saved habit entries on next load
+        // (and reconciliation), and the backend dedups — so this denormalized
+        // day-completed/feed write self-heals without a retry loop here.
+        markDayCompleteConvex({ challengeId, dayNumber }).catch((err) => {
+          console.error("markDayComplete failed (will re-derive on next load):", err);
         });
       }
     }
