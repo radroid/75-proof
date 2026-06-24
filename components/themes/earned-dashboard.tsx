@@ -201,13 +201,26 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
   ].filter(Boolean).length : 0;
 
   const newSystemEntryMap = new Map((habitEntries ?? []).map((e: any) => [e.habitDefinitionId, e]));
+  // All-habits progress — drives the "N of M done" chip only.
   const newTotalDone = isNewSystem ? (habitDefs?.filter((h: any) => newSystemEntryMap.get(h._id)?.completed).length ?? 0) : 0;
   const newTotalItems = isNewSystem ? (habitDefs?.length ?? 0) : 8;
+  // Hard-only completion — the canonical "day earned" rule the rest of the app
+  // celebrates and persists (mirrors EarnedChecklist's requiredDone and the
+  // Convex markDayComplete, both hard-only). The reward + footer gate on THIS so
+  // an undone optional habit can't make the day read as complete everywhere
+  // (confetti, streak) yet show zero stars here.
+  const newRequiredItems = isNewSystem ? (habitDefs?.filter((h: any) => h.isHard).length ?? 0) : 0;
+  const newRequiredDone = isNewSystem
+    ? (habitDefs?.filter((h: any) => h.isHard && newSystemEntryMap.get(h._id)?.completed).length ?? 0)
+    : 0;
 
   const totalDone = isNewSystem ? newTotalDone : legacyTotalDone;
   const totalItems = isNewSystem ? newTotalItems : 8;
-  const allDone = totalItems > 0 && totalDone === totalItems;
-  const remaining = Math.max(totalItems - totalDone, 0);
+  // The legacy 8-item system is all-hard, so its completion is already hard-only.
+  const requiredItems = isNewSystem ? newRequiredItems : 8;
+  const requiredDone = isNewSystem ? newRequiredDone : legacyTotalDone;
+  const allDone = requiredItems > 0 && requiredDone === requiredItems;
+  const remaining = Math.max(requiredItems - requiredDone, 0);
 
   const weekdayLabel = displayDay === todayDayNumber ? "today" : handwrittenDate(dateStr);
 
@@ -265,10 +278,10 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
           {allDone && (
             <EarnedStarReward
               key={`${displayDay}-${starResetNonce}`}
-              count={totalDone}
+              count={requiredItems}
               milestone={isMilestoneDay(displayDay, daysTotal)}
               storageKey={`${challenge._id}:${displayDay}`}
-              ariaLabel={`Day ${displayDay} earned — ${totalDone} ${totalDone === 1 ? "star" : "stars"}`}
+              ariaLabel={`Day ${displayDay} earned — ${requiredItems} ${requiredItems === 1 ? "star" : "stars"}`}
               onArrangementChange={setStarsCustom}
             />
           )}
@@ -423,7 +436,8 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
                   fontFamily: HAND,
                   fontWeight: 500,
                   fontSize: 19,
-                  color: "rgba(31,31,29,0.55)",
+                  // 0.66 alpha clears WCAG AA on the cream page (was 0.55 ≈ 3.6:1).
+                  color: "rgba(31,31,29,0.66)",
                   paddingLeft: 18,
                 }}
               >

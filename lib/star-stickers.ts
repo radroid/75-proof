@@ -71,8 +71,3 @@ export function clearStarPositions(key: string): void {
     // no-op
   }
 }
-
-/** Whether the user has a saved (custom) star arrangement for this day. */
-export function hasStarArrangement(key: string): boolean {
-  return Array.isArray(readStore()[key]);
-}

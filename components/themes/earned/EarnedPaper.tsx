@@ -250,7 +250,7 @@ export function EarnedStarReward({
 }) {
   const n = Math.max(0, Math.floor(count));
   // Stars shrink a touch as the count grows so the default row never overflows.
-  const size = n <= 6 ? 32 : n <= 9 ? 28 : 24;
+  const size = n <= 6 ? 32 : n <= 9 ? 28 : 26;
 
   const layerRef = React.useRef<HTMLDivElement>(null);
   const [positions, setPositions] = React.useState<StarPos[] | null>(null);
@@ -278,7 +278,9 @@ export function EarnedStarReward({
       onChangeRef.current?.(true);
       return;
     }
-    const width = layerRef.current?.clientWidth ?? 360;
+    // `|| 360` (not `??`) so a measured 0px width also falls back instead of
+    // stacking every star at x=0.
+    const width = layerRef.current?.clientWidth || 360;
     setPositions(defaultStarRow(n, size, width, milestone));
     onChangeRef.current?.(false);
   }, [storageKey, n, size, milestone]);
@@ -735,6 +737,73 @@ export function EarnedHabitRow({
 }) {
   const done = state === "checked" || state === "star";
   const j = handJitter(name);
+  // For a plain binary habit (no counter control) the WHOLE row is the tap /
+  // keyboard target — the big card looks tappable, so make it so (44px+ hit
+  // area). Counter rows (which carry +/- in `right`) and locked rows keep the
+  // small checkbox non-interactive so we never nest interactives or hijack the
+  // steppers.
+  const rowIsToggle = !!onToggle && isEditable && !right;
+
+  const inner = (
+    <>
+      <EarnedCheckbox
+        state={state}
+        // When the row is the button, the checkbox is purely presentational.
+        onClick={rowIsToggle ? undefined : isEditable ? onToggle : undefined}
+        disabled={!isEditable}
+        size={34}
+        boxStroke={j.boxSw}
+        seed={name}
+        label={`${done ? "mark incomplete" : "mark complete"}: ${name}`}
+      />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontFamily: HAND,
+            fontWeight: 600,
+            fontSize: 23,
+            lineHeight: 1.08,
+            color: EC.ink,
+            textDecoration: state === "star" ? `underline wavy ${EC.gold}` : "none",
+            textUnderlineOffset: 5,
+            wordBreak: "break-word",
+            // Per-row baseline + rotation jitter so titles don't look stamped.
+            transform: `translateY(${j.titleDy.toFixed(2)}px) rotate(${j.titleRot.toFixed(2)}deg)`,
+            transformOrigin: "left center",
+          }}
+        >
+          {name}
+        </div>
+        {note && (
+          <div
+            style={{
+              fontFamily: SANS,
+              // Real info (counter readout, "optional") — keep it at WCAG AA:
+              // inkSoft at 12px is ~10:1 on the cream row (was 0.6 alpha ≈ 4.1:1).
+              fontSize: 12,
+              fontWeight: 500,
+              color: EC.inkSoft,
+              marginTop: 2,
+            }}
+          >
+            {note}
+          </div>
+        )}
+      </div>
+      {right && <div style={{ flexShrink: 0 }}>{right}</div>}
+    </>
+  );
+
+  const contentStyle: React.CSSProperties = {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: "11px 13px",
+    width: "100%",
+    textAlign: "left",
+  };
+
   return (
     <div style={{ position: "relative", transform: tilt ? `rotate(${tilt}deg)` : undefined }}>
       {/* Hand-drawn border on its own layer so the waver filter never touches text. */}
@@ -755,58 +824,29 @@ export function EarnedHabitRow({
           transition: "background 140ms ease, box-shadow 140ms ease",
         }}
       />
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          padding: "11px 13px",
-        }}
-      >
-        <EarnedCheckbox
-          state={state}
-          onClick={isEditable ? onToggle : undefined}
-          disabled={!isEditable}
-          size={34}
-          boxStroke={j.boxSw}
-          seed={name}
-          label={`${done ? "mark incomplete" : "mark complete"}: ${name}`}
-        />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontFamily: HAND,
-              fontWeight: 600,
-              fontSize: 23,
-              lineHeight: 1.08,
-              color: EC.ink,
-              textDecoration: state === "star" ? `underline wavy ${EC.gold}` : "none",
-              textUnderlineOffset: 5,
-              wordBreak: "break-word",
-              // Per-row baseline + rotation jitter so titles don't look stamped.
-              transform: `translateY(${j.titleDy.toFixed(2)}px) rotate(${j.titleRot.toFixed(2)}deg)`,
-              transformOrigin: "left center",
-            }}
-          >
-            {name}
-          </div>
-          {note && (
-            <div
-              style={{
-                fontFamily: SANS,
-                fontSize: 11,
-                fontWeight: 500,
-                color: "rgba(31,31,29,0.6)",
-                marginTop: 2,
-              }}
-            >
-              {note}
-            </div>
-          )}
-        </div>
-        {right && <div style={{ flexShrink: 0 }}>{right}</div>}
-      </div>
+      {rowIsToggle ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-pressed={done}
+          aria-label={`${done ? "mark incomplete" : "mark complete"}: ${name}`}
+          style={{
+            ...contentStyle,
+            background: "transparent",
+            border: "none",
+            margin: 0,
+            font: "inherit",
+            color: "inherit",
+            cursor: "pointer",
+            touchAction: "manipulation",
+            WebkitTapHighlightColor: "transparent",
+          }}
+        >
+          {inner}
+        </button>
+      ) : (
+        <div style={contentStyle}>{inner}</div>
+      )}
     </div>
   );
 }
@@ -826,7 +866,7 @@ export function EarnedPageHeader({
   return (
     <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
       <div>
-        <div style={{ fontFamily: HAND, fontWeight: 600, fontSize: 25, lineHeight: 1, color: EC.sky }}>
+        <div style={{ fontFamily: HAND, fontWeight: 600, fontSize: 25, lineHeight: 1, color: EC.skyDeep }}>
           {date}
         </div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 2 }}>
