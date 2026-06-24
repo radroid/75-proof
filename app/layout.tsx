@@ -84,7 +84,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#0085D4" />
+        {/* Cream paper so the status-bar / browser chrome blends into the page
+            for a full-screen effect. ThemeProvider keeps this in sync with the
+            active theme's background on the client. */}
+        <meta name="theme-color" content="#F4ECD8" />
         {/* Google Fonts for all themes */}
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link

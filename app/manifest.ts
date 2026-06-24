@@ -7,7 +7,9 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Show up. Every day. Build the streak.",
     start_url: "/dashboard",
     display: "standalone",
-    theme_color: "#0085D4",
+    // Match the cream paper so the PWA chrome/splash reads full-screen, not a
+    // contrasting blue bar.
+    theme_color: "#F4ECD8",
     background_color: "#F4ECD8",
     orientation: "portrait-primary",
     categories: ["productivity", "lifestyle"],
