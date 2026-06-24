@@ -177,9 +177,10 @@ function buildCheck(rng: () => number): TickGeom {
   // Short leg up-and-left (length + angle both vary).
   const Ax = clamp(Bx - rand(6.5, 10.8), 4.2, 11.8);
   const Ay = clamp(By - rand(7.8, 13.2), 13.8, 21);
-  // Long flick up-and-right (wide range → some flat, some a long slash).
-  const Cx = clamp(Bx + rand(12.5, 20.5), 27, 35.2);
-  const Cy = clamp(By - rand(18, 26), 2.6, 10);
+  // Long flick up-and-right — a confident slash that's allowed to run well past
+  // the box corner (the svg is overflow-visible), with a wide length range.
+  const Cx = clamp(Bx + rand(16, 25.5), 29, 40);
+  const Cy = clamp(By - rand(22, 31), -4, 8);
   const A = [Ax, Ay], B = [Bx, By], C = [Cx, Cy];
   return {
     down: `M ${f(Ax)} ${f(Ay)} ${cubic(A, B, rand(-0.8, 1.3))}`,
