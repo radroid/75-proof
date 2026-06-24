@@ -117,9 +117,82 @@ function handJitter(seed: string) {
   };
 }
 
+/**
+ * Seeded PRNG (mulberry32 over an FNV-1a hash). A given seed always yields the
+ * same sequence, so an already-completed row gets a stable-but-varied tick at
+ * load time with no hydration mismatch.
+ */
+function seededRng(seed: string): () => number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  let a = h >>> 0;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const clamp = (x: number, a: number, b: number) => Math.max(a, Math.min(b, x));
+
+type TickGeom = {
+  /** Short downstroke A→B (the firm press). */
+  down: string;
+  /** Long up-flick B→C (the fast, lighter flick). */
+  up: string;
+  /** Base ink weight for this tick. */
+  w: number;
+  /** Slight whole-stroke rotation, degrees. */
+  rot: number;
+};
+
+/**
+ * Build a hand-drawn tick as TWO strokes that share the elbow B: a short
+ * downstroke (A→B) and a long up-flick (B→C). Randomizes STRUCTURE — vertex
+ * position, leg lengths, the up-flick's angle + overshoot, the curve bow, and
+ * ink weight — so no two ticks share a pose (not just jittered anchors). All
+ * coords are clamped to the ~0..36 box so the flick never breaches the frame.
+ * `rng` is any 0..1 source: `Math.random` for a unique tap, a seeded RNG for a
+ * stable at-load tick.
+ */
+function buildCheck(rng: () => number): TickGeom {
+  const rand = (a: number, b: number) => a + rng() * (b - a);
+  const f = (n: number) => Math.round(n * 10) / 10;
+  // Cubic from P to Q with a perpendicular bow, so the leg curves like a hand.
+  const cubic = (P: number[], Q: number[], bow: number) => {
+    const dx = Q[0] - P[0], dy = Q[1] - P[1];
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    const c1 = [P[0] + dx * 0.34 + nx * bow * 0.6, P[1] + dy * 0.34 + ny * bow * 0.6];
+    const c2 = [P[0] + dx * 0.66 + nx * bow, P[1] + dy * 0.66 + ny * bow];
+    return `C ${f(c1[0])} ${f(c1[1])}, ${f(c2[0])} ${f(c2[1])}, ${f(Q[0])} ${f(Q[1])}`;
+  };
+  // Elbow.
+  const Bx = rand(13.4, 17.4), By = rand(25.8, 29.9);
+  // Short leg up-and-left (length + angle both vary).
+  const Ax = clamp(Bx - rand(6.5, 10.8), 4.2, 11.8);
+  const Ay = clamp(By - rand(7.8, 13.2), 13.8, 21);
+  // Long flick up-and-right (wide range → some flat, some a long slash).
+  const Cx = clamp(Bx + rand(12.5, 20.5), 27, 35.2);
+  const Cy = clamp(By - rand(18, 26), 2.6, 10);
+  const A = [Ax, Ay], B = [Bx, By], C = [Cx, Cy];
+  return {
+    down: `M ${f(Ax)} ${f(Ay)} ${cubic(A, B, rand(-0.8, 1.3))}`,
+    up: `M ${f(Bx)} ${f(By)} ${cubic(B, C, rand(0.3, 2.2))}`,
+    w: rand(2.8, 3.5),
+    rot: (rng() * 2 - 1) * 3,
+  };
+}
+
 export type CheckState = "empty" | "checked" | "star" | "missed" | "rest";
 
-/** Hand-drawn wobbly checkbox with all five paper states. */
+/** Hand-drawn wobbly checkbox. The "checked" state draws a blue ink tick on,
+ *  with a fresh randomized path each time it's ticked so no two are alike. */
 export function EarnedCheckbox({
   state = "empty",
   size = 34,
@@ -127,6 +200,7 @@ export function EarnedCheckbox({
   disabled,
   label = "toggle habit",
   boxStroke = 2,
+  seed = "",
 }: {
   state?: CheckState;
   size?: number;
@@ -135,13 +209,50 @@ export function EarnedCheckbox({
   label?: string;
   /** Box outline stroke width — vary slightly per row for a hand-drawn look. */
   boxStroke?: number;
+  /** Stable seed (e.g. habit name) for the at-load tick path so SSR matches. */
+  seed?: string;
 }) {
+  const isDone = state === "checked" || state === "star";
+
+  // The ink tick. First render (incl. an already-complete day) uses a stable
+  // seeded path with NO draw animation; a tap empty→done swaps in a fresh
+  // Math.random path and replays the stroke. `id` keys the path so each tick
+  // restarts the draw — that's what makes re-ticking always look hand-made.
+  const [tick, setTick] = React.useState(() => ({
+    id: 0,
+    geom: buildCheck(seededRng(seed || "earned")),
+    animate: false,
+    dMs: 150,
+    uMs: 180,
+  }));
+  const prevDone = React.useRef(isDone);
+  React.useEffect(() => {
+    const was = prevDone.current;
+    prevDone.current = isDone;
+    if (isDone && !was) {
+      setTick((t) => ({
+        id: t.id + 1,
+        geom: buildCheck(Math.random),
+        animate: true,
+        dMs: Math.round(120 + Math.random() * 45),
+        uMs: Math.round(150 + Math.random() * 55),
+      }));
+    }
+  }, [isDone]);
+
   const svg = (
     <svg
+      key={tick.id}
       viewBox="-1 -2 41 41"
       width={size}
       height={size}
-      style={{ display: "block", overflow: "visible", filter: "url(#earned-rough-soft)" }}
+      style={{
+        display: "block",
+        overflow: "visible",
+        filter: "url(#earned-rough-soft)",
+        transformOrigin: "center",
+        animation: tick.animate ? "earnBoxPress 220ms ease-out both" : undefined,
+      }}
     >
       <path
         d="M4 5 C 14 3, 28 4, 33 6 C 33.5 16, 33 26, 32 32 C 22 33, 10 33, 4 31 C 3 22, 3.5 12, 4 5 Z"
@@ -153,15 +264,38 @@ export function EarnedCheckbox({
         strokeDasharray={state === "rest" ? "3 3" : "none"}
       />
       {state === "checked" && (
-        // Tail overshoots the box top-right corner — a hand-drawn tell.
-        <path
-          d="M7 19 C 10 23, 13 28, 16 29 C 23 21, 29 11, 37 2"
-          fill="none"
-          stroke={EC.sky}
-          strokeWidth={3}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        <g transform={`rotate(${tick.geom.rot} 18 17)`}>
+          {/* Beat 1 — firm downstroke (heavier ink). */}
+          <path
+            d={tick.geom.down}
+            pathLength={1}
+            fill="none"
+            stroke={EC.sky}
+            strokeWidth={tick.geom.w}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={
+              tick.animate
+                ? { strokeDasharray: 1, animation: `earnDrawCheck ${tick.dMs}ms cubic-bezier(0.3,0.7,0.5,1) both` }
+                : undefined
+            }
+          />
+          {/* Beat 2 — faster, lighter up-flick; starts as the downstroke finishes. */}
+          <path
+            d={tick.geom.up}
+            pathLength={1}
+            fill="none"
+            stroke={EC.sky}
+            strokeWidth={Math.max(1.65, tick.geom.w * 0.66)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={
+              tick.animate
+                ? { strokeDasharray: 1, animation: `earnDrawCheck ${tick.uMs}ms cubic-bezier(0.4,0,0.6,1) ${tick.dMs}ms both` }
+                : undefined
+            }
+          />
+        </g>
       )}
       {state === "star" && (
         <g transform="translate(6 6) scale(0.24)">
@@ -365,6 +499,7 @@ export function EarnedHabitRow({
           disabled={!isEditable}
           size={34}
           boxStroke={j.boxSw}
+          seed={name}
           label={`${done ? "mark incomplete" : "mark complete"}: ${name}`}
         />
         <div style={{ flex: 1, minWidth: 0 }}>

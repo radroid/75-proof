@@ -610,6 +610,21 @@ html {
   100% { stroke-dashoffset: 0; }
 }
 
+/* Earned theme: draws a normalized (pathLength=1) ink tick on, like a pen
+   stroke. Paired with a per-tap randomized path in EarnedCheckbox. */
+@keyframes earnDrawCheck {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* Earned theme: a tiny press on the checkbox when it's ticked — the physical
+   "you pressed something" cue. */
+@keyframes earnBoxPress {
+  0% { transform: scale(1); }
+  35% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
 @keyframes fade-up {
   0% { opacity: 0; transform: translateY(10px); }
   100% { opacity: 1; transform: translateY(0); }
