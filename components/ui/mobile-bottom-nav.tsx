@@ -13,6 +13,7 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { haptic } from "@/lib/haptics";
+import { useThemePersonality } from "@/components/theme-provider";
 
 const INDICATOR_WIDTH = 72;
 const INDICATOR_HEIGHT = 54;
@@ -80,6 +81,11 @@ export const defaultNavItems: NavItem[] = [
 
 export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
   const navItems = items ?? defaultNavItems;
+  // The earned theme renders the nav as a hand-drawn paper sticker (ink border
+  // with a wavering edge, hard offset shadow, Caveat labels) instead of the
+  // frosted-glass pill the other themes use. Colors come from theme tokens.
+  const { personality } = useThemePersonality();
+  const earned = personality === "earned";
   const pathname = usePathname();
   const router = useRouter();
 
@@ -293,6 +299,16 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 200, damping: 20 }}
     >
+      {earned && (
+        <svg aria-hidden width="0" height="0" style={{ position: "absolute", pointerEvents: "none" }}>
+          <defs>
+            <filter id="earned-nav-rough" x="-6%" y="-40%" width="112%" height="180%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="5" result="n" />
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="2" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+          </defs>
+        </svg>
+      )}
       <nav
         ref={navRef}
         aria-label="Primary"
@@ -304,11 +320,13 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
         style={{
           maxWidth: navItems.length >= 5 ? 440 : 380,
           height: "var(--bottom-nav-height)",
-          background: "var(--nav-bg)",
+          // Earned draws its paper surface on a separate wavering layer (below);
+          // the nav itself stays transparent so the ink edge isn't blurred.
+          background: earned ? "transparent" : "var(--nav-bg)",
           borderRadius: "var(--nav-radius)",
-          backdropFilter: "blur(24px) saturate(180%)",
-          WebkitBackdropFilter: "blur(24px) saturate(180%)",
-          boxShadow: "var(--nav-shadow)",
+          backdropFilter: earned ? "none" : "blur(24px) saturate(180%)",
+          WebkitBackdropFilter: earned ? "none" : "blur(24px) saturate(180%)",
+          boxShadow: earned ? "none" : "var(--nav-shadow)",
           // `pan-y` lets the user keep scrolling the page vertically with a
           // gesture that starts on the nav, while we claim horizontal motion
           // for the scrub. `userSelect: none` prevents the long-press
@@ -323,6 +341,24 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
       >
+        {/* Earned paper sticker: cream fill + ink border with a hand-drawn
+            waver and a hard offset shadow, on its own layer so the filter never
+            touches the icons or labels. */}
+        {earned && (
+          <span
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: 14,
+              background: "var(--card)",
+              border: "1.75px solid var(--foreground)",
+              boxShadow: "2.5px 2.5px 0 var(--foreground)",
+              filter: "url(#earned-nav-rough)",
+              pointerEvents: "none",
+            }}
+          />
+        )}
         <motion.div
           aria-hidden="true"
           className="absolute pointer-events-none"
@@ -332,8 +368,16 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
             top: "50%",
             left: 0,
             marginTop: -INDICATOR_HEIGHT / 2,
-            borderRadius: "var(--nav-radius)",
-            background: "var(--nav-indicator)",
+            borderRadius: earned ? 12 : "var(--nav-radius)",
+            // Earned: an ink-outlined cream "you're here" sticker with a crisp
+            // hard offset shadow (same recipe as the streak chip / date arrows),
+            // so the active tab reads as lifted off the page — a second cue
+            // beyond the blue label, not color alone. Other themes keep the
+            // faint tinted pill.
+            background: earned ? "var(--secondary)" : "var(--nav-indicator)",
+            border: earned ? "1.75px solid var(--foreground)" : undefined,
+            boxShadow: earned ? "1.5px 1.5px 0 var(--foreground)" : undefined,
+            boxSizing: "border-box",
           }}
           initial={false}
           animate={{
@@ -368,18 +412,24 @@ export function MobileBottomNav({ items }: { items?: NavItem[] } = {}) {
             >
               <Icon
                 className="h-5 w-5 transition-colors"
-                strokeWidth={isActive ? 2.5 : 2}
+                // Slightly heavier ink stroke on the earned paper nav.
+                strokeWidth={isActive ? (earned ? 2.6 : 2.5) : earned ? 2.2 : 2}
                 style={{
                   color: isActive ? "var(--primary)" : "var(--muted-foreground)",
                   transitionDuration: "var(--duration-normal)",
                 }}
               />
               <span
-                className="leading-none transition-colors text-[10px] tracking-wide"
+                className="leading-none transition-colors tracking-wide"
                 style={{
+                  // Caveat (heading) labels on earned read as handwriting; the
+                  // larger size compensates for Caveat's small x-height so the
+                  // tab names stay legible.
+                  fontSize: earned ? 15 : 10,
                   color: isActive ? "var(--primary)" : "var(--muted-foreground)",
-                  fontFamily: "var(--font-body)",
-                  fontWeight: isActive ? 700 : 500,
+                  fontFamily: earned ? "var(--font-heading)" : "var(--font-body)",
+                  fontWeight: isActive ? 700 : earned ? 600 : 500,
+                  lineHeight: 1,
                   transitionDuration: "var(--duration-normal)",
                 }}
               >

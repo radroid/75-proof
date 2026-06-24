@@ -53,6 +53,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (mounted) {
       document.documentElement.setAttribute("data-theme", personality);
       localStorage.setItem(PERSONALITY_STORAGE_KEY, personality);
+      // Keep the browser/PWA chrome (status bar) matching the active theme's
+      // paper color so the page reads full-screen instead of a contrasting bar.
+      const bg = getComputedStyle(document.documentElement)
+        .getPropertyValue("--background")
+        .trim();
+      if (bg) {
+        let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+        if (!meta) {
+          meta = document.createElement("meta");
+          meta.name = "theme-color";
+          document.head.appendChild(meta);
+        }
+        meta.content = bg;
+      }
     }
   }, [personality, mounted]);
 
