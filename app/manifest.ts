@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Show up. Every day. Build the streak.",
     start_url: "/dashboard",
     display: "standalone",
-    theme_color: "#FF6154",
-    background_color: "#ffffff",
+    theme_color: "#0085D4",
+    background_color: "#F4ECD8",
     orientation: "portrait-primary",
     categories: ["productivity", "lifestyle"],
     icons: [

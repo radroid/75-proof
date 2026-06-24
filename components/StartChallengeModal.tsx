@@ -82,7 +82,7 @@ export function StartChallengeModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-2xl">
-            Start <span className="text-emerald-500">{template.title}</span>
+            Start <span className="text-primary">{template.title}</span>
           </DialogTitle>
           <DialogDescription>
             Ready to commit to {template.daysTotal} days?
@@ -99,7 +99,7 @@ export function StartChallengeModal({
                   key={`${habit.name}-${i}`}
                   className="flex items-start gap-2"
                 >
-                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                   <span>
                     {habit.name}
                     {habit.blockType === "counter" && habit.target
@@ -147,7 +147,7 @@ export function StartChallengeModal({
                     htmlFor={option.value}
                     className={`flex min-h-[48px] cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 transition-colors active:bg-muted ${
                       selected
-                        ? "border-emerald-500 bg-emerald-500/5"
+                        ? "border-primary bg-primary/5"
                         : "border-input hover:bg-muted/50"
                     }`}
                   >
@@ -184,7 +184,7 @@ export function StartChallengeModal({
             disabled={isStarting || !user}
             loading={isStarting}
             size="lg"
-            className="w-full bg-emerald-500 text-white shadow-sm hover:bg-emerald-600 active:bg-emerald-700 sm:flex-1"
+            className="w-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 active:bg-primary/80 sm:flex-1"
           >
             {isStarting ? "Starting..." : "Start Challenge"}
           </Button>

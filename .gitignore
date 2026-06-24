@@ -58,3 +58,8 @@ skills-lock.json
 
 .timelapse/
 .timelapse-worktrees/
+
+# brand/design scratch + browser smoke artifacts
+.brand-scratch/
+.playwright-mcp/
+/earned-landing-*.png

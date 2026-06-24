@@ -58,7 +58,7 @@ export function InstallPrompt() {
           <div className="flex items-center gap-3">
             <div
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-              style={{ backgroundColor: "#FF6154" }}
+              style={{ backgroundColor: "var(--primary)" }}
               aria-hidden="true"
             >
               <Image
@@ -91,7 +91,7 @@ export function InstallPrompt() {
                     >
                       <Share
                         className="h-3.5 w-3.5"
-                        style={{ color: "#FF6154" }}
+                        style={{ color: "var(--primary)" }}
                         aria-hidden="true"
                       />
                     </span>

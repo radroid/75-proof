@@ -29,42 +29,27 @@ export default function Error({
         paddingRight: "max(1.25rem, env(safe-area-inset-right))",
         paddingBottom: "max(2rem, env(safe-area-inset-bottom))",
         paddingLeft: "max(1.25rem, env(safe-area-inset-left))",
-        backgroundColor: "#ffffff",
-        fontFamily: "system-ui, -apple-system, sans-serif",
+        backgroundColor: "var(--background)",
+        fontFamily: "var(--font-body)",
         textAlign: "center",
       }}
     >
-      <div
-        style={{
-          width: 96,
-          height: 96,
-          borderRadius: 24,
-          backgroundColor: "#FF6154",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 32,
-        }}
+      {/* Gold star brand mark */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/star.svg"
+        alt=""
+        width={84}
+        height={84}
+        style={{ marginBottom: 28 }}
         aria-hidden="true"
-      >
-        <span
-          style={{
-            fontSize: 48,
-            fontWeight: 900,
-            color: "#ffffff",
-            letterSpacing: "-0.04em",
-            lineHeight: 1,
-          }}
-        >
-          75
-        </span>
-      </div>
+      />
 
       <h1
         style={{
           fontSize: 28,
           fontWeight: 800,
-          color: "#1a1a1a",
+          color: "var(--foreground)",
           margin: "0 0 12px",
           letterSpacing: "-0.02em",
         }}
@@ -75,15 +60,15 @@ export default function Error({
       <p
         style={{
           fontSize: 16,
-          color: "#1a1a1a",
-          opacity: 0.6,
+          color: "var(--foreground)",
+          opacity: 0.72,
           margin: "0 0 32px",
           maxWidth: 320,
           lineHeight: 1.5,
         }}
       >
         Unexpected error. Your progress is safe &mdash; try again or head back
-        to the dashboard.
+        to your dashboard.
       </p>
 
       <div
@@ -99,9 +84,10 @@ export default function Error({
           onClick={reset}
           style={{
             minHeight: 48,
+            borderRadius: 10,
             padding: "12px 32px",
-            backgroundColor: "#FF6154",
-            color: "#ffffff",
+            backgroundColor: "var(--primary)",
+            color: "var(--primary-foreground)",
             border: "none",
             fontSize: 16,
             fontWeight: 700,
@@ -111,7 +97,7 @@ export default function Error({
             WebkitTapHighlightColor: "transparent",
           }}
         >
-          Try Again
+          Try again
         </button>
         <Link
           href="/dashboard"
@@ -120,19 +106,20 @@ export default function Error({
             alignItems: "center",
             justifyContent: "center",
             minHeight: 48,
+            borderRadius: 10,
             padding: "12px 32px",
             backgroundColor: "transparent",
-            color: "#1a1a1a",
+            color: "var(--foreground)",
             textDecoration: "none",
             fontSize: 16,
             fontWeight: 600,
             letterSpacing: "0.01em",
-            border: "1px solid rgba(26,26,26,0.15)",
+            border: "1px solid var(--border)",
             touchAction: "manipulation",
             WebkitTapHighlightColor: "transparent",
           }}
         >
-          Back to Dashboard
+          Back to my dashboard
         </Link>
       </div>
 
@@ -141,7 +128,7 @@ export default function Error({
           style={{
             marginTop: 24,
             fontSize: 11,
-            color: "#1a1a1a",
+            color: "var(--foreground)",
             opacity: 0.3,
             fontFamily: "ui-monospace, SFMono-Regular, monospace",
             letterSpacing: "0.05em",

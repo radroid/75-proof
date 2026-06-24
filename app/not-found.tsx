@@ -13,45 +13,29 @@ export default function NotFound() {
         paddingRight: "max(1.25rem, env(safe-area-inset-right))",
         paddingBottom: "max(2rem, env(safe-area-inset-bottom))",
         paddingLeft: "max(1.25rem, env(safe-area-inset-left))",
-        backgroundColor: "#ffffff",
-        fontFamily: "system-ui, -apple-system, sans-serif",
+        backgroundColor: "var(--background)",
+        fontFamily: "var(--font-body)",
         textAlign: "center",
       }}
     >
-      {/* Coral "75" badge */}
-      <div
-        style={{
-          width: 96,
-          height: 96,
-          borderRadius: 24,
-          backgroundColor: "#FF6154",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 32,
-        }}
+      {/* Gold star brand mark */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/star.svg"
+        alt=""
+        width={84}
+        height={84}
+        style={{ marginBottom: 28 }}
         aria-hidden="true"
-      >
-        <span
-          style={{
-            fontSize: 48,
-            fontWeight: 900,
-            color: "#ffffff",
-            letterSpacing: "-0.04em",
-            lineHeight: 1,
-          }}
-        >
-          75
-        </span>
-      </div>
+      />
 
       <p
         style={{
           fontSize: 12,
           fontWeight: 700,
           letterSpacing: "0.2em",
-          color: "#1a1a1a",
-          opacity: 0.5,
+          color: "var(--foreground)",
+          opacity: 0.7,
           margin: "0 0 8px",
           textTransform: "uppercase",
         }}
@@ -63,7 +47,7 @@ export default function NotFound() {
         style={{
           fontSize: 28,
           fontWeight: 800,
-          color: "#1a1a1a",
+          color: "var(--foreground)",
           margin: "0 0 12px",
           letterSpacing: "-0.02em",
         }}
@@ -74,14 +58,14 @@ export default function NotFound() {
       <p
         style={{
           fontSize: 16,
-          color: "#1a1a1a",
-          opacity: 0.6,
+          color: "var(--foreground)",
+          opacity: 0.72,
           margin: "0 0 32px",
           maxWidth: 320,
           lineHeight: 1.5,
         }}
       >
-        This page doesn&apos;t exist. Let&apos;s get you back to work.
+        This page doesn&apos;t exist. Let&apos;s get you back to showing up.
       </p>
 
       <div
@@ -100,9 +84,10 @@ export default function NotFound() {
             alignItems: "center",
             justifyContent: "center",
             minHeight: 48,
+            borderRadius: 10,
             padding: "12px 32px",
-            backgroundColor: "#FF6154",
-            color: "#ffffff",
+            backgroundColor: "var(--primary)",
+            color: "var(--primary-foreground)",
             textDecoration: "none",
             fontSize: 16,
             fontWeight: 700,
@@ -111,7 +96,7 @@ export default function NotFound() {
             WebkitTapHighlightColor: "transparent",
           }}
         >
-          Back to Dashboard
+          Back to my dashboard
         </Link>
         <Link
           href="/"
@@ -120,19 +105,20 @@ export default function NotFound() {
             alignItems: "center",
             justifyContent: "center",
             minHeight: 48,
+            borderRadius: 10,
             padding: "12px 32px",
             backgroundColor: "transparent",
-            color: "#1a1a1a",
+            color: "var(--foreground)",
             textDecoration: "none",
             fontSize: 16,
             fontWeight: 600,
             letterSpacing: "0.01em",
-            border: "1px solid rgba(26,26,26,0.15)",
+            border: "1px solid var(--border)",
             touchAction: "manipulation",
             WebkitTapHighlightColor: "transparent",
           }}
         >
-          Go Home
+          Go home
         </Link>
       </div>
     </div>

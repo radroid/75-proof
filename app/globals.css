@@ -58,11 +58,151 @@
   --color-destructive-foreground: var(--destructive-foreground);
 }
 
+/* ==========================================================================
+   THEMES
+   --------------------------------------------------------------------------
+   Each theme is a `[data-theme="<key>"]` block of CSS variables. The DEFAULT
+   theme also lives on `:root` so SSR has the right colors before JS runs.
+   The list of themes, their metadata, order, and default live in
+   `lib/themes.ts` (single source of truth). See `docs/theming.md`.
+
+   TO ADD A THEME: (1) add an entry to THEME_DEFINITIONS in lib/themes.ts, then
+   (2) copy the template below and fill in every variable.
+
+   TEMPLATE (copy, rename the selector, fill values):
+
+   [data-theme="<key>"] {
+     --radius: 0.5rem;
+     --font-body: '…'; --font-heading: '…'; --font-code: '…';
+     --primary: ; --primary-foreground: ;
+     --background: ; --foreground: ;
+     --card: ; --card-foreground: ;
+     --popover: ; --popover-foreground: ;
+     --secondary: ; --secondary-foreground: ;
+     --muted: ; --muted-foreground: ;
+     --accent: ; --accent-foreground: ;
+     --success: ; --success-foreground: ;
+     --warning: ; --warning-foreground: ;
+     --destructive: ; --destructive-foreground: ;
+     --border: ; --input: ; --ring: ;
+     --chart-1: ; --chart-2: ; --chart-3: ; --chart-4: ; --chart-5: ;
+     --sidebar: ; --sidebar-foreground: ;
+     --sidebar-primary: ; --sidebar-primary-foreground: ;
+     --sidebar-accent: ; --sidebar-accent-foreground: ;
+     --sidebar-border: ; --sidebar-ring: ;
+     --shadow-color: ;
+     --shadow-2xs: ; --shadow-xs: ; --shadow-sm: ; --shadow: ;
+     --shadow-md: ; --shadow-lg: ; --shadow-xl: ; --shadow-2xl: ;
+     --shadow-card: ; --shadow-card-hover: ;
+     --glow-success: ; --inner-glow-success: ;
+     --duration-fast: ; --duration-normal: ; --duration-slow: ;
+     --gradient-primary: ; --gradient-accent: ;
+     --nav-bg: ; --nav-shadow: ; --nav-indicator: ; --nav-radius: ;
+   }
+   ========================================================================== */
+
 /* ==========================================
-   ARCTIC THEME (Default)
-   Minimal white, electric blue accents, clean and modern
+   EARNED THEME (Default)
+   Cream paper notebook · ink + sky · gold star = the earned reward
    ========================================== */
 :root,
+[data-theme="earned"] {
+  /* Paper is mostly square; floating elements round to ~10px */
+  --radius: 0.625rem;
+
+  --font-body: 'Poppins', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Caveat', 'Poppins', system-ui, cursive;
+  --font-code: 'JetBrains Mono', 'Courier New', monospace;
+
+  /* Sky is the interactive accent; gold is reserved for the star reward.
+     Text-bearing sky fills use the deeper sky (#006ba8) so the cream label
+     clears WCAG AA 4.5:1 — the brighter #0085d4 is kept for decorative
+     accents (ring, charts, nav indicator). */
+  --primary: #006ba8;
+  --primary-foreground: #f9f3e1;
+
+  --background: #f4ecd8;
+  --foreground: #1f1f1d;
+
+  --card: #f9f3e1;
+  --card-foreground: #1f1f1d;
+
+  --popover: #f9f3e1;
+  --popover-foreground: #1f1f1d;
+
+  --secondary: #e8dec4;
+  --secondary-foreground: #1f1f1d;
+
+  --muted: #e8dec4;
+  --muted-foreground: #5a564d;
+
+  --accent: #006ba8;
+  --accent-foreground: #f9f3e1;
+
+  /* "Showed up" checks read sky; the gold star reward is rendered separately */
+  --success: #006ba8;
+  --success-foreground: #f9f3e1;
+  --warning: #b8791f;
+  --warning-foreground: #f9f3e1;
+  --destructive: #b5402b;
+  --destructive-foreground: #f9f3e1;
+
+  /* Notebook dividers: visible ink, but not the design's full 0.88 "sticker"
+     border — that strength is reserved for deliberate bordered elements
+     (buttons, key cards), not the global token `*` applies everywhere. */
+  --border: rgba(31, 31, 29, 0.28);
+  --input: rgba(31, 31, 29, 0.55);
+  --ring: #0085d4;
+
+  --chart-1: #0085d4;
+  --chart-2: #d8a830;
+  --chart-3: #7a8c6b;
+  --chart-4: #c75f4a;
+  --chart-5: #3a3a36;
+
+  --sidebar: #f9f3e1;
+  --sidebar-foreground: #1f1f1d;
+  --sidebar-primary: #006ba8;
+  --sidebar-primary-foreground: #f9f3e1;
+  --sidebar-accent: #e8dec4;
+  --sidebar-accent-foreground: #1f1f1d;
+  --sidebar-border: rgba(31, 31, 29, 0.2);
+  --sidebar-ring: #0085d4;
+
+  /* Warm paper shadows: a low hard offset + a soft warm-brown drop */
+  --shadow-color: 38 45% 24%;
+  --shadow-2xs: 0 1px 0 rgba(78, 60, 28, 0.10);
+  --shadow-xs: 0 1px 0 rgba(78, 60, 28, 0.12), 0 2px 6px rgba(78, 60, 28, 0.08);
+  --shadow-sm: 0 1px 0 rgba(78, 60, 28, 0.12), 0 2px 6px rgba(78, 60, 28, 0.08);
+  --shadow: 0 2px 0 rgba(78, 60, 28, 0.10), 0 6px 18px rgba(78, 60, 28, 0.10);
+  --shadow-md: 0 2px 0 rgba(78, 60, 28, 0.10), 0 6px 18px rgba(78, 60, 28, 0.10);
+  --shadow-lg: 0 4px 0 rgba(78, 60, 28, 0.10), 0 14px 40px rgba(78, 60, 28, 0.14);
+  --shadow-xl: 0 4px 0 rgba(78, 60, 28, 0.10), 0 14px 40px rgba(78, 60, 28, 0.14);
+  --shadow-2xl: 0 6px 0 rgba(78, 60, 28, 0.12), 0 24px 60px rgba(78, 60, 28, 0.18);
+  --shadow-card: 0 2px 0 rgba(78, 60, 28, 0.10), 0 6px 18px rgba(78, 60, 28, 0.10);
+  --shadow-card-hover: 0 4px 0 rgba(78, 60, 28, 0.12), 0 14px 40px rgba(78, 60, 28, 0.14);
+
+  --glow-success: 0 0 0 3px rgba(0, 133, 212, 0.20);
+  --inner-glow-success: inset 0 0 20px 0 rgba(0, 133, 212, 0.06);
+
+  --duration-fast: 140ms;
+  --duration-normal: 220ms;
+  --duration-slow: 420ms;
+
+  --gradient-primary: linear-gradient(135deg, #006ba8, #00557f);
+  --gradient-accent: linear-gradient(135deg, #0085d4, #2aa3e6);
+
+  /* Mobile bottom nav — paper strip */
+  --nav-bg: rgba(249, 243, 225, 0.86);
+  --nav-shadow: 0 -1px 0 rgba(31, 31, 29, 0.08), 0 8px 32px rgba(78, 60, 28, 0.14);
+  --nav-indicator: rgba(0, 133, 212, 0.14);
+  --nav-radius: 14px;
+}
+
+/* ==========================================
+   ARCTIC THEME
+   Minimal white, electric blue accents, clean and modern
+   ========================================== */
 [data-theme="arctic"] {
   --radius: 0.375rem;
 
