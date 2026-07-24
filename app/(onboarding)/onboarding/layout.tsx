@@ -15,7 +15,7 @@ export default function OnboardingLayout({
         <Link href="/dashboard" className="flex items-center gap-2">
           <Image
             src="/logo.svg"
-            alt="earned"
+            alt=""
             width={28}
             height={28}
             className="flex-shrink-0"
