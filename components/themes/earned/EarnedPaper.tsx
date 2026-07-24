@@ -77,6 +77,14 @@ export function EarnedStar({
   stroke?: string;
   sw?: number;
 }) {
+  // A FILLED star keeps a thin ink outline so the shape has a ~13:1 edge
+  // against the cream paper. Gold (#D8A830) fill alone is only ~1.9:1 on
+  // cream — below the WCAG 1.4.11 3:1 floor for meaningful graphics — and the
+  // earned star is meaningful (it marks a day as earned). The outline
+  // preserves the brand gold rather than darkening it, and reads as consistent
+  // with the hand-drawn ink notebook aesthetic. Ink-filled stars (e.g. on a
+  // gold chip) already have contrast, so skip the redundant outline there.
+  const filledOutline = filled && color !== stroke;
   return (
     <svg
       width={size}
@@ -88,8 +96,8 @@ export function EarnedStar({
       <path
         d={STAR_PATH}
         fill={filled ? color : "none"}
-        stroke={filled ? "none" : stroke}
-        strokeWidth={filled ? 0 : sw}
+        stroke={filled ? (filledOutline ? stroke : "none") : stroke}
+        strokeWidth={filled ? (filledOutline ? 3.5 : 0) : sw}
         strokeLinejoin="round"
         strokeLinecap="round"
       />
