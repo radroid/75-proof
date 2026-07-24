@@ -1,6 +1,6 @@
 "use client";
 
-import { Dumbbell } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 export default function OnboardingLayout({
@@ -13,9 +13,13 @@ export default function OnboardingLayout({
       {/* Minimal header */}
       <header className="flex items-center px-4 sm:px-6 py-4">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="h-7 w-7 bg-primary rounded-lg flex items-center justify-center">
-            <Dumbbell className="h-4 w-4 text-primary-foreground" />
-          </div>
+          <Image
+            src="/logo.svg"
+            alt="earned"
+            width={28}
+            height={28}
+            className="flex-shrink-0"
+          />
           <span className="font-bold text-foreground text-base">earned</span>
         </Link>
       </header>
