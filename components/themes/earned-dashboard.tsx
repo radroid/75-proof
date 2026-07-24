@@ -28,7 +28,9 @@ import { ChallengeCompletedDialog } from "@/components/ChallengeCompletedDialog"
 import {
   useLocalActiveHabitDefinitions,
   useLocalEntriesForDay,
+  useLocalDayCompletionMap,
 } from "@/lib/local-store/hooks";
+import { currentStreakFrom } from "@/lib/progress-metrics";
 import type { Doc } from "@/convex/_generated/dataModel";
 
 // The earned dashboard is the default theme's home surface. It keeps the
@@ -166,6 +168,23 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
     isGuest ? "skip" : { challengeId: challenge._id }
   );
   const effectiveLogs = logs;
+
+  // Real "day streak" — consecutive complete days ending at today. Uses the
+  // exact query + helper the Progress page relies on (currentStreakFrom over
+  // getDayCompletionMap), so Today and Progress can never disagree. Previously
+  // the chip rendered the day *index* (todayDayNumber), which diverges once a
+  // graced miss lands: day 40 with a miss still read "40 day streak".
+  const convexCompletionMap = useQuery(
+    api.challenges.getDayCompletionMap,
+    isGuest ? "skip" : { challengeId: challenge._id },
+  );
+  const localCompletionMap = useLocalDayCompletionMap(
+    isGuest ? (challenge._id as string) : undefined,
+  );
+  const completionMap: Record<number, boolean> = isGuest
+    ? (localCompletionMap ?? {})
+    : (convexCompletionMap ?? {});
+  const currentStreak = currentStreakFrom(completionMap, challenge.currentDay);
 
   const convexHabitDefs = useQuery(
     api.habitDefinitions.getActiveHabitDefinitions,
@@ -335,7 +354,7 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
             <EarnedChip tone="gold" tilt={-2.5}>
               <EarnedStar size={15} color={EC.ink} filled />
               <span style={{ fontFamily: HAND, fontSize: 17, fontWeight: 700, lineHeight: 1 }}>
-                {todayDayNumber}
+                {currentStreak}
               </span>
               <span style={{ marginLeft: 1 }}>day streak</span>
             </EarnedChip>
