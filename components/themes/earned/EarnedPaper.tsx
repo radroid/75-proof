@@ -604,6 +604,7 @@ export function EarnedCheckbox({
   return (
     <button
       type="button"
+      className="earned-focusable"
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
@@ -837,6 +838,7 @@ export function EarnedHabitRow({
       {rowIsToggle ? (
         <button
           type="button"
+          className="earned-focusable"
           onClick={onToggle}
           aria-pressed={done}
           aria-label={`${done ? "mark incomplete" : "mark complete"}: ${name}`}
@@ -879,15 +881,19 @@ export function EarnedPageHeader({
         <div style={{ fontFamily: HAND, fontWeight: 600, fontSize: 25, lineHeight: 1, color: EC.skyDeep }}>
           {date}
         </div>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 2 }}>
-          <span style={{ fontFamily: HAND, fontWeight: 600, fontSize: 23, color: "rgba(31,31,29,0.6)", lineHeight: 0.9 }}>
+        <div
+          style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 2 }}
+          role="text"
+          aria-label={total ? `Day ${day} of ${total}` : `Day ${day}`}
+        >
+          <span aria-hidden style={{ fontFamily: HAND, fontWeight: 600, fontSize: 23, color: "rgba(31,31,29,0.6)", lineHeight: 0.9 }}>
             Day
           </span>
-          <span style={{ fontFamily: HAND, fontWeight: 700, fontSize: 62, lineHeight: 0.8, color: EC.ink }}>
+          <span aria-hidden style={{ fontFamily: HAND, fontWeight: 700, fontSize: 62, lineHeight: 0.8, color: EC.ink }}>
             {day}
           </span>
           {total ? (
-            <span style={{ fontFamily: HAND, fontWeight: 700, fontSize: 34, color: "rgba(70,54,24,0.72)", lineHeight: 0.85, marginLeft: -2 }}>
+            <span aria-hidden style={{ fontFamily: HAND, fontWeight: 700, fontSize: 34, color: "rgba(70,54,24,0.72)", lineHeight: 0.85, marginLeft: -2 }}>
               / {total}
             </span>
           ) : null}

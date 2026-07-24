@@ -731,6 +731,19 @@ html {
 }
 
 /* ==========================================
+   EARNED FOCUS RING
+   The earned surfaces use raw inline-styled <button>s with border:none, which
+   bypass shadcn's focus-visible ring — a keyboard user was invisible on the
+   default screen of the default theme. Apply this class to those controls.
+   Uses the theme --ring token so it adapts if a non-earned theme is active.
+   ========================================== */
+.earned-focusable:focus-visible {
+  outline: 2px solid var(--ring, #0085d4);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ==========================================
    REDUCED MOTION
    ========================================== */
 @media (prefers-reduced-motion: reduce) {
