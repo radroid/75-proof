@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import posthog from "posthog-js";
 import {
   ThemePersonality,
   PERSONALITY_STORAGE_KEY,
@@ -70,9 +71,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [personality, mounted]);
 
-  const setPersonality = React.useCallback((newPersonality: ThemePersonality) => {
-    setPersonalityState(newPersonality);
-  }, []);
+  const setPersonality = React.useCallback(
+    (newPersonality: ThemePersonality) => {
+      // Fire outside the state updater so React StrictMode's double-invoke of
+      // updater functions can't double-count the switch.
+      if (newPersonality !== personality) {
+        posthog.capture("theme_switched", {
+          from: personality,
+          to: newPersonality,
+        });
+      }
+      setPersonalityState(newPersonality);
+    },
+    [personality],
+  );
 
   const contextValue = React.useMemo(
     () => ({ personality, setPersonality }),

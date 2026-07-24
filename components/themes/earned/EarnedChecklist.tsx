@@ -10,6 +10,7 @@
  * instead of a shadcn TaskBlock / CounterBlock.
  */
 import { useEffect, useRef } from "react";
+import posthog from "posthog-js";
 import { useMutation } from "convex/react";
 import { Id } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
@@ -141,6 +142,12 @@ export function EarnedChecklist({
     const flippedToDone = allDone && !prev.value;
     if (flippedToDone) {
       triggerConfetti();
+      // Completion analytics for the DEFAULT Today path. The legacy
+      // DailyChecklist emits this, but every guest + dynamic-habit user routes
+      // through EarnedChecklist, which had no PostHog import — so no
+      // day_completed event has fired from the default screen since the
+      // rebrand. Mirror the legacy payload so the two are comparable.
+      posthog.capture("day_completed", { day_number: dayNumber });
       if (isGuest) {
         localMarkDayComplete({
           challengeId: challengeId as unknown as string,

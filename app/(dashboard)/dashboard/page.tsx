@@ -28,6 +28,7 @@ import { useLocalHydrationComplete } from "@/lib/local-store/hooks";
 import { NotificationPromptGate } from "@/components/pwa/notification-prompt-gate";
 import { DashboardTour } from "@/components/DashboardTour";
 import { useFeatureFlagEnabled } from "posthog-js/react";
+import posthog from "posthog-js";
 
 // Themed dashboard components
 import { EarnedDashboard } from "@/components/themes/earned-dashboard";
@@ -65,6 +66,18 @@ export default function DashboardPage() {
   const { personality } = useThemePersonality();
   const router = useRouter();
   const localHydrated = useLocalHydrationComplete();
+
+  // Fire once per Today-route mount with the active theme. Named today_loaded
+  // (not earned_today_loaded) — earned is the unconditional default now, so the
+  // theme is a property, not part of the event name. Guards to one fire so the
+  // personality re-resolving from localStorage (default -> stored) can't
+  // double-count.
+  const todayLoadedRef = useRef(false);
+  useEffect(() => {
+    if (todayLoadedRef.current) return;
+    todayLoadedRef.current = true;
+    posthog.capture("today_loaded", { theme: personality });
+  }, [personality]);
 
   // Local mode: render themed dashboard against the live local store.
   // Wait for hydration to complete before deciding the local store is
