@@ -1,0 +1,37 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{ width:700px; height:200px; padding:26px 28px; box-sizing:border-box; background:var(--bg); border:1px solid var(--earned-cream-dark) }
+  .label{ font-family:var(--font-sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted); font-weight:600; margin-bottom:18px }
+  .row{ display:flex; gap:18px; align-items:flex-end }
+  .bar-wrap{ flex:1 }
+  .name-row{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px }
+  .name{ font-family:var(--font-hand); font-weight:600; font-size:22px; color:var(--fg) }
+  .count{ font-family:var(--font-sans); font-weight:600; font-size:13px; color:var(--fg-2) }
+  /* Marker-filled progress bar */
+  .track{ position:relative; height:14px; background:var(--earned-cream-light); border:1.5px solid var(--earned-ink); border-radius:8px; overflow:hidden }
+  .fill{ position:absolute; left:0; top:0; bottom:0; background-image:
+    repeating-linear-gradient(90deg, var(--earned-sky) 0 6px, var(--earned-sky-deep) 6px 12px);
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,.15);
+  }
+  .fill::after{ content:""; position:absolute; right:-3px; top:-2px; bottom:-2px; width:6px; background:var(--earned-sky-deep); border-radius:50% }
+</style></head>
+<body>
+<div class="card">
+  <div class="label">Progress · marker-filled</div>
+  <div class="row">
+    <div class="bar-wrap">
+      <div class="name-row"><div class="name">Read 20 pages</div><div class="count">12 / 75</div></div>
+      <div class="track"><div class="fill" style="width:16%"></div></div>
+    </div>
+  </div>
+  <div class="row" style="margin-top:18px">
+    <div class="bar-wrap">
+      <div class="name-row"><div class="name">Walk 30 min</div><div class="count">forever · 5 days</div></div>
+      <div class="track"><div class="fill" style="width:42%; background-image: repeating-linear-gradient(90deg, var(--earned-star-gold) 0 6px, #B68A22 6px 12px)"></div></div>
+    </div>
+  </div>
+</div>
+</body></html>

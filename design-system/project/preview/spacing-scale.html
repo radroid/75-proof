@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{ width:700px; height:220px; padding:24px 28px; box-sizing:border-box; background:var(--bg); border:1px solid var(--earned-cream-dark) }
+  .label{ font-family:var(--font-sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted); font-weight:600; margin-bottom:16px }
+  .scale{ display:flex; align-items:flex-end; gap:14px }
+  .step{ display:flex; flex-direction:column; align-items:center; gap:8px }
+  .block{ background:var(--earned-ink); width:24px }
+  .num{ font-family:var(--font-mono); font-size:10px; color:var(--fg-muted) }
+  .name{ font-family:var(--font-sans); font-size:11px; color:var(--fg); font-weight:600 }
+</style></head>
+<body>
+<div class="card">
+  <div class="label">Spacing scale · 4pt grid + 32px rule line</div>
+  <div class="scale">
+    <div class="step"><div class="block" style="height:4px"></div><div class="name">1</div><div class="num">4</div></div>
+    <div class="step"><div class="block" style="height:8px"></div><div class="name">2</div><div class="num">8</div></div>
+    <div class="step"><div class="block" style="height:12px"></div><div class="name">3</div><div class="num">12</div></div>
+    <div class="step"><div class="block" style="height:16px"></div><div class="name">4</div><div class="num">16</div></div>
+    <div class="step"><div class="block" style="height:24px"></div><div class="name">5</div><div class="num">24</div></div>
+    <div class="step"><div class="block" style="height:32px; background:var(--earned-sky)"></div><div class="name">rule</div><div class="num">32</div></div>
+    <div class="step"><div class="block" style="height:48px"></div><div class="name">7</div><div class="num">48</div></div>
+    <div class="step"><div class="block" style="height:64px"></div><div class="name">8</div><div class="num">64</div></div>
+  </div>
+</div>
+</body></html>

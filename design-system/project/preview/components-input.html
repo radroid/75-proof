@@ -1,0 +1,45 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{ width:700px; height:240px; padding:22px 28px; box-sizing:border-box; background:var(--bg); border:1px solid var(--earned-cream-dark) }
+  .label{ font-family:var(--font-sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted); font-weight:600; margin-bottom:18px }
+  .row{ display:flex; gap:14px; align-items:flex-start }
+  .field{ flex:1 }
+  .field-label{ font-family:var(--font-sans); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--fg-muted); font-weight:600; margin-bottom:6px }
+  .input{
+    width:100%; box-sizing:border-box;
+    background:transparent; border:none;
+    border-bottom:1.5px solid var(--earned-ink);
+    padding:6px 4px 8px;
+    font-family:var(--font-hand); font-weight:500; font-size:24px;
+    color:var(--fg); outline:none;
+  }
+  .input.empty{ color:var(--fg-faint) }
+  .helper{ font-family:var(--font-sans); font-size:11px; color:var(--fg-muted); margin-top:6px }
+  .toggle-group{ display:flex; gap:0; margin-top:8px; border:1.5px solid var(--earned-ink); border-radius:10px; overflow:hidden; width:fit-content }
+  .toggle{ font-family:var(--font-sans); font-weight:600; font-size:13px; padding:8px 14px; background:transparent; border:none; cursor:pointer; color:var(--fg) }
+  .toggle.on{ background:var(--earned-ink); color:var(--earned-cream-light) }
+</style></head>
+<body>
+<div class="card">
+  <div class="label">Form inputs · pen-on-paper feel</div>
+  <div class="row">
+    <div class="field" style="flex:2">
+      <div class="field-label">Habit name</div>
+      <input class="input" value="Read 20 pages of Atomic Habits" />
+      <div class="helper">Hand-script input · underlined like a notebook line</div>
+    </div>
+    <div class="field">
+      <div class="field-label">How long?</div>
+      <div class="toggle-group">
+        <button class="toggle">7 days</button>
+        <button class="toggle">30 days</button>
+        <button class="toggle on">75 days</button>
+        <button class="toggle">∞</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>

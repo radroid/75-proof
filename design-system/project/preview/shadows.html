@@ -1,0 +1,25 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{ width:700px; height:240px; padding:28px 28px 24px; box-sizing:border-box; background:var(--bg); border:1px solid var(--earned-cream-dark) }
+  .label{ font-family:var(--font-sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted); font-weight:600; margin-bottom:24px }
+  .row{ display:flex; gap:34px; align-items:flex-end }
+  .step{ display:flex; flex-direction:column; align-items:center; gap:14px }
+  .chip{ width:100px; height:80px; background:var(--earned-cream-light); display:flex; align-items:center; justify-content:center; font-family:var(--font-hand); font-size:22px; color:var(--fg) }
+  .name{ font-family:var(--font-sans); font-size:11px; font-weight:600 }
+  .val{ font-family:var(--font-mono); font-size:10px; color:var(--fg-muted); text-align:center }
+</style></head>
+<body>
+<div class="card">
+  <div class="label">Shadows · two families</div>
+  <div class="row">
+    <div class="step"><div class="chip" style="box-shadow:var(--shadow-paper-sm)">paper-sm</div><div class="name">paper-sm</div><div class="val">soft lift</div></div>
+    <div class="step"><div class="chip" style="box-shadow:var(--shadow-paper)">paper</div><div class="name">paper</div><div class="val">page off desk</div></div>
+    <div class="step"><div class="chip" style="box-shadow:var(--shadow-paper-lg)">paper-lg</div><div class="name">paper-lg</div><div class="val">floating</div></div>
+    <div class="step"><div class="chip" style="box-shadow:var(--shadow-ink); border:1.5px solid var(--earned-ink)">ink</div><div class="name">ink</div><div class="val">sticker · 2px hard</div></div>
+    <div class="step"><div class="chip" style="box-shadow:var(--shadow-ink-lg); border:1.5px solid var(--earned-ink)">ink-lg</div><div class="name">ink-lg</div><div class="val">sticker · 3px hard</div></div>
+  </div>
+</div>
+</body></html>
