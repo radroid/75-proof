@@ -2,20 +2,27 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, MotionConfig, useReducedMotion } from "framer-motion";
 import { haptic } from "@/lib/haptics";
 
 interface ConfettiProps {
   isActive: boolean;
   duration?: number;
+  /**
+   * Particle palette. Defaults to the earned identity (gold / ink / cream) so
+   * a celebration reads as "earned a star" on cream paper, not the old arctic
+   * emerald/amber/sky. Override for surfaces on a different background.
+   */
+  colors?: string[];
 }
 
-const colors = [
-  "oklch(0.650 0.200 155)", // emerald
-  "oklch(0.700 0.150 175)", // teal
-  "oklch(0.800 0.150 85)", // amber
-  "oklch(0.700 0.150 250)", // blue
-  "oklch(0.750 0.180 155)", // lime
+/** Earned celebration palette — gold star currency + ink, tuned for contrast
+ *  on the cream paper surfaces where the confetti fires. */
+const EARNED_COLORS = [
+  "#D8A830", // gold — the star reward currency
+  "#F2C94C", // light gold
+  "#1F1F1D", // ink
+  "#E8DEC4", // cream (dark) — quiet accent
 ];
 
 const shapes = ["circle", "square", "triangle"] as const;
@@ -23,6 +30,8 @@ const shapes = ["circle", "square", "triangle"] as const;
 interface Particle {
   id: number;
   x: number;
+  /** Vertical resting position (%) — only used by the reduced-motion still scatter. */
+  y: number;
   color: string;
   shape: (typeof shapes)[number];
   delay: number;
@@ -31,10 +40,11 @@ interface Particle {
   duration: number;
 }
 
-function generateParticles(count: number): Particle[] {
+function generateParticles(count: number, colors: string[]): Particle[] {
   return Array.from({ length: count }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
+    y: 12 + Math.random() * 68,
     color: colors[Math.floor(Math.random() * colors.length)],
     shape: shapes[Math.floor(Math.random() * shapes.length)],
     delay: Math.random() * 0.3,
@@ -79,12 +89,21 @@ function ParticleShape({
  * promotes that ancestor to a containing block and pinned the particles to
  * mid-screen instead of the top.
  */
-export function Confetti({ isActive, duration = 3000 }: ConfettiProps) {
+export function Confetti({
+  isActive,
+  duration = 3000,
+  colors = EARNED_COLORS,
+}: ConfettiProps) {
   // Re-key the particle set on every activation so AnimatePresence treats
   // back-to-back triggers as fresh mounts (otherwise the second activation
   // re-runs the same animation on the same nodes and looks half-baked).
   const [activation, setActivation] = React.useState(0);
   const [running, setRunning] = React.useState(false);
+  // The blanket `globals.css` reduced-motion rule only clamps CSS
+  // animation-duration; it can't touch these JS-driven framer transforms, so
+  // we guard here. Reduced-motion users get a still scatter that fades in
+  // place (no falling, no spinning) instead of 50 flying particles.
+  const shouldReduceMotion = useReducedMotion();
 
   React.useEffect(() => {
     if (!isActive) return;
@@ -99,10 +118,11 @@ export function Confetti({ isActive, duration = 3000 }: ConfettiProps) {
   }, [isActive, duration]);
 
   const particles = React.useMemo(
-    () => (activation > 0 ? generateParticles(50) : []),
+    () => (activation > 0 ? generateParticles(50, colors) : []),
     // Fresh particle set per activation; `running` flipping back to false
-    // shouldn't regenerate them.
-    [activation],
+    // shouldn't regenerate them. `colors` is a stable module constant by
+    // default, so it doesn't churn the set.
+    [activation, colors],
   );
 
   // SSR-safe portal: bail out when running on the server where `document`
@@ -110,33 +130,41 @@ export function Confetti({ isActive, duration = 3000 }: ConfettiProps) {
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <AnimatePresence>
-      {running && (
-        <div className="pointer-events-none fixed inset-0 z-[100] overflow-hidden">
-          {particles.map((p) => (
-            <motion.div
-              key={`${activation}-${p.id}`}
-              className="absolute"
-              style={{ left: `${p.x}%`, top: 0 }}
-              initial={{ y: -20, opacity: 1, rotate: 0 }}
-              animate={{
-                y: "100dvh",
-                opacity: 0,
-                rotate: p.rotation + 720,
-              }}
-              exit={{ opacity: 0 }}
-              transition={{
-                duration: p.duration,
-                delay: p.delay,
-                ease: [0.23, 0.03, 0.38, 1],
-              }}
-            >
-              <ParticleShape shape={p.shape} color={p.color} />
-            </motion.div>
-          ))}
-        </div>
-      )}
-    </AnimatePresence>,
+    // `reducedMotion="user"` is a belt-and-suspenders backstop: even if a new
+    // motion.div is added below without an explicit still variant, framer will
+    // strip its transforms for reduced-motion users.
+    <MotionConfig reducedMotion="user">
+      <AnimatePresence>
+        {running && (
+          <div className="pointer-events-none fixed inset-0 z-[100] overflow-hidden">
+            {particles.map((p) => (
+              <motion.div
+                key={`${activation}-${p.id}`}
+                className="absolute"
+                style={{
+                  left: `${p.x}%`,
+                  top: shouldReduceMotion ? `${p.y}%` : 0,
+                }}
+                initial={{ y: shouldReduceMotion ? 0 : -20, opacity: 0, rotate: 0 }}
+                animate={
+                  shouldReduceMotion
+                    ? { opacity: [0, 1, 1, 0], rotate: 0, y: 0 }
+                    : { y: "100dvh", opacity: 0, rotate: p.rotation + 720 }
+                }
+                exit={{ opacity: 0 }}
+                transition={{
+                  duration: shouldReduceMotion ? duration / 1000 : p.duration,
+                  delay: shouldReduceMotion ? 0 : p.delay,
+                  ease: [0.23, 0.03, 0.38, 1],
+                }}
+              >
+                <ParticleShape shape={p.shape} color={p.color} />
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </AnimatePresence>
+    </MotionConfig>,
     document.body,
   );
 }
