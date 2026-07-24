@@ -49,7 +49,12 @@ next-env.d.ts
 
 # local agent/tooling artifacts
 .agents/
-.claude/
+# .claude/ is local-only, except the repo's own brand skill. Vendored skills
+# (installed by `npx convex ai-files install`) stay ignored.
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/earned-design/
 .vscode/
 .superpowers/
 convex/_generated/ai/

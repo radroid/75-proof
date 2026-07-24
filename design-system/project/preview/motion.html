@@ -1,0 +1,34 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{ width:700px; height:200px; padding:24px 28px; box-sizing:border-box; background:var(--bg); border:1px solid var(--earned-cream-dark) }
+  .label{ font-family:var(--font-sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted); font-weight:600; margin-bottom:16px }
+  .row{ display:flex; gap:22px; align-items:center }
+  .ease{ flex:1 }
+  .name{ font-family:var(--font-sans); font-size:11px; font-weight:600; margin-bottom:4px }
+  .val{ font-family:var(--font-mono); font-size:10px; color:var(--fg-muted); margin-bottom:8px }
+  .track{ width:100%; height:36px; background:var(--earned-cream-light); border:1.5px solid var(--earned-ink); border-radius:6px; position:relative; overflow:hidden }
+  .ball{ position:absolute; top:50%; transform:translateY(-50%); width:24px; height:24px; background:var(--earned-sky); border:1.5px solid var(--earned-ink); border-radius:50%; left:6px; animation-duration:2.6s; animation-iteration-count:infinite; animation-direction:alternate }
+  .ball.out{ animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); animation-name:bounceA }
+  .ball.paper{ animation-timing-function: cubic-bezier(0.34, 1.2, 0.4, 1); animation-name:bounceA }
+  @keyframes bounceA { from { left:6px } to { left:calc(100% - 30px) } }
+</style></head>
+<body>
+<div class="card">
+  <div class="label">Motion · default eases</div>
+  <div class="row">
+    <div class="ease">
+      <div class="name">--ease-out · UI default</div>
+      <div class="val">cubic-bezier(0.2, 0.8, 0.2, 1)</div>
+      <div class="track"><div class="ball out"></div></div>
+    </div>
+    <div class="ease">
+      <div class="name">--ease-paper · page settles</div>
+      <div class="val">cubic-bezier(0.34, 1.2, 0.4, 1)</div>
+      <div class="track"><div class="ball paper"></div></div>
+    </div>
+  </div>
+</div>
+</body></html>
