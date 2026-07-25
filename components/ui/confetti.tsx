@@ -145,7 +145,14 @@ export function Confetti({
                   left: `${p.x}%`,
                   top: shouldReduceMotion ? `${p.y}%` : 0,
                 }}
-                initial={{ y: shouldReduceMotion ? 0 : -20, opacity: 0, rotate: 0 }}
+                initial={{
+                  y: shouldReduceMotion ? 0 : -20,
+                  // Falling particles must start opaque (they fade to 0 as they
+                  // fall). Only the reduced-motion still-scatter starts at 0 and
+                  // fades IN via its [0,1,1,0] opacity keyframes.
+                  opacity: shouldReduceMotion ? 0 : 1,
+                  rotate: 0,
+                }}
                 animate={
                   shouldReduceMotion
                     ? { opacity: [0, 1, 1, 0], rotate: 0, y: 0 }
