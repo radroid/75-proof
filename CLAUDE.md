@@ -14,9 +14,15 @@ Package manager: bun. Use `bun install` / `bun add` / `bun remove`; do not run `
 
 Always run `npx next build` and confirm it passes **before** committing any changes. Do not commit code that fails the build.
 
+## Tests
+
+Run the suite with `bun run test` (the package script → `vitest run`). Do **not** run bare `bun test`: Bun's own test runner shadows the script, tries to execute the vitest files itself, and chokes on `import.meta.glob` — falsely reporting failures. CI (`.github/workflows/ci.yml`) calls `bun run test` for this reason.
+
+Lint (`bun run lint`) currently reports ~141 pre-existing **source** errors (mostly `no-explicit-any`). This is known debt — CI runs lint as a non-blocking/informational step so it doesn't gate PRs. `.open-next/**` (the generated Cloudflare bundle) is ignored in `eslint.config.mjs`; do not remove that ignore or the count jumps back to ~26,700.
+
 ## Dev server
 
-The dev server is always already running — do not start it yourself (no `npx next dev`, `bun dev`, etc.).
+The dev server is *intended* to be always already running — do not start a duplicate (no `npx next dev`, `bun dev`, etc.) if one is up. Note: as of 2026-07, the only Next dev server found running was a **different** project (`flighty-replica` on :3000); this repo's server may be down. Confirm what's on a port (`curl -s localhost:PORT | grep '<title>'` — this app's title is `earned`) before assuming it's this app. A service worker is registered even in dev and **serves stale JS/CSS chunks** — after switching branches, unregister it + clear caches (DevTools → Application, or `navigator.serviceWorker.getRegistrations()` → `unregister()`) or visual QA will show old code.
 
 ## Tailwind class style
 

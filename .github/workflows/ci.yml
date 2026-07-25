@@ -1,0 +1,50 @@
+name: CI
+
+# Nothing had ever run lint or tests on a PR before this workflow — the only
+# automated gate was Cloudflare's "Workers Builds" check, which covers the
+# BUILD step (with the real env it holds). So this workflow adds the two gates
+# that were missing: lint and test. Build is intentionally NOT duplicated here
+# — a fake-env `next build` on a runner is flakier than Cloudflare's real one.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref so a rapid push train doesn't queue.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          # Pin to the version used locally (bun.lock is the committed lockfile).
+          bun-version: 1.3.2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Lint is NON-BLOCKING for now: `.open-next/**` was being linted, hiding
+      # ~122 real source errors under ~26,700 noise problems. That's fixed
+      # (see eslint.config.mjs), but the ~141 pre-existing source errors still
+      # need burning down. Surface the count on every PR without blocking the
+      # pipeline; flip `continue-on-error` off once the debt reaches zero.
+      - name: Lint (informational)
+        run: bun run lint
+        continue-on-error: true
+
+      # IMPORTANT: `bun run test` (the package script → vitest), NOT bare
+      # `bun test`. Bun's own runner shadows the script and chokes on
+      # `import.meta.glob`, falsely reporting failures.
+      - name: Test
+        run: bun run test
