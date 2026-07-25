@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/dashboard", "/sign-in", "/sign-up", "/landing"],
+        disallow: ["/dashboard", "/sign-in", "/sign-up"],
       },
     ],
     sitemap: "https://75.createplus.club/sitemap.xml",
