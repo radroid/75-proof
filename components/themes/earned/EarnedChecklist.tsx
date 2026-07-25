@@ -22,7 +22,7 @@ import {
   HABIT_CATEGORY_LABELS,
   HABIT_CATEGORY_ORDER,
 } from "@/convex/lib/habitCategories";
-import { EarnedHabitRow, EarnedCheckbox, EC, HAND, SANS } from "./EarnedPaper";
+import { EarnedHabitRow, EarnedCheckbox, HandButton, EC, HAND, SANS } from "./EarnedPaper";
 
 interface EarnedChecklistProps {
   challengeId: Id<"challenges">;
@@ -66,35 +66,23 @@ function StepButton({
   label: string;
 }) {
   return (
-    <button
-      type="button"
+    <HandButton
+      shape="round"
       onClick={onClick}
       disabled={disabled}
+      disabledOpacity={0.4}
+      keepShadowWhenDisabled
       aria-label={label}
       style={{
-        width: 30,
-        height: 30,
-        borderRadius: 999,
-        border: `1.5px solid ${EC.ink}`,
-        background: EC.creamLight,
         color: EC.ink,
         fontFamily: SANS,
         fontWeight: 700,
         fontSize: 16,
         lineHeight: 1,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: disabled ? "default" : "pointer",
-        opacity: disabled ? 0.4 : 1,
-        boxShadow: `1.5px 1.5px 0 ${EC.ink}`,
-        filter: "url(#earned-rough-soft)",
-        touchAction: "manipulation",
-        padding: 0,
       }}
     >
       {sign}
-    </button>
+    </HandButton>
   );
 }
 

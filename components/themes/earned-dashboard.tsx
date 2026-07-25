@@ -10,6 +10,7 @@ import {
   EarnedPrompt,
   EarnedStar,
   EarnedStarReward,
+  HandButton,
   EC,
   HAND,
 } from "@/components/themes/earned/EarnedPaper";
@@ -68,28 +69,7 @@ function DayArrow({
   label: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      style={{
-        width: 30,
-        height: 30,
-        borderRadius: 8,
-        border: `1.5px solid ${EC.ink}`,
-        background: EC.creamLight,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: disabled ? "default" : "pointer",
-        opacity: disabled ? 0.3 : 1,
-        boxShadow: disabled ? "none" : `1.5px 1.5px 0 ${EC.ink}`,
-        filter: "url(#earned-rough-soft)",
-        padding: 0,
-        touchAction: "manipulation",
-      }}
-    >
+    <HandButton shape="square" onClick={onClick} disabled={disabled} aria-label={label}>
       <svg width="11" height="14" viewBox="0 0 11 14" fill="none" aria-hidden="true">
         <path
           d={dir === "left" ? "M8 2 L3 7 L8 12" : "M3 2 L8 7 L3 12"}
@@ -99,7 +79,7 @@ function DayArrow({
           strokeLinejoin="round"
         />
       </svg>
-    </button>
+    </HandButton>
   );
 }
 
@@ -418,35 +398,27 @@ export function EarnedDashboard({ user, challenge }: ThemedDashboardProps) {
                   Day {displayDay} — earned.
                 </div>
                 {starsCustom && (
-                  <button
-                    type="button"
+                  <HandButton
+                    shape="pill"
+                    aria-label="reset stars to a row"
                     onClick={() => {
                       clearStarPositions(`${challenge._id}:${displayDay}`);
                       setStarsCustom(false);
                       setStarResetNonce((nonce) => nonce + 1);
                     }}
                     style={{
-                      display: "inline-flex",
-                      alignItems: "center",
                       gap: 5,
-                      background: EC.creamLight,
-                      border: `1.5px solid ${EC.ink}`,
-                      borderRadius: 999,
                       padding: "5px 12px",
-                      cursor: "pointer",
                       fontFamily: HAND,
                       fontSize: 17,
                       fontWeight: 600,
                       color: EC.skyDeep,
                       lineHeight: 1,
-                      boxShadow: `1.5px 1.5px 0 ${EC.ink}`,
-                      filter: "url(#earned-rough-soft)",
-                      touchAction: "manipulation",
                     }}
                   >
                     <span aria-hidden style={{ fontSize: 16 }}>↺</span>
                     reset stars to a row
-                  </button>
+                  </HandButton>
                 )}
               </div>
             ) : (
