@@ -140,10 +140,12 @@ export default function OnboardingPage() {
     }
   }, [user, state.displayName, seededFromPrevious]);
 
-  // Restore chosen theme on page load (e.g. after refresh mid-onboarding)
+  // Restore chosen theme on page load (e.g. after refresh mid-onboarding).
+  // `silent` — this is a programmatic restore, not a user theme switch, so it
+  // must not emit a `theme_switched` analytics event.
   useEffect(() => {
     if (state.theme) {
-      setPersonality(state.theme);
+      setPersonality(state.theme, { silent: true });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

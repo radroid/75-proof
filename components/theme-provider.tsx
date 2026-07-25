@@ -11,7 +11,19 @@ import {
 
 interface ThemeContextValue {
   personality: ThemePersonality;
-  setPersonality: (personality: ThemePersonality) => void;
+  /**
+   * @param opts.silent - suppress the `theme_switched` analytics event for
+   *   programmatic changes (e.g. restoring a saved theme on mount), which are
+   *   not user-initiated switches.
+   */
+  setPersonality: (
+    personality: ThemePersonality,
+    opts?: { silent?: boolean },
+  ) => void;
+  /** True once the stored theme has been read from localStorage. Consumers that
+   *  report the active theme (analytics) should wait for this so they capture
+   *  the resolved value, not the pre-hydration default. */
+  hydrated: boolean;
 }
 
 const ThemeContext = React.createContext<ThemeContextValue | undefined>(
@@ -72,10 +84,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [personality, mounted]);
 
   const setPersonality = React.useCallback(
-    (newPersonality: ThemePersonality) => {
+    (newPersonality: ThemePersonality, opts?: { silent?: boolean }) => {
       // Fire outside the state updater so React StrictMode's double-invoke of
-      // updater functions can't double-count the switch.
-      if (newPersonality !== personality) {
+      // updater functions can't double-count the switch. `silent` skips the
+      // event for programmatic restores (not real user switches).
+      if (!opts?.silent && newPersonality !== personality) {
         posthog.capture("theme_switched", {
           from: personality,
           to: newPersonality,
@@ -87,8 +100,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 
   const contextValue = React.useMemo(
-    () => ({ personality, setPersonality }),
-    [personality, setPersonality]
+    () => ({ personality, setPersonality, hydrated: mounted }),
+    [personality, setPersonality, mounted]
   );
 
   return (
