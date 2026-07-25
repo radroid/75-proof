@@ -119,6 +119,23 @@ Real work, not urgent.
 
 ---
 
+## Experiments
+
+Speculative directions — prototype before committing. Not scheduled against the Now/Next work.
+
+- **Life Areas — multi-domain life organizer.** Let the user switch between life *areas*
+  (self-care, fitness, work/business, personal finance) the way they switch themes today, with the
+  chosen area as the landing view. Each area holds **periodic tasks** (daily habit → every-6-months
+  chore → one-off to-do), and each task carries a **notes/research layer** and a **product/usage
+  log** (e.g. night creams tried for a skincare routine). Reuses more than it rebuilds:
+  `habitDefinitions.category` already exists, habit-tracker mode is already open-ended, and the
+  theme-switcher is the exact UX precedent. The one deep change is recurrence beyond the daily
+  `dayNumber` grid. Full write-up, schema mapping, risk sizing, and a phased (Phase 0 = throwaway
+  prototype, no migration) plan in **`docs/LIFE_AREAS_EXPLORATION.md`**. *Prototype in progress on
+  `experiment/life-areas`.*
+
+---
+
 ## Open decisions
 
 Judgment calls that block code. Resolve and record in the log below.
