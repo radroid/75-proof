@@ -881,11 +881,14 @@ export function EarnedPageHeader({
         <div style={{ fontFamily: HAND, fontWeight: 600, fontSize: 25, lineHeight: 1, color: EC.skyDeep }}>
           {date}
         </div>
-        <div
-          style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 2 }}
-          role="text"
-          aria-label={total ? `Day ${day} of ${total}` : `Day ${day}`}
-        >
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 2 }}>
+          {/* Screen readers get one clean phrase; the stylized spans below are
+              decorative (aria-hidden). Avoids role="text" (WebKit-only — on
+              Firefox/NVDA it degrades to role=generic where the label is
+              dropped, and with the spans hidden the header would vanish). */}
+          <span className="sr-only">
+            {total ? `Day ${day} of ${total}` : `Day ${day}`}
+          </span>
           <span aria-hidden style={{ fontFamily: HAND, fontWeight: 600, fontSize: 23, color: "rgba(31,31,29,0.6)", lineHeight: 0.9 }}>
             Day
           </span>
