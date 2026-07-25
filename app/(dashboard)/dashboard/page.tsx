@@ -28,6 +28,7 @@ import { useLocalHydrationComplete } from "@/lib/local-store/hooks";
 import { NotificationPromptGate } from "@/components/pwa/notification-prompt-gate";
 import { DashboardTour } from "@/components/DashboardTour";
 import { useFeatureFlagEnabled } from "posthog-js/react";
+import posthog from "posthog-js";
 
 // Themed dashboard components
 import { EarnedDashboard } from "@/components/themes/earned-dashboard";
@@ -62,9 +63,25 @@ function dashboardForTheme(personality: ThemePersonality) {
 
 export default function DashboardPage() {
   const { isGuest, demoUser, demoChallenge } = useGuest();
-  const { personality } = useThemePersonality();
+  const { personality, hydrated: themeHydrated } = useThemePersonality();
   const router = useRouter();
   const localHydrated = useLocalHydrationComplete();
+
+  // Fire once per Today-route mount with the RESOLVED active theme. Named
+  // today_loaded (not earned_today_loaded) — earned is the unconditional
+  // default now, so the theme is a property, not part of the event name.
+  // Gate on themeHydrated: `personality` starts at the default and is only
+  // corrected from localStorage inside ThemeProvider's mount effect. React
+  // runs child effects before parent effects, so firing on first mount would
+  // capture the default for every theme-switcher (the exact cohort the theme
+  // property exists to measure). Waiting for hydration + a one-fire ref gives
+  // the resolved value exactly once.
+  const todayLoadedRef = useRef(false);
+  useEffect(() => {
+    if (!themeHydrated || todayLoadedRef.current) return;
+    todayLoadedRef.current = true;
+    posthog.capture("today_loaded", { theme: personality });
+  }, [themeHydrated, personality]);
 
   // Local mode: render themed dashboard against the live local store.
   // Wait for hydration to complete before deciding the local store is
