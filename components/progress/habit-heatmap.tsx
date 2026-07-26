@@ -1,6 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import * as React from "react";
+import { EC } from "@/components/earned/primitives/tokens";
 
 interface Props {
   /** Per-day completion. Day 1 is the first day of the challenge. */
@@ -8,12 +9,16 @@ interface Props {
   currentDay: number;
 }
 
-const RAMP_BG = [
-  "bg-muted",
-  "bg-success/20",
-  "bg-success/40",
-  "bg-success/60",
-  "bg-success",
+// Ink-density ramp (restyled unconditionally): empty days are faint cream,
+// earned days are solid ink, with graded ink opacities between. Step 3 lifts
+// to 0.55 ink so the ramp reads as a true gradient — inkSoft (#3A3A36) is only
+// ~12% lighter than ink and would collapse the top two steps together.
+const EARNED_RAMP: React.CSSProperties[] = [
+  { background: EC.creamLight, border: `1px solid ${EC.creamDark}` },
+  { background: EC.creamDark },
+  { background: "rgba(31,31,29,0.4)" },
+  { background: "rgba(31,31,29,0.55)" },
+  { background: EC.ink },
 ];
 
 /**
@@ -47,7 +52,7 @@ export function HabitHeatmap({ completionMap, currentDay }: Props) {
     <div
       className="overflow-x-auto pb-2"
       role="img"
-      aria-label={`Activity heatmap: ${currentDay} days, completion shaded green`}
+      aria-label={`Activity heatmap: ${currentDay} days, completion shaded darker as more days are earned`}
     >
       <div className="flex gap-1 min-w-max">
         {weeks.map((week, wi) => (
@@ -61,10 +66,8 @@ export function HabitHeatmap({ completionMap, currentDay }: Props) {
               return (
                 <div
                   key={di}
-                  className={cn(
-                    "h-3 w-3 rounded-sm transition-colors",
-                    RAMP_BG[ramp],
-                  )}
+                  className="h-3 w-3 rounded-sm transition-colors"
+                  style={EARNED_RAMP[ramp]}
                   title={`Day ${day}${complete ? " — complete" : " — missed"}`}
                 />
               );
@@ -72,10 +75,13 @@ export function HabitHeatmap({ completionMap, currentDay }: Props) {
           </div>
         ))}
       </div>
-      <div className="mt-3 flex items-center gap-2 text-[10px] text-muted-foreground">
+      <div
+        className="mt-3 flex items-center gap-2 text-[10px]"
+        style={{ color: EC.inkSoft }}
+      >
         <span>Less</span>
-        {RAMP_BG.map((cls, i) => (
-          <span key={i} className={cn("h-3 w-3 rounded-sm", cls)} />
+        {EARNED_RAMP.map((style, i) => (
+          <span key={i} className="h-3 w-3 rounded-sm" style={style} />
         ))}
         <span>More</span>
       </div>
