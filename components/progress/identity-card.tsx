@@ -6,6 +6,7 @@ import {
   weeklyAnnotation,
   type IdentityCardInput,
 } from "@/lib/identity-cards";
+import { EC, HAND, SANS } from "@/components/earned/primitives/tokens";
 
 interface Props {
   /** User-authored "I'm becoming…" statement (PD-8). Renders verbatim when set. */
@@ -20,6 +21,12 @@ interface Props {
  * underlying weekly count beside the narrative copy so it's still useful for
  * screen readers and for users who don't connect with the generated copy
  * (research §6 a11y).
+ *
+ * Earned skin: a cream sticker card with a hard ink offset shadow and the
+ * handwritten (Caveat) headline — the same paper vocabulary as the Today
+ * screen's chips (see `EarnedChip`). Restyled unconditionally (the whole app
+ * is on the earned theme); Tailwind owns layout/spacing, inline `EC.*` owns
+ * the paper palette.
  */
 export function IdentityCard({
   userStatement,
@@ -41,18 +48,30 @@ export function IdentityCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="rounded-2xl border bg-card/40 p-5 md:p-8"
+      className="p-5 md:p-8"
+      style={{
+        background: EC.creamLight,
+        border: `1.5px solid ${EC.ink}`,
+        borderRadius: 16,
+        boxShadow: `3px 3px 0 ${EC.ink}`,
+      }}
     >
-      <p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground mb-3">
+      <p
+        className="text-[10px] tracking-[0.2em] uppercase mb-3"
+        style={{ fontFamily: SANS, fontWeight: 600, color: EC.inkSoft }}
+      >
         {useUserCopy ? "Your identity" : "Today"}
       </p>
       <p
-        className="text-2xl md:text-3xl font-light leading-snug"
-        style={{ fontFamily: "var(--font-heading)" }}
+        className="text-3xl md:text-4xl leading-snug"
+        style={{ fontFamily: HAND, fontWeight: 700, color: EC.ink }}
       >
         {headline}
       </p>
-      <p className="mt-4 text-sm text-muted-foreground tabular-nums">
+      <p
+        className="mt-4 text-sm tabular-nums"
+        style={{ fontFamily: SANS, color: EC.inkSoft }}
+      >
         {annotation}
       </p>
     </motion.div>

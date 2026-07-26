@@ -57,6 +57,7 @@ import {
 } from "@/lib/progress-metrics";
 import { resolveSocialCategory } from "@/lib/routine-category";
 import { IdentityCard } from "@/components/progress/identity-card";
+import { TodaySnapshot } from "@/components/progress/today-snapshot";
 import { HeadlineMetrics } from "@/components/progress/headline-metrics";
 import { CalendarGrid } from "@/components/progress/calendar-grid";
 import { HabitHeatmap } from "@/components/progress/habit-heatmap";
@@ -360,6 +361,56 @@ export default function ProgressPage() {
     [activeCompletionMap, currentDay],
   );
 
+  // Today's "X of N done" for the read-only snapshot row. Neutral 0/0 while
+  // the day isn't started or either Convex query is still in-flight — never
+  // flash a misleading legacy "0 of 7" before habit data hydrates.
+  const todayStats = useMemo(() => {
+    if (currentDay < 1) return { done: 0, total: 0 };
+    if (activeHabitDefs === undefined || activeHabitEntries === undefined) {
+      return { done: 0, total: 0 };
+    }
+    // New-system path: per-habit entries.
+    if (activeHabitDefs.length > 0) {
+      const todayEntries = activeHabitEntries.filter(
+        (e) => e.dayNumber === currentDay,
+      );
+      const entriesByHabit = new Map(
+        todayEntries.map((e) => [e.habitDefinitionId, e]),
+      );
+      // Only hard + active habits gate day completion (matches
+      // getDayCompletionMap / convex hardHabits filter), so the snapshot's
+      // done/total agrees with isDayComplete — otherwise soft habits would
+      // make "3 of 5 done" disagree with an already-complete day.
+      const active = activeHabitDefs.filter((h) => h.isActive && h.isHard);
+      let done = 0;
+      for (const h of active) {
+        const e = entriesByHabit.get(h._id);
+        if (h.blockType === "counter") {
+          if (e?.completed || (e?.value ?? 0) >= (h.target ?? Infinity)) done += 1;
+        } else if (e?.completed) {
+          done += 1;
+        }
+      }
+      return { done, total: active.length };
+    }
+    // Legacy dailyLogs path: derive done/total from the `dailyLogs` row for
+    // the current day (seven canonical hard requirements).
+    const todayLog = (logs ?? []).find((l) => l.dayNumber === currentDay) as
+      | LegacyDayLog
+      | undefined;
+    if (!todayLog) return { done: 0, total: 7 };
+    const reqs: boolean[] = [
+      !!todayLog.workout1 && todayLog.workout1.durationMinutes >= 45,
+      !!todayLog.workout2 && todayLog.workout2.durationMinutes >= 45,
+      !!todayLog.outdoorWorkoutCompleted,
+      todayLog.waterIntakeOz >= 128,
+      todayLog.readingMinutes >= 20,
+      !!todayLog.dietFollowed,
+      !!todayLog.noAlcohol,
+    ];
+    return { done: reqs.filter(Boolean).length, total: reqs.length };
+  }, [activeHabitDefs, activeHabitEntries, currentDay, logs]);
+
   const habitStats = useMemo(
     () =>
       activeHabitDefs && activeHabitEntries
@@ -428,6 +479,10 @@ export default function ProgressPage() {
 
   const handleRibbonImpression = useCallback(() => {
     posthog.capture("progress_friends_ribbon_view");
+  }, []);
+
+  const handleLogTap = useCallback(() => {
+    posthog.capture("progress_to_log_tap");
   }, []);
 
   // Social block — friends progress, activity feed, and inbound/outbound
@@ -595,6 +650,15 @@ export default function ProgressPage() {
               topHabit,
               userSalt: String(userSalt),
             }}
+          />
+
+          {/* Today snapshot — read-only "X of N done" with a Log → link back
+              to the dashboard. Logging itself never happens here. */}
+          <TodaySnapshot
+            habitsCompleted={todayStats.done}
+            habitsTotal={todayStats.total}
+            isDayComplete={!!activeCompletionMap[currentDay]}
+            onLogTap={handleLogTap}
           />
 
           {/* Headline metrics — 30-day rate + streak chip.
