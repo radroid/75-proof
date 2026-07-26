@@ -35,9 +35,12 @@ export function TodaySnapshot({
 }: Props) {
   const dots = Array.from({ length: habitsTotal }, (_, i) => i < habitsCompleted);
   const allDone = isDayComplete || (habitsTotal > 0 && habitsCompleted >= habitsTotal);
-  // Sage for the satisfied state, deep sky for the call-to-log — both live in
-  // the earned paper palette (no raw green/blue).
-  const accent = allDone ? EC.sage : EC.skyDeep;
+  // Decorative filled-dot tint: sage when satisfied, deep sky for in-progress —
+  // both earned-palette. Sage stays DECORATIVE only: as 14px text it's 3.27:1 on
+  // cream (below the 4.5:1 AA floor), so the "All done" label + check render in
+  // ink instead. skyDeep "Log" is 5.16:1 and passes as text.
+  const dotTint = allDone ? EC.sage : EC.skyDeep;
+  const clusterColor = allDone ? EC.ink : EC.skyDeep;
 
   return (
     <Link
@@ -74,14 +77,14 @@ export function TodaySnapshot({
             <span
               key={i}
               className="h-1.5 w-1.5 rounded-full"
-              style={{ background: filled ? accent : EC.rule }}
+              style={{ background: filled ? dotTint : EC.rule }}
             />
           ))}
         </div>
       </div>
       <div
         className="flex items-center gap-1.5 text-sm shrink-0"
-        style={{ fontFamily: SANS, fontWeight: 600, color: accent }}
+        style={{ fontFamily: SANS, fontWeight: 600, color: clusterColor }}
       >
         {allDone ? (
           <>

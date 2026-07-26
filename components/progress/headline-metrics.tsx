@@ -53,7 +53,10 @@ export function HeadlineMetrics({
         className="p-4 md:p-6"
         style={tileStyle}
       >
-        <div className="flex items-center gap-2 mb-2 min-w-0">
+        <div
+          className="flex items-center gap-2 mb-2 min-w-0"
+          style={{ color: EC.inkSoft }}
+        >
           <ThemedIcon name="trending-up" className="h-4 w-4 shrink-0" />
           <span
             className="text-[10px] tracking-[0.2em] uppercase truncate"
@@ -92,7 +95,10 @@ export function HeadlineMetrics({
         style={tileStyle}
         aria-label={`Current streak: ${currentStreak} days, best ${bestStreak} days`}
       >
-        <div className="flex items-center gap-2 mb-2 min-w-0">
+        <div
+          className="flex items-center gap-2 mb-2 min-w-0"
+          style={{ color: EC.inkSoft }}
+        >
           <ThemedIcon name="flame" className="h-4 w-4 shrink-0" />
           <span
             className="text-[10px] tracking-[0.2em] uppercase truncate"

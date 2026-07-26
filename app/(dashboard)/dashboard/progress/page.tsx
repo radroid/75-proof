@@ -377,7 +377,11 @@ export default function ProgressPage() {
       const entriesByHabit = new Map(
         todayEntries.map((e) => [e.habitDefinitionId, e]),
       );
-      const active = activeHabitDefs.filter((h) => h.isActive);
+      // Only hard + active habits gate day completion (matches
+      // getDayCompletionMap / convex hardHabits filter), so the snapshot's
+      // done/total agrees with isDayComplete — otherwise soft habits would
+      // make "3 of 5 done" disagree with an already-complete day.
+      const active = activeHabitDefs.filter((h) => h.isActive && h.isHard);
       let done = 0;
       for (const h of active) {
         const e = entriesByHabit.get(h._id);
