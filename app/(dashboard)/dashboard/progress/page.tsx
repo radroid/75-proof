@@ -74,6 +74,7 @@ import {
   isKnownTemplate,
 } from "@/lib/routine-templates";
 import posthog from "posthog-js";
+import { EC, SANS } from "@/components/earned/primitives/tokens";
 
 type FilterType = "all" | "complete" | "incomplete";
 
@@ -677,8 +678,11 @@ export default function ProgressPage() {
 
           {/* Calendar / consistency */}
           <div>
-            <div className="h-px bg-border mb-6 md:mb-8" />
-            <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-3 md:mb-4">
+            <div className="mb-6 md:mb-8" style={{ height: 1.5, background: EC.rule }} />
+            <p
+              className="text-[10px] tracking-[0.3em] uppercase mb-3 md:mb-4"
+              style={{ color: EC.inkSoft, fontFamily: SANS, fontWeight: 600 }}
+            >
               {useHeatmap
                 ? "Consistency"
                 : isActiveHabitTracker
@@ -702,8 +706,11 @@ export default function ProgressPage() {
           {/* Per-habit list — replaces legacy Workouts/Water/Reading tiles */}
           {habitStats.length > 0 && (
             <div>
-              <div className="h-px bg-border mb-6 md:mb-8" />
-              <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-3 md:mb-4">
+              <div className="mb-6 md:mb-8" style={{ height: 1.5, background: EC.rule }} />
+              <p
+              className="text-[10px] tracking-[0.3em] uppercase mb-3 md:mb-4"
+              style={{ color: EC.inkSoft, fontFamily: SANS, fontWeight: 600 }}
+            >
                 Habits — last {Math.min(rolling30.consideredDays, ROLLING_WINDOW)} days
               </p>
               <PerHabitList stats={habitStats} />
@@ -712,8 +719,11 @@ export default function ProgressPage() {
 
           {/* Day-by-Day History — kept polymorphic for legacy + new system */}
           <div>
-            <div className="h-px bg-border mb-6 md:mb-8" />
-            <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-3 md:mb-5">
+            <div className="mb-6 md:mb-8" style={{ height: 1.5, background: EC.rule }} />
+            <p
+              className="text-[10px] tracking-[0.3em] uppercase mb-3 md:mb-5"
+              style={{ color: EC.inkSoft, fontFamily: SANS, fontWeight: 600 }}
+            >
               Day-by-Day History
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
