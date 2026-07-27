@@ -6,7 +6,7 @@ import {
   ThemePersonality,
   PERSONALITY_STORAGE_KEY,
   defaultThemeConfig,
-  themeMetadata,
+  resolveStoredPersonality,
 } from "@/lib/themes";
 
 interface ThemeContextValue {
@@ -46,19 +46,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
   const [mounted, setMounted] = React.useState(false);
 
-  // Load personality from localStorage on mount, with migration for old themes
+  // Load personality from localStorage on mount. resolveStoredPersonality
+  // applies removed-theme migration and the one-time legacy-default ("arctic")
+  // reset, writing back any change so the stored value stays canonical.
   React.useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem(PERSONALITY_STORAGE_KEY);
-    const OLD_THEMES = ["warm-bento", "brutalist", "swiss-poster", "analog"];
-    if (stored && OLD_THEMES.includes(stored)) {
-      // Migrate old theme to new default
-      const newDefault = defaultThemeConfig.personality;
-      localStorage.setItem(PERSONALITY_STORAGE_KEY, newDefault);
-      setPersonalityState(newDefault);
-    } else if (stored && stored in themeMetadata) {
-      setPersonalityState(stored as ThemePersonality);
-    }
+    setPersonalityState(resolveStoredPersonality());
   }, []);
 
   // Update data-theme attribute when personality changes
