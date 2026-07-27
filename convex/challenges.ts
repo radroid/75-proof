@@ -10,6 +10,41 @@ import {
   getReconciliationWindow,
   getAutoFailUpperBound,
 } from "./lib/dayCalculation";
+import { STANDARD_HABITS } from "./lib/standardHabits";
+
+// The default routine slug the quick-start modal commits (mirrors
+// DEFAULT_TEMPLATE_SLUG in lib/routine-templates — its habit set is exactly
+// STANDARD_HABITS). Kept as a local literal so this Convex module doesn't have
+// to import the client-side routine catalog.
+const DEFAULT_TEMPLATE_SLUG = "original-75-hard";
+
+/**
+ * Seed the standard 75-Hard habit set for a challenge. Every challenge the app
+ * creates MUST have habit definitions — the Today dashboard renders the earned
+ * hand-drawn checklist (and completion/streak math) off `habitDefinitions`, and
+ * falls back to the plain legacy `DailyChecklist` when a challenge has none.
+ */
+async function seedStandardHabitDefinitions(
+  ctx: MutationCtx,
+  challengeId: Id<"challenges">,
+  userId: Id<"users">,
+): Promise<void> {
+  for (const h of STANDARD_HABITS) {
+    await ctx.db.insert("habitDefinitions", {
+      challengeId,
+      userId,
+      name: h.name,
+      blockType: h.blockType,
+      target: h.target,
+      unit: h.unit,
+      isHard: h.isHard,
+      isActive: true,
+      sortOrder: h.sortOrder,
+      category: h.category,
+      icon: h.icon,
+    });
+  }
+}
 
 /**
  * Shared helper: check if a day is complete for a challenge.
@@ -157,6 +192,8 @@ export const startChallenge = mutation({
       v.literal("public")
     ),
     daysTotal: v.optional(v.number()),
+    // Routine slug this quick-start commits. Defaults to the classic 75-Hard.
+    templateSlug: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Check if user already has an active challenge
@@ -181,7 +218,13 @@ export const startChallenge = mutation({
       visibility: args.visibility,
       restartCount: 0,
       daysTotal,
+      templateSlug: args.templateSlug ?? DEFAULT_TEMPLATE_SLUG,
     });
+
+    // Seed the standard habit definitions. Without this the challenge has zero
+    // habit definitions and the Today dashboard falls back to the plain legacy
+    // checklist instead of the earned hand-drawn one (see #legacy-checklist bug).
+    await seedStandardHabitDefinitions(ctx, challengeId, args.userId);
 
     // Update user's current challenge
     await ctx.db.patch(args.userId, {
@@ -198,6 +241,47 @@ export const startChallenge = mutation({
     });
 
     return challengeId;
+  },
+});
+
+/**
+ * One-off repair: backfill the standard habit definitions onto a challenge that
+ * was created via the pre-fix `startChallenge` (zero habit definitions), so it
+ * renders the earned checklist instead of the legacy fallback.
+ *
+ * SAFETY: only seeds when the challenge has BOTH zero habit definitions AND zero
+ * dailyLogs. A legacy challenge that accrued dailyLog history has its streak
+ * computed off those logs; seeding habit definitions would flip
+ * getDayCompletionMap to the (empty) habitEntries path and wipe the streak. The
+ * dailyLogs guard makes this a no-op on those, so it only ever upgrades a
+ * brand-new empty challenge. Idempotent.
+ */
+export const backfillStandardHabitsIfEmpty = internalMutation({
+  args: { challengeId: v.id("challenges") },
+  handler: async (ctx, args) => {
+    const challenge = await ctx.db.get(args.challengeId);
+    if (!challenge) return { status: "not_found" as const };
+
+    const existingDefs = await ctx.db
+      .query("habitDefinitions")
+      .withIndex("by_challenge", (q) => q.eq("challengeId", args.challengeId))
+      .collect();
+    if (existingDefs.length > 0) {
+      return { status: "already_has_defs" as const, count: existingDefs.length };
+    }
+
+    const logs = await ctx.db
+      .query("dailyLogs")
+      .withIndex("by_challenge_day", (q) => q.eq("challengeId", args.challengeId))
+      .collect();
+    if (logs.length > 0) {
+      // Has legacy history — refuse so we don't wipe a streak. Needs a bespoke
+      // dailyLog→habitEntry migration, not this seed.
+      return { status: "has_legacy_history" as const, logs: logs.length };
+    }
+
+    await seedStandardHabitDefinitions(ctx, args.challengeId, challenge.userId);
+    return { status: "seeded" as const, count: STANDARD_HABITS.length };
   },
 });
 
