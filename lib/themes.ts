@@ -119,24 +119,62 @@ export const themeOrder = THEME_DEFINITIONS.map(
 // Old theme names for migration (renamed/removed personalities → default).
 const OLD_THEME_NAMES = ["warm-bento", "brutalist", "swiss-poster", "analog"];
 
+// The app-wide default before the "earned" rebrand (#94). Every browser that
+// first loaded the app back then had "arctic" silently written to localStorage
+// (the old code persisted the default on first read), so those users are pinned
+// to arctic forever — arctic is still a valid, selectable theme, so it never
+// migrates like a removed theme would. We reset those stale pins to the new
+// default ONCE, guarded by THEME_RESET_STORAGE_KEY, so anyone who deliberately
+// re-picks arctic afterward keeps it.
+const LEGACY_DEFAULT_THEME = "arctic";
+
 // Local storage keys
 export const PERSONALITY_STORAGE_KEY = "earned-personality";
+// Set to "1" the first time we run the one-time legacy-default reset below.
+export const THEME_RESET_STORAGE_KEY = "earned-personality-reset-v1";
 
 // Default theme = the first entry in THEME_DEFINITIONS.
 export const defaultThemeConfig: ThemeConfig = {
   personality: THEME_DEFINITIONS[0].key,
 };
 
-export function getStoredPersonality(): ThemePersonality {
+/**
+ * Read the persisted personality and apply migrations, writing back any change
+ * so the stored value stays canonical. Client-only (touches localStorage).
+ *
+ * Order:
+ *  1. Removed-theme migration — OLD_THEME_NAMES → default, on every load.
+ *  2. One-time legacy-default reset — a browser silently pinned to the
+ *     pre-rebrand default ("arctic") is moved to the current default ONCE,
+ *     guarded by THEME_RESET_STORAGE_KEY. A later deliberate pick still sticks.
+ */
+export function resolveStoredPersonality(): ThemePersonality {
   if (typeof window === "undefined") return defaultThemeConfig.personality;
+  const def = defaultThemeConfig.personality;
   const stored = localStorage.getItem(PERSONALITY_STORAGE_KEY);
-  // Migrate old theme names to default
+
+  // 1. Removed themes always migrate to the current default.
   if (stored && OLD_THEME_NAMES.includes(stored)) {
-    localStorage.setItem(PERSONALITY_STORAGE_KEY, defaultThemeConfig.personality);
-    return defaultThemeConfig.personality;
+    localStorage.setItem(PERSONALITY_STORAGE_KEY, def);
+    return def;
   }
+
+  // 2. One-time reset of the stale pre-rebrand default.
+  if (localStorage.getItem(THEME_RESET_STORAGE_KEY) !== "1") {
+    localStorage.setItem(THEME_RESET_STORAGE_KEY, "1");
+    if (stored === LEGACY_DEFAULT_THEME) {
+      localStorage.setItem(PERSONALITY_STORAGE_KEY, def);
+      return def;
+    }
+  }
+
   if (stored && stored in themeMetadata) return stored as ThemePersonality;
-  return defaultThemeConfig.personality;
+  return def;
+}
+
+/** @deprecated Use {@link resolveStoredPersonality}. Kept for back-compat. */
+export function getStoredPersonality(): ThemePersonality {
+  return resolveStoredPersonality();
 }
 
 export function setStoredPersonality(personality: ThemePersonality): void {
