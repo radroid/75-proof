@@ -12,6 +12,10 @@ type BeforeInstallPromptEvent = Event & {
 
 const DISMISS_KEY = "earned_install_prompt_dismissed_at";
 const DISMISS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+// How long to wait for Chromium's `beforeinstallprompt` before offering the
+// Android manual fallback. Longer than the dialog's own 2.5s open delay so a
+// slightly-slow Chrome resolves to the native Install button, not manual.
+const MANUAL_GRACE_MS = 3500;
 
 /**
  * Module-scope singleton that captures the one-shot `beforeinstallprompt`
@@ -193,6 +197,12 @@ export function useInstallPrompt(): UseInstallPromptResult {
   const [isAndroid, setIsAndroid] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  // The manual fallback is only eligible after this grace window, giving
+  // Chromium a chance to fire `beforeinstallprompt` first. Without it an
+  // Android Chrome user whose event is slow would briefly see the manual
+  // "open in Chrome" copy (they're already in Chrome) before it flips to the
+  // native Install button. See MANUAL_GRACE_MS.
+  const [manualGracePassed, setManualGracePassed] = useState(false);
 
   // Detect environment once on mount. We avoid SSR divergence by gating on
   // `typeof window`.
@@ -201,6 +211,8 @@ export function useInstallPrompt(): UseInstallPromptResult {
     setIsAndroid(detectAndroid());
     setIsStandalone(detectStandalone());
     setDismissed(isWithinDismissWindow());
+    const t = setTimeout(() => setManualGracePassed(true), MANUAL_GRACE_MS);
+    return () => clearTimeout(t);
   }, []);
 
   // The module-scope `appinstalled` listener flips a flag for us — mirror
@@ -260,7 +272,7 @@ export function useInstallPrompt(): UseInstallPromptResult {
       installMode = "native";
     } else if (isIOS) {
       installMode = "ios";
-    } else if (isAndroid) {
+    } else if (isAndroid && manualGracePassed) {
       installMode = "manual";
     }
   }

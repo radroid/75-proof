@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Download, Share, MoreVertical } from "lucide-react";
 import {
@@ -24,6 +24,11 @@ export function InstallPrompt() {
   const [open, setOpen] = useState(false);
   const isIOS = installMode === "ios";
   const isManual = installMode === "manual";
+  // Log the "shown" analytics at most once per mount. Guards the rare tail
+  // where a very slow `beforeinstallprompt` flips manual→native after the
+  // dialog already opened, which would otherwise double-count the event and
+  // pollute the `mode` metric.
+  const shownLoggedRef = useRef(false);
 
   useEffect(() => {
     if (!canInstall) {
@@ -32,6 +37,8 @@ export function InstallPrompt() {
     }
     const t = setTimeout(() => {
       setOpen(true);
+      if (shownLoggedRef.current) return;
+      shownLoggedRef.current = true;
       // Record which affordance we surfaced so we can confirm the manual
       // fallback actually reaches browsers like Comet that never fire
       // `beforeinstallprompt`.
@@ -169,11 +176,9 @@ export function InstallPrompt() {
                     3
                   </span>
                   <span>
-                    Don&rsquo;t see it? Open{" "}
-                    <span className="font-medium text-foreground">
-                      75.createplus.club
-                    </span>{" "}
-                    in Chrome, which supports one-tap install.
+                    Don&rsquo;t see it? Open this page in{" "}
+                    <span className="font-medium text-foreground">Chrome</span>,
+                    which supports one-tap install.
                   </span>
                 </li>
               </ol>
