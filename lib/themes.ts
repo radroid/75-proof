@@ -153,6 +153,13 @@ export function resolveStoredPersonality(): ThemePersonality {
   const def = defaultThemeConfig.personality;
   const stored = localStorage.getItem(PERSONALITY_STORAGE_KEY);
 
+  // The legacy-default reset runs on the first resolve for this browser,
+  // whichever branch handles that load. Capture and set the marker up front so
+  // the removed-theme migration (which returns early) can't leave it unset and
+  // wrongly reset a later deliberate "arctic" pick.
+  const firstResolve = localStorage.getItem(THEME_RESET_STORAGE_KEY) !== "1";
+  if (firstResolve) localStorage.setItem(THEME_RESET_STORAGE_KEY, "1");
+
   // 1. Removed themes always migrate to the current default.
   if (stored && OLD_THEME_NAMES.includes(stored)) {
     localStorage.setItem(PERSONALITY_STORAGE_KEY, def);
@@ -160,12 +167,9 @@ export function resolveStoredPersonality(): ThemePersonality {
   }
 
   // 2. One-time reset of the stale pre-rebrand default.
-  if (localStorage.getItem(THEME_RESET_STORAGE_KEY) !== "1") {
-    localStorage.setItem(THEME_RESET_STORAGE_KEY, "1");
-    if (stored === LEGACY_DEFAULT_THEME) {
-      localStorage.setItem(PERSONALITY_STORAGE_KEY, def);
-      return def;
-    }
+  if (firstResolve && stored === LEGACY_DEFAULT_THEME) {
+    localStorage.setItem(PERSONALITY_STORAGE_KEY, def);
+    return def;
   }
 
   if (stored && stored in themeMetadata) return stored as ThemePersonality;

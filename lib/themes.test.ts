@@ -57,6 +57,19 @@ describe("resolveStoredPersonality", () => {
     expect(localStorage.getItem(PERSONALITY_STORAGE_KEY)).toBe(DEFAULT);
   });
 
+  it("sets the reset marker when migrating a removed theme, so a later arctic pick survives", () => {
+    // A removed-theme migration returns early; it must still mark the one-time
+    // reset as done, or a subsequent deliberate arctic pick would be wiped.
+    localStorage.setItem(PERSONALITY_STORAGE_KEY, "brutalist");
+    resolveStoredPersonality(); // brutalist -> default, marker set
+    expect(localStorage.getItem(THEME_RESET_STORAGE_KEY)).toBe("1");
+
+    // User then deliberately picks arctic.
+    localStorage.setItem(PERSONALITY_STORAGE_KEY, "arctic");
+    expect(resolveStoredPersonality()).toBe("arctic");
+    expect(localStorage.getItem(PERSONALITY_STORAGE_KEY)).toBe("arctic");
+  });
+
   it("is idempotent across reloads for a reset arctic user", () => {
     localStorage.setItem(PERSONALITY_STORAGE_KEY, "arctic");
     resolveStoredPersonality(); // arctic -> default
