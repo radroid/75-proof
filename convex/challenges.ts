@@ -245,16 +245,18 @@ export const startChallenge = mutation({
 });
 
 /**
- * One-off repair: backfill the standard habit definitions onto a challenge that
- * was created via the pre-fix `startChallenge` (zero habit definitions), so it
- * renders the earned checklist instead of the legacy fallback.
+ * One-off repair: migrate a challenge that was created via the pre-fix
+ * `startChallenge` (zero habit definitions) onto the new habit-definitions
+ * system, so it renders the earned checklist instead of the legacy fallback.
  *
- * SAFETY: only seeds when the challenge has BOTH zero habit definitions AND zero
- * dailyLogs. A legacy challenge that accrued dailyLog history has its streak
- * computed off those logs; seeding habit definitions would flip
- * getDayCompletionMap to the (empty) habitEntries path and wipe the streak. The
- * dailyLogs guard makes this a no-op on those, so it only ever upgrades a
- * brand-new empty challenge. Idempotent.
+ * Seeds the standard habit set AND carries day-completion so no streak is lost:
+ * `getDayCompletionMap` reads dailyLogs' `allRequirementsMet` for legacy
+ * challenges but switches to habitEntries the moment habit definitions exist. To
+ * keep the completion map identical, every dailyLog with `allRequirementsMet`
+ * gets its hard habits marked complete via habitEntries. Partial (in-progress)
+ * days aren't carried at the per-item level — only whole-day completion, which
+ * is exactly what the streak and dashboard read. Idempotent (no-op once habit
+ * definitions exist).
  */
 export const backfillStandardHabitsIfEmpty = internalMutation({
   args: { challengeId: v.id("challenges") },
@@ -270,18 +272,41 @@ export const backfillStandardHabitsIfEmpty = internalMutation({
       return { status: "already_has_defs" as const, count: existingDefs.length };
     }
 
+    await seedStandardHabitDefinitions(ctx, args.challengeId, challenge.userId);
+
+    // Re-read the freshly-seeded definitions to get their ids. All STANDARD_HABITS
+    // are hard, so the whole set defines day-completion.
+    const seededDefs = await ctx.db
+      .query("habitDefinitions")
+      .withIndex("by_challenge", (q) => q.eq("challengeId", args.challengeId))
+      .collect();
+
+    // Carry whole-day completion from legacy dailyLogs so the streak is preserved.
     const logs = await ctx.db
       .query("dailyLogs")
       .withIndex("by_challenge_day", (q) => q.eq("challengeId", args.challengeId))
       .collect();
-    if (logs.length > 0) {
-      // Has legacy history — refuse so we don't wipe a streak. Needs a bespoke
-      // dailyLog→habitEntry migration, not this seed.
-      return { status: "has_legacy_history" as const, logs: logs.length };
+    let daysCarried = 0;
+    for (const log of logs) {
+      if (!log.allRequirementsMet) continue;
+      for (const def of seededDefs) {
+        await ctx.db.insert("habitEntries", {
+          habitDefinitionId: def._id,
+          challengeId: args.challengeId,
+          userId: challenge.userId,
+          dayNumber: log.dayNumber,
+          date: log.date,
+          completed: true,
+        });
+      }
+      daysCarried++;
     }
 
-    await seedStandardHabitDefinitions(ctx, args.challengeId, challenge.userId);
-    return { status: "seeded" as const, count: STANDARD_HABITS.length };
+    return {
+      status: "migrated" as const,
+      habits: seededDefs.length,
+      daysCarried,
+    };
   },
 });
 

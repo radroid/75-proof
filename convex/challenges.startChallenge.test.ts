@@ -80,7 +80,7 @@ describe("backfillStandardHabitsIfEmpty", () => {
       internal.challenges.backfillStandardHabitsIfEmpty,
       { challengeId },
     );
-    expect(res.status).toBe("seeded");
+    expect(res.status).toBe("migrated");
 
     const defs = await t.run(async (ctx) =>
       ctx.db
@@ -106,18 +106,19 @@ describe("backfillStandardHabitsIfEmpty", () => {
     expect(res.status).toBe("already_has_defs");
   });
 
-  test("refuses to seed a legacy challenge that has dailyLog history (streak safety)", async () => {
+  test("carries whole-day completion from legacy dailyLogs so the streak is preserved", async () => {
     const t = convexTest(schema, modules);
     const userId = await seedUser(t);
     const challengeId = await t.run(async (ctx) => {
       const cid = await ctx.db.insert("challenges", {
         userId,
         startDate: "2026-06-01",
-        currentDay: 10,
+        currentDay: 3,
         status: "active",
         visibility: "friends",
         daysTotal: 75,
       });
+      // Day 1 fully complete, day 2 in-progress (not complete).
       await ctx.db.insert("dailyLogs", {
         challengeId: cid,
         userId,
@@ -130,21 +131,41 @@ describe("backfillStandardHabitsIfEmpty", () => {
         readingMinutes: 20,
         allRequirementsMet: true,
       });
+      await ctx.db.insert("dailyLogs", {
+        challengeId: cid,
+        userId,
+        dayNumber: 2,
+        date: "2026-06-02",
+        outdoorWorkoutCompleted: false,
+        dietFollowed: false,
+        noAlcohol: false,
+        waterIntakeOz: 0,
+        readingMinutes: 0,
+        allRequirementsMet: false,
+      });
       return cid;
     });
+
+    // Completion map BEFORE migration (legacy path reads allRequirementsMet).
+    const before = await t.query(api.challenges.getDayCompletionMap, {
+      challengeId,
+    });
+    expect(before[1]).toBe(true);
+    expect(before[2]).toBe(false);
 
     const res = await t.mutation(
       internal.challenges.backfillStandardHabitsIfEmpty,
       { challengeId },
     );
-    expect(res.status).toBe("has_legacy_history");
+    expect(res.status).toBe("migrated");
+    expect(res.daysCarried).toBe(1);
 
-    const defs = await t.run(async (ctx) =>
-      ctx.db
-        .query("habitDefinitions")
-        .withIndex("by_challenge", (q) => q.eq("challengeId", challengeId))
-        .collect(),
-    );
-    expect(defs.length).toBe(0);
+    // Completion map AFTER migration (new path reads habitEntries) is identical
+    // — the streak is preserved.
+    const after = await t.query(api.challenges.getDayCompletionMap, {
+      challengeId,
+    });
+    expect(after[1]).toBe(true);
+    expect(after[2]).toBe(false);
   });
 });
