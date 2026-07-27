@@ -133,6 +133,11 @@ function detectIOSSafari(): boolean {
   return /Safari/i.test(ua);
 }
 
+function detectAndroid(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /Android/i.test(navigator.userAgent || "");
+}
+
 function detectStandalone(): boolean {
   if (typeof window === "undefined") return false;
   const displayModeStandalone =
@@ -145,8 +150,22 @@ function detectStandalone(): boolean {
   return displayModeStandalone || iosStandalone;
 }
 
+/**
+ * How the install affordance should present:
+ * - "native": Chromium fired `beforeinstallprompt`; we can call `.prompt()`.
+ * - "ios":    iOS Safari — show the manual Add-to-Home-Screen share steps.
+ * - "manual": Android browser that never fired `beforeinstallprompt` (e.g.
+ *             Comet, and other Chromium forks that omit the install pipeline).
+ *             Show a generic "use the browser menu" hint — best-effort, since
+ *             some of these browsers can't install PWAs at all.
+ * - null:     nothing to show (already installed, dismissed, or a desktop
+ *             browser with no install path).
+ */
+export type InstallMode = "native" | "ios" | "manual" | null;
+
 export type UseInstallPromptResult = {
   canInstall: boolean;
+  installMode: InstallMode;
   isIOS: boolean;
   isStandalone: boolean;
   promptInstall: () => Promise<void>;
@@ -171,6 +190,7 @@ export function useInstallPrompt(): UseInstallPromptResult {
   const deferredEvent = installSnapshot.event;
   const installedFromCapture = installSnapshot.installed;
   const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -178,6 +198,7 @@ export function useInstallPrompt(): UseInstallPromptResult {
   // `typeof window`.
   useEffect(() => {
     setIsIOS(detectIOSSafari());
+    setIsAndroid(detectAndroid());
     setIsStandalone(detectStandalone());
     setDismissed(isWithinDismissWindow());
   }, []);
@@ -228,13 +249,25 @@ export function useInstallPrompt(): UseInstallPromptResult {
     setDismissed(true);
   }, []);
 
-  const canInstall =
-    !isStandalone &&
-    !dismissed &&
-    (deferredEvent !== null || isIOS);
+  // Resolve the single presentation mode. Native wins when the event is
+  // present; iOS Safari gets its share-sheet steps; an Android browser that
+  // never fired the event falls back to the manual menu hint. Android-only for
+  // the manual case keeps the "Add to Home screen" wording correct and avoids
+  // nagging desktop browsers that legitimately have no install path.
+  let installMode: InstallMode = null;
+  if (!isStandalone && !dismissed) {
+    if (deferredEvent !== null) {
+      installMode = "native";
+    } else if (isIOS) {
+      installMode = "ios";
+    } else if (isAndroid) {
+      installMode = "manual";
+    }
+  }
 
   return {
-    canInstall,
+    canInstall: installMode !== null,
+    installMode,
     isIOS,
     isStandalone,
     promptInstall,
