@@ -12,6 +12,10 @@ type BeforeInstallPromptEvent = Event & {
 
 const DISMISS_KEY = "earned_install_prompt_dismissed_at";
 const DISMISS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+// How long to wait for Chromium's `beforeinstallprompt` before offering the
+// Android manual fallback. Longer than the dialog's own 2.5s open delay so a
+// slightly-slow Chrome resolves to the native Install button, not manual.
+const MANUAL_GRACE_MS = 3500;
 
 /**
  * Module-scope singleton that captures the one-shot `beforeinstallprompt`
@@ -133,6 +137,11 @@ function detectIOSSafari(): boolean {
   return /Safari/i.test(ua);
 }
 
+function detectAndroid(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /Android/i.test(navigator.userAgent || "");
+}
+
 function detectStandalone(): boolean {
   if (typeof window === "undefined") return false;
   const displayModeStandalone =
@@ -145,8 +154,22 @@ function detectStandalone(): boolean {
   return displayModeStandalone || iosStandalone;
 }
 
+/**
+ * How the install affordance should present:
+ * - "native": Chromium fired `beforeinstallprompt`; we can call `.prompt()`.
+ * - "ios":    iOS Safari — show the manual Add-to-Home-Screen share steps.
+ * - "manual": Android browser that never fired `beforeinstallprompt` (e.g.
+ *             Comet, and other Chromium forks that omit the install pipeline).
+ *             Show a generic "use the browser menu" hint — best-effort, since
+ *             some of these browsers can't install PWAs at all.
+ * - null:     nothing to show (already installed, dismissed, or a desktop
+ *             browser with no install path).
+ */
+export type InstallMode = "native" | "ios" | "manual" | null;
+
 export type UseInstallPromptResult = {
   canInstall: boolean;
+  installMode: InstallMode;
   isIOS: boolean;
   isStandalone: boolean;
   promptInstall: () => Promise<void>;
@@ -171,15 +194,25 @@ export function useInstallPrompt(): UseInstallPromptResult {
   const deferredEvent = installSnapshot.event;
   const installedFromCapture = installSnapshot.installed;
   const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  // The manual fallback is only eligible after this grace window, giving
+  // Chromium a chance to fire `beforeinstallprompt` first. Without it an
+  // Android Chrome user whose event is slow would briefly see the manual
+  // "open in Chrome" copy (they're already in Chrome) before it flips to the
+  // native Install button. See MANUAL_GRACE_MS.
+  const [manualGracePassed, setManualGracePassed] = useState(false);
 
   // Detect environment once on mount. We avoid SSR divergence by gating on
   // `typeof window`.
   useEffect(() => {
     setIsIOS(detectIOSSafari());
+    setIsAndroid(detectAndroid());
     setIsStandalone(detectStandalone());
     setDismissed(isWithinDismissWindow());
+    const t = setTimeout(() => setManualGracePassed(true), MANUAL_GRACE_MS);
+    return () => clearTimeout(t);
   }, []);
 
   // The module-scope `appinstalled` listener flips a flag for us — mirror
@@ -228,13 +261,25 @@ export function useInstallPrompt(): UseInstallPromptResult {
     setDismissed(true);
   }, []);
 
-  const canInstall =
-    !isStandalone &&
-    !dismissed &&
-    (deferredEvent !== null || isIOS);
+  // Resolve the single presentation mode. Native wins when the event is
+  // present; iOS Safari gets its share-sheet steps; an Android browser that
+  // never fired the event falls back to the manual menu hint. Android-only for
+  // the manual case keeps the "Add to Home screen" wording correct and avoids
+  // nagging desktop browsers that legitimately have no install path.
+  let installMode: InstallMode = null;
+  if (!isStandalone && !dismissed) {
+    if (deferredEvent !== null) {
+      installMode = "native";
+    } else if (isIOS) {
+      installMode = "ios";
+    } else if (isAndroid && manualGracePassed) {
+      installMode = "manual";
+    }
+  }
 
   return {
-    canInstall,
+    canInstall: installMode !== null,
+    installMode,
     isIOS,
     isStandalone,
     promptInstall,
