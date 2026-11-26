@@ -11,6 +11,7 @@ import {
   getAutoFailUpperBound,
 } from "./lib/dayCalculation";
 import { STANDARD_HABITS } from "./lib/standardHabits";
+import { getAuthenticatedUser } from "./lib/auth";
 
 // The default routine slug the quick-start modal commits (mirrors
 // DEFAULT_TEMPLATE_SLUG in lib/routine-templates — its habit set is exactly
@@ -196,6 +197,14 @@ export const startChallenge = mutation({
     templateSlug: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // `userId` stays in the args because already-deployed clients (and the
+    // service worker's cached bundles) send it. It is only accepted when it is
+    // the signed-in user's own id.
+    const user = await getAuthenticatedUser(ctx);
+    if (user._id !== args.userId) {
+      throw new Error("You can only start a challenge on your own account.");
+    }
+
     // Check if user already has an active challenge
     const existingChallenge = await ctx.db
       .query("challenges")

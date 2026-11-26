@@ -7,14 +7,21 @@ import { STANDARD_HABITS } from "./lib/standardHabits";
 
 const modules = import.meta.glob("./**/*.ts");
 
-async function seedUser(t: ReturnType<typeof convexTest>) {
+async function seedUser(
+  t: ReturnType<typeof convexTest>,
+  clerkId = "clerk_start",
+) {
   return await t.run(async (ctx) =>
     ctx.db.insert("users", {
-      clerkId: "clerk_start",
+      clerkId,
       displayName: "Starter",
       preferences: { timezone: "America/New_York", waterUnit: "oz" },
     }),
   );
+}
+
+async function allChallenges(t: ReturnType<typeof convexTest>) {
+  return await t.run(async (ctx) => ctx.db.query("challenges").collect());
 }
 
 describe("startChallenge", () => {
@@ -22,11 +29,13 @@ describe("startChallenge", () => {
     const t = convexTest(schema, modules);
     const userId = await seedUser(t);
 
-    const challengeId = await t.mutation(api.challenges.startChallenge, {
-      userId,
-      startDate: "2026-07-27",
-      visibility: "friends",
-    });
+    const challengeId = await t
+      .withIdentity({ subject: "clerk_start" })
+      .mutation(api.challenges.startChallenge, {
+        userId,
+        startDate: "2026-07-27",
+        visibility: "friends",
+      });
 
     const defs = await t.run(async (ctx) =>
       ctx.db
@@ -49,14 +58,51 @@ describe("startChallenge", () => {
   test("honors an explicit templateSlug on the challenge", async () => {
     const t = convexTest(schema, modules);
     const userId = await seedUser(t);
-    const challengeId = await t.mutation(api.challenges.startChallenge, {
-      userId,
-      startDate: "2026-07-27",
-      visibility: "private",
-      templateSlug: "custom",
-    });
+    const challengeId = await t
+      .withIdentity({ subject: "clerk_start" })
+      .mutation(api.challenges.startChallenge, {
+        userId,
+        startDate: "2026-07-27",
+        visibility: "private",
+        templateSlug: "custom",
+      });
     const challenge = await t.run(async (ctx) => ctx.db.get(challengeId));
     expect(challenge?.templateSlug).toBe("custom");
+  });
+
+  test("a signed-in user cannot start a challenge on someone else's account", async () => {
+    const t = convexTest(schema, modules);
+    const victimId = await seedUser(t);
+    await seedUser(t, "clerk_attacker");
+
+    await expect(
+      t
+        .withIdentity({ subject: "clerk_attacker" })
+        .mutation(api.challenges.startChallenge, {
+          userId: victimId,
+          startDate: "2026-07-27",
+          visibility: "public",
+        }),
+    ).rejects.toThrow("You can only start a challenge on your own account.");
+
+    expect(await allChallenges(t)).toEqual([]);
+    const victim = await t.run(async (ctx) => ctx.db.get(victimId));
+    expect(victim?.currentChallengeId).toBeUndefined();
+  });
+
+  test("a signed-out caller cannot start a challenge", async () => {
+    const t = convexTest(schema, modules);
+    const userId = await seedUser(t);
+
+    await expect(
+      t.mutation(api.challenges.startChallenge, {
+        userId,
+        startDate: "2026-07-27",
+        visibility: "friends",
+      }),
+    ).rejects.toThrow("Not authenticated");
+
+    expect(await allChallenges(t)).toEqual([]);
   });
 });
 
@@ -94,11 +140,13 @@ describe("backfillStandardHabitsIfEmpty", () => {
   test("is a no-op when the challenge already has habit definitions", async () => {
     const t = convexTest(schema, modules);
     const userId = await seedUser(t);
-    const challengeId = await t.mutation(api.challenges.startChallenge, {
-      userId,
-      startDate: "2026-07-27",
-      visibility: "friends",
-    });
+    const challengeId = await t
+      .withIdentity({ subject: "clerk_start" })
+      .mutation(api.challenges.startChallenge, {
+        userId,
+        startDate: "2026-07-27",
+        visibility: "friends",
+      });
     const res = await t.mutation(
       internal.challenges.backfillStandardHabitsIfEmpty,
       { challengeId },
